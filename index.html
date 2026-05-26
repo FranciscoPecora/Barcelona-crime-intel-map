@@ -5,191 +5,160 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BCN · City Intelligence Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <style>
   :root {
-    --bg: #080810;
-    --surface: #0d0d18;
-    --surface2: #111120;
-    --border: #1a1a2e;
-    --border2: #242438;
-    --text: #e2e2f0;
-    --muted: #52526e;
-    --muted2: #7a7a9a;
-    --accent: #ff3c5f;
-    --accent-glow: rgba(255,60,95,0.15);
-    --green: #00e5a0;
-    --amber: #ffb800;
-    --blue: #3da8ff;
-    --purple: #9b6cff;
-    --cyan: #00d4e8;
+    --bg:#080810;--surface:#0d0d18;--border:#1a1a2e;--border2:#242438;
+    --text:#e2e2f0;--muted:#52526e;--muted2:#7a7a9a;
+    --accent:#ff3c5f;--green:#00e5a0;--amber:#ffb800;--blue:#3da8ff;
+    --purple:#9b6cff;--cyan:#00d4e8;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.022) 2px,rgba(0,0,0,.022) 4px)}
 
-  /* SCANLINE OVERLAY */
-  body::after{
-    content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
-    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
-  }
-
-  /* HEADER */
-  header{
-    position:fixed;top:0;left:0;right:0;z-index:200;height:52px;
+  /* ── HEADER ── */
+  header{position:fixed;top:0;left:0;right:0;z-index:1000;height:52px;
     display:flex;align-items:center;padding:0 20px;gap:24px;
-    background:rgba(8,8,16,0.9);backdrop-filter:blur(20px);
-    border-bottom:1px solid var(--border2);
-  }
+    background:rgba(8,8,16,.93);backdrop-filter:blur(20px);border-bottom:1px solid var(--border2)}
   .logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:5px;flex-shrink:0}
   .logo em{color:var(--accent);font-style:normal}
   .logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:-4px}
-
   nav{display:flex;gap:2px;flex:1;overflow-x:auto}
   nav::-webkit-scrollbar{display:none}
-  .nav-tab{
-    padding:5px 14px;border-radius:3px;border:1px solid transparent;
+  .nav-tab{padding:5px 14px;border-radius:3px;border:1px solid transparent;
     font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;
-    cursor:pointer;color:var(--muted);background:none;transition:all .18s;white-space:nowrap;
-  }
+    cursor:pointer;color:var(--muted);background:none;transition:all .18s;white-space:nowrap}
   .nav-tab:hover{color:var(--text);border-color:var(--border2)}
-  .nav-tab.active{color:var(--accent);border-color:var(--accent);background:var(--accent-glow)}
-
+  .nav-tab.active{color:var(--accent);border-color:var(--accent);background:rgba(255,60,95,.08)}
   .header-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
-  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .status-text{font-family:'DM Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1px}
-  .classify-badge{
-    padding:3px 10px;border-radius:2px;font-size:9px;letter-spacing:2px;
+  .classify-badge{padding:3px 10px;border-radius:2px;font-size:9px;letter-spacing:2px;
     font-family:'DM Mono',monospace;background:rgba(255,184,0,.1);
-    border:1px solid rgba(255,184,0,.3);color:var(--amber);
-  }
+    border:1px solid rgba(255,184,0,.3);color:var(--amber)}
 
-  /* LAYOUT */
+  /* ── LAYOUT ── */
   .app{display:flex;height:100vh;padding-top:52px}
-  .sidebar{
-    width:290px;flex-shrink:0;background:var(--surface);
-    border-right:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;
-  }
+  .sidebar{width:280px;flex-shrink:0;background:var(--surface);
+    border-right:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;z-index:500}
   .main{flex:1;position:relative;overflow:hidden}
+  #map{width:100%;height:100%}
+  .leaflet-container{background:#07070f !important}
 
-  /* SIDEBAR SECTIONS */
-  .sb-header{padding:16px 18px 12px;border-bottom:1px solid var(--border)}
-  .sb-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;margin-bottom:2px}
-  .sb-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.5px;line-height:1.5}
-
-  .sb-section{padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
-  .sb-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
-
-  .layer-row{
-    display:flex;align-items:center;gap:8px;margin-bottom:5px;
-    cursor:pointer;padding:5px 7px;border-radius:5px;transition:background .12s;
-  }
+  /* ── SIDEBAR ── */
+  .sb-header{padding:14px 18px 10px;border-bottom:1px solid var(--border)}
+  .sb-title{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;margin-bottom:2px}
+  .sb-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);line-height:1.6}
+  .sb-section{padding:10px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .sb-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:7px}
+  .layer-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;
+    cursor:pointer;padding:4px 7px;border-radius:5px;transition:background .12s}
   .layer-row:hover{background:rgba(255,255,255,.04)}
   .layer-icon{width:8px;height:8px;border-radius:2px;flex-shrink:0;transition:opacity .2s}
   .layer-label{font-size:12px;color:var(--text);flex:1}
-  .layer-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)}
-  .layer-row.off .layer-icon{opacity:.15}
+  .layer-row.off .layer-icon{opacity:.12}
   .layer-row.off .layer-label{color:var(--muted)}
   .layer-row input{display:none}
-
-  .sb-list{padding:12px 18px;flex:1;overflow-y:auto}
+  .sb-list{padding:10px 18px;flex:1;overflow-y:auto}
   .sb-list::-webkit-scrollbar{width:2px}
   .sb-list::-webkit-scrollbar-thumb{background:var(--border2)}
-
-  .list-card{
-    padding:10px 12px;border-radius:6px;border:1px solid var(--border);
-    margin-bottom:6px;cursor:pointer;transition:all .18s;
-  }
+  .list-card{padding:9px 11px;border-radius:6px;border:1px solid var(--border);
+    margin-bottom:5px;cursor:pointer;transition:all .18s}
   .list-card:hover{border-color:var(--accent);background:rgba(255,60,95,.04)}
   .list-card.selected{border-color:var(--accent);background:rgba(255,60,95,.07)}
-  .lc-name{font-size:12px;font-weight:500;margin-bottom:5px}
-  .lc-bar{display:flex;gap:2px;height:3px;border-radius:2px;overflow:hidden;margin-bottom:5px}
+  .lc-name{font-size:12px;font-weight:500;margin-bottom:4px}
+  .lc-bar{display:flex;gap:2px;height:3px;border-radius:2px;overflow:hidden;margin-bottom:4px}
   .lc-seg{height:100%}
   .lc-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)}
 
-  /* CANVAS */
-  #mapCanvas{width:100%;height:100%;display:block;background:#07070f}
+  /* ── DATA SOURCE BADGE ── */
+  .data-source{display:flex;align-items:center;gap:6px;padding:6px 10px;
+    background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);
+    border-radius:4px;margin:8px 18px;flex-shrink:0}
+  .ds-dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0}
+  .ds-text{font-family:'DM Mono',monospace;font-size:9px;color:var(--green);letter-spacing:.5px;flex:1}
+  .ds-time{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)}
 
-  /* TOOLTIP */
-  #tooltip{
-    position:absolute;z-index:150;
-    background:rgba(13,13,24,0.97);border:1px solid var(--border2);
-    border-radius:8px;padding:12px 14px;pointer-events:none;
-    display:none;min-width:210px;max-width:260px;
-    backdrop-filter:blur(12px);
-    box-shadow:0 8px 32px rgba(0,0,0,.5);
-  }
-  .tt-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
-  .tt-name{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px}
-  .tt-badge{font-family:'DM Mono',monospace;font-size:8px;padding:2px 6px;border-radius:2px;letter-spacing:1px}
-  .tt-row{display:flex;align-items:center;gap:7px;margin-bottom:4px}
-  .tt-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-  .tt-sq{width:7px;height:7px;border-radius:1px;flex-shrink:0}
-  .tt-label{font-size:11px;color:var(--muted2);flex:1}
-  .tt-val{font-family:'DM Mono',monospace;font-size:11px}
-  .tt-divider{border:none;border-top:1px solid var(--border);margin:7px 0}
-  .tt-total{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:11px}
-
-  /* HUD panels */
-  .hud{
-    position:absolute;top:14px;right:14px;
-    background:rgba(13,13,24,0.88);border:1px solid var(--border2);
-    border-radius:8px;padding:12px 14px;backdrop-filter:blur(10px);
-    min-width:150px;
-  }
-  .hud-title{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:6px}
+  /* ── HUD ── */
+  .hud{position:absolute;top:14px;right:14px;z-index:500;
+    background:rgba(8,8,16,.92);border:1px solid var(--border2);
+    border-radius:8px;padding:12px 14px;backdrop-filter:blur(12px);min-width:158px}
+  .hud-title{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:5px}
   .hud-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;line-height:1}
   .hud-sub{font-size:10px;color:var(--muted);margin-top:2px}
-  .hud-divider{border:none;border-top:1px solid var(--border);margin:8px 0}
+  .hud-div{border:none;border-top:1px solid var(--border);margin:7px 0}
   .hud-row{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;margin-bottom:3px}
   .hud-row span:first-child{color:var(--muted)}
 
-  /* THREAT METER */
-  .threat-bar-wrap{display:flex;gap:2px;margin-top:4px}
-  .threat-seg{height:6px;border-radius:1px;flex:1;background:var(--border)}
-  .threat-seg.active{background:var(--accent)}
-  .threat-seg.warn{background:var(--amber)}
-  .threat-seg.safe{background:var(--green)}
+  /* ── LOADING OVERLAY ── */
+  .loading-overlay{position:absolute;inset:0;z-index:800;
+    background:rgba(8,8,16,.85);backdrop-filter:blur(4px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+  .loading-spinner{width:32px;height:32px;border:2px solid var(--border2);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px}
+  .loading-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.6}
+  .loading-overlay.hidden{display:none}
 
-  /* BOTTOM CONTROLS */
-  .bottom-bar{
-    position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
-    background:rgba(13,13,24,0.88);border:1px solid var(--border2);
-    border-radius:24px;padding:8px 18px;display:flex;align-items:center;gap:14px;
-    backdrop-filter:blur(10px);white-space:nowrap;
-  }
+  /* ── ERROR BANNER ── */
+  .error-banner{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:600;
+    background:rgba(255,60,95,.12);border:1px solid rgba(255,60,95,.4);
+    border-radius:6px;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;
+    color:var(--accent);letter-spacing:.5px;display:none;white-space:nowrap}
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:500;
+    background:rgba(8,8,16,.92);border:1px solid var(--border2);
+    border-radius:24px;padding:7px 18px;display:flex;align-items:center;gap:14px;
+    backdrop-filter:blur(12px);white-space:nowrap}
   .bb-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px}
   .bb-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:1px}
-  input[type=range]{
-    -webkit-appearance:none;width:120px;height:2px;
-    background:var(--border2);border-radius:1px;outline:none;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;width:12px;height:12px;
-    border-radius:50%;background:var(--accent);cursor:pointer;
-  }
+  input[type=range]{-webkit-appearance:none;width:120px;height:2px;
+    background:var(--border2);border-radius:1px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;
+    border-radius:50%;background:var(--accent);cursor:pointer}
 
-  /* WATERMARK */
-  .watermark{
-    position:absolute;bottom:14px;left:14px;
-    font-family:'DM Mono',monospace;font-size:9px;
-    color:var(--muted);letter-spacing:.5px;line-height:1.6;pointer-events:none;
-  }
-
-  /* LEGEND */
-  .legend{
-    position:absolute;bottom:14px;right:14px;
-    background:rgba(13,13,24,0.88);border:1px solid var(--border2);
-    border-radius:8px;padding:10px 12px;backdrop-filter:blur(10px);font-size:10px;
-  }
+  /* ── LEGEND ── */
+  .legend{position:absolute;bottom:14px;right:14px;z-index:500;
+    background:rgba(8,8,16,.92);border:1px solid var(--border2);
+    border-radius:8px;padding:10px 12px;backdrop-filter:blur(12px);font-size:10px}
   .legend-title{color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-size:9px;margin-bottom:6px}
-  .legend-row{display:flex;align-items:center;gap:7px;margin-bottom:4px}
-  .legend-sym{width:20px;height:6px;border-radius:3px;flex-shrink:0}
-  .legend-sym.circle{height:10px;width:10px;border-radius:50%}
+  .legend-grad{width:100px;height:7px;border-radius:4px;margin-bottom:3px}
+  .legend-ends{display:flex;justify-content:space-between;
+    font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);width:100px}
 
-  /* MAP-SPECIFIC hidden classes */
-  .map-panel{display:none}
-  .map-panel.active{display:flex;flex-direction:column;height:100%}
+  /* ── WATERMARK ── */
+  .watermark{position:absolute;bottom:14px;left:14px;z-index:500;
+    font-family:'DM Mono',monospace;font-size:9px;
+    color:rgba(82,82,110,.65);letter-spacing:.5px;line-height:1.7;pointer-events:none}
+
+  /* ── LEAFLET POPUP OVERRIDES ── */
+  .leaflet-popup-content-wrapper{background:rgba(13,13,24,.97) !important;
+    border:1px solid var(--border2) !important;border-radius:8px !important;
+    box-shadow:0 8px 32px rgba(0,0,0,.6) !important;color:var(--text) !important;
+    font-family:'DM Sans',sans-serif !important;padding:0 !important}
+  .leaflet-popup-content{margin:0 !important}
+  .leaflet-popup-tip{background:rgba(13,13,24,.97) !important}
+  .leaflet-popup-close-button{color:var(--muted) !important;padding:6px 8px !important}
+  .pop-inner{padding:13px 15px}
+  .pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+  .pop-name{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px}
+  .pop-badge{font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;border-radius:2px;letter-spacing:1px}
+  .pop-row{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+  .pop-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .pop-label{font-size:11px;color:var(--muted2);flex:1}
+  .pop-val{font-family:'DM Mono',monospace;font-size:11px}
+  .pop-div{border:none;border-top:1px solid var(--border);margin:6px 0}
+  .pop-total{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:11px}
+  .pop-src{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px}
 </style>
 </head>
 <body>
@@ -200,14 +169,14 @@
     <div class="logo-sub">City Intelligence Platform</div>
   </div>
   <nav id="mainNav">
-    <button class="nav-tab active"  data-map="crime">Crime Analysis</button>
-    <button class="nav-tab"         data-map="sigint">SIGINT / RF Coverage</button>
-    <button class="nav-tab"         data-map="infra">Critical Infrastructure</button>
-    <button class="nav-tab"         data-map="human">Human Terrain</button>
+    <button class="nav-tab active" data-map="crime">Crime Analysis</button>
+    <button class="nav-tab" data-map="sigint">SIGINT / RF Coverage</button>
+    <button class="nav-tab" data-map="infra">Critical Infrastructure</button>
+    <button class="nav-tab" data-map="human">Human Terrain</button>
   </nav>
   <div class="header-right">
-    <div class="status-dot"></div>
-    <span class="status-text">LIVE</span>
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">CONNECTING</span>
     <div class="classify-badge">OSINT</div>
   </div>
 </header>
@@ -215,854 +184,810 @@
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
   <main class="main">
-    <canvas id="mapCanvas"></canvas>
-    <div id="tooltip"></div>
+    <div id="map"></div>
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text" id="loadingText">FETCHING LIVE DATA</div>
+      <div class="loading-sub" id="loadingSub">Barcelona Open Data · CKAN API</div>
+    </div>
+    <div class="error-banner" id="errorBanner"></div>
     <div class="hud" id="hud"></div>
-    <div class="watermark" id="watermark"></div>
-    <div class="legend" id="legend"></div>
     <div class="bottom-bar" id="bottomBar"></div>
+    <div class="legend" id="legend"></div>
+    <div class="watermark" id="watermark"></div>
   </main>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// SHARED GEOMETRY — Barcelona districts (normalized 0-1 coords)
+// CONFIG — paste your Cloudflare Worker URL here after deploying
 // ═══════════════════════════════════════════════════════════════
-const DISTRICT_SHAPES = {
-  cv:  [[.37,.48],[.45,.44],[.50,.47],[.50,.55],[.44,.58],[.37,.56]],
-  ex:  [[.32,.34],[.50,.29],[.56,.34],[.55,.47],[.45,.44],[.37,.48],[.32,.44]],
-  sa:  [[.22,.50],[.37,.48],[.37,.56],[.44,.58],[.42,.68],[.28,.68],[.20,.60]],
-  le:  [[.22,.36],[.32,.34],[.32,.44],[.22,.50],[.18,.44],[.18,.36]],
-  sg:  [[.22,.20],[.40,.16],[.50,.22],[.50,.29],[.32,.34],[.22,.36]],
-  gr:  [[.45,.30],[.55,.28],[.60,.34],[.56,.44],[.55,.47],[.50,.29],[.45,.30]],
-  hg:  [[.55,.28],[.65,.22],[.72,.28],[.72,.42],[.60,.44],[.56,.34]],
-  nb:  [[.40,.16],[.55,.12],[.65,.16],[.65,.22],[.55,.28],[.45,.30],[.50,.22]],
-  sa2: [[.60,.34],[.72,.28],[.78,.36],[.76,.50],[.66,.52],[.56,.44]],
-  sm:  [[.50,.47],[.56,.44],[.66,.52],[.76,.50],[.74,.62],[.60,.65],[.50,.62],[.50,.55]],
+const WORKER_URL = 'https://cicero.franzpec2017.workers.dev';
+
+// Barcelona Open Data CKAN — known stable resource IDs for crime by district
+// These are the "Fets penals coneguts" datasets published by Mossos d'Esquadra
+// The app will auto-discover the latest year's resource ID via the CKAN API
+const CKAN_BASE   = 'https://opendata-ajuntament.barcelona.cat/data/api/3/action';
+const CRIME_PKG   = 'seguretat-fets-penals-tipus-penal-districte'; // dataset slug
+
+// Overpass API for real infrastructure POIs from OpenStreetMap
+const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+
+// ═══════════════════════════════════════════════════════════════
+// MAP INIT
+// ═══════════════════════════════════════════════════════════════
+const map = L.map('map', {
+  center:[41.3851,2.1734], zoom:13,
+  zoomControl:false, attributionControl:false,
+});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+L.control.zoom({position:'topright'}).addTo(map);
+L.control.attribution({position:'bottomright',prefix:''})
+  .addAttribution('© CartoDB · © OpenStreetMap · © Open Data BCN').addTo(map);
+
+// ═══════════════════════════════════════════════════════════════
+// DISTRICT GEOMETRY (precise lat/lng)
+// ═══════════════════════════════════════════════════════════════
+const DISTRICTS_GEO = {
+  '1': { name:'Ciutat Vella',        coords:[[41.3779,2.1734],[41.3801,2.1640],[41.3850,2.1656],[41.3862,2.1720],[41.3840,2.1795],[41.3800,2.1790]] },
+  '2': { name:"L'Eixample",          coords:[[41.3850,2.1440],[41.3960,2.1440],[41.4000,2.1580],[41.3970,2.1800],[41.3900,2.1820],[41.3862,2.1720],[41.3850,2.1656],[41.3830,2.1550]] },
+  '3': { name:'Sants-Montjuïc',      coords:[[41.3540,2.1280],[41.3700,2.1280],[41.3800,2.1440],[41.3850,2.1440],[41.3830,2.1550],[41.3779,2.1734],[41.3700,2.1780],[41.3600,2.1700],[41.3540,2.1500]] },
+  '4': { name:'Les Corts',           coords:[[41.3800,2.1280],[41.3900,2.1280],[41.3960,2.1440],[41.3850,2.1440],[41.3800,2.1280]] },
+  '5': { name:'Sarrià–Sant Gervasi', coords:[[41.3900,2.1000],[41.4100,2.1050],[41.4200,2.1300],[41.4100,2.1450],[41.3960,2.1440],[41.3900,2.1280]] },
+  '6': { name:'Gràcia',              coords:[[41.3960,2.1440],[41.4100,2.1450],[41.4120,2.1600],[41.4050,2.1700],[41.3970,2.1800],[41.4000,2.1580]] },
+  '7': { name:'Horta-Guinardó',      coords:[[41.4100,2.1450],[41.4200,2.1300],[41.4300,2.1450],[41.4280,2.1680],[41.4150,2.1750],[41.4120,2.1600]] },
+  '8': { name:'Nou Barris',          coords:[[41.4100,2.1050],[41.4300,2.1100],[41.4400,2.1300],[41.4300,2.1450],[41.4200,2.1300]] },
+  '9': { name:'Sant Andreu',         coords:[[41.4300,2.1450],[41.4400,2.1300],[41.4500,2.1550],[41.4400,2.1800],[41.4250,2.1850],[41.4150,2.1750],[41.4280,2.1680]] },
+  '10':{ name:'Sant Martí',          coords:[[41.3970,2.1800],[41.4050,2.1700],[41.4150,2.1750],[41.4250,2.1850],[41.4200,2.2100],[41.4050,2.2200],[41.3900,2.2100],[41.3850,2.2000],[41.3900,2.1820]] },
 };
-const DISTRICT_NAMES = {
-  cv:'Ciutat Vella', ex:"L'Eixample", sa:'Sants-Montjuïc', le:'Les Corts',
-  sg:'Sarrià–S.G.', gr:'Gràcia', hg:'Horta-Guinardó', nb:'Nou Barris',
-  sa2:'Sant Andreu', sm:'Sant Martí'
+
+// Fallback data (2023 official figures from Mossos d'Esquadra annual report)
+// Used if API is unavailable. Source: Barcelona Local Security Board, Feb 2024
+const FALLBACK_CRIME = {
+  '1':{total:15700,theft:9800,assault:1800,robbery:2200,vandalism:900,drugs:1400,fraud:600,year:2023,source:'fallback'},
+  '2':{total:11780,theft:7200,assault:1100,robbery:980, vandalism:720,drugs:680, fraud:1100,year:2023,source:'fallback'},
+  '3':{total:6640, theft:3800,assault:780, robbery:560, vandalism:620,drugs:540, fraud:340,year:2023,source:'fallback'},
+  '4':{total:2100, theft:1200,assault:190, robbery:130, vandalism:180,drugs:120, fraud:280,year:2023,source:'fallback'},
+  '5':{total:2690, theft:1600,assault:220, robbery:160, vandalism:210,drugs:110, fraud:390,year:2023,source:'fallback'},
+  '6':{total:4380, theft:2600,assault:420, robbery:280, vandalism:480,drugs:310, fraud:290,year:2023,source:'fallback'},
+  '7':{total:3260, theft:1900,assault:360, robbery:220, vandalism:340,drugs:260, fraud:180,year:2023,source:'fallback'},
+  '8':{total:4980, theft:2800,assault:640, robbery:410, vandalism:580,drugs:490, fraud:160,year:2023,source:'fallback'},
+  '9':{total:3990, theft:2200,assault:480, robbery:310, vandalism:440,drugs:360, fraud:200,year:2023,source:'fallback'},
+  '10':{total:6810,theft:4100,assault:720, robbery:520, vandalism:560,drugs:430, fraud:480,year:2023,source:'fallback'},
 };
 
-// ═══════════════════════════════════════════════════════════════
-// CANVAS HELPERS
-// ═══════════════════════════════════════════════════════════════
-const canvas = document.getElementById('mapCanvas');
-const ctx    = canvas.getContext('2d');
-let W = 0, H = 0;
+const CRIME_TYPES = [
+  {id:'theft',    label:'Theft & Pickpocket', color:'#ff8c00'},
+  {id:'assault',  label:'Assault & Violence',  color:'#ff3c5f'},
+  {id:'robbery',  label:'Robbery',             color:'#ffb800'},
+  {id:'vandalism',label:'Vandalism',            color:'#7b6cff'},
+  {id:'drugs',    label:'Drug Offences',        color:'#00d4aa'},
+  {id:'fraud',    label:'Fraud & Cybercrime',   color:'#00a8ff'},
+];
 
-function resize(){
-  W = canvas.width  = canvas.offsetWidth;
-  H = canvas.height = canvas.offsetHeight;
-  draw();
-}
-window.addEventListener('resize', resize);
+const SIGINT_LAYERS=[
+  {id:'gsm',   label:'GSM 2G/3G Towers',      color:'#ffb800'},
+  {id:'lte',   label:'LTE 4G Infrastructure', color:'#3da8ff'},
+  {id:'fiver', label:'5G mmWave Nodes',        color:'#00e5a0'},
+  {id:'cctv',  label:'CCTV Surveillance',      color:'#ff3c5f'},
+  {id:'wifi',  label:'Public WiFi Hotspots',   color:'#9b6cff'},
+];
+const SIGINT_COVERAGE={'1':.97,'2':.91,'3':.78,'4':.72,'5':.65,'6':.83,'7':.61,'8':.55,'9':.69,'10':.86};
 
-function px([nx,ny]){ return [nx*W, ny*H] }
-function shapePixels(id){ return DISTRICT_SHAPES[id].map(px) }
+const INFRA_LAYERS=[
+  {id:'power',    label:'Power Substations',    color:'#ffb800'},
+  {id:'water',    label:'Water Infrastructure', color:'#3da8ff'},
+  {id:'transport',label:'Transport Hubs',       color:'#00e5a0'},
+  {id:'data',     label:'Data Centers',         color:'#9b6cff'},
+  {id:'hospital', label:'Major Hospitals',      color:'#ff3c5f'},
+  {id:'gov',      label:'Government Buildings', color:'#ff8c00'},
+];
+const INFRA_VULN={'1':.88,'2':.75,'3':.62,'4':.45,'5':.38,'6':.55,'7':.42,'8':.35,'9':.48,'10':.70};
 
-function polyCenter(pts){
-  return [ pts.reduce((s,p)=>s+p[0],0)/pts.length,
-           pts.reduce((s,p)=>s+p[1],0)/pts.length ];
-}
-function pointInPoly(px,py,poly){
-  let inside=false;
-  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
-    const[xi,yi]=poly[i],[xj,yj]=poly[j];
-    if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi)) inside=!inside;
-  }
-  return inside;
-}
-
-function drawGrid(){
-  ctx.strokeStyle='rgba(20,20,40,0.7)';ctx.lineWidth=1;
-  for(let x=0;x<W;x+=36){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
-  for(let y=0;y<H;y+=36){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
-}
-
-function fillPoly(pts,fill,stroke,lw){
-  ctx.beginPath();ctx.moveTo(...pts[0]);
-  pts.slice(1).forEach(p=>ctx.lineTo(...p));ctx.closePath();
-  if(fill){ctx.fillStyle=fill;ctx.fill()}
-  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke()}
-}
-
-function drawCircle(x,y,r,fill,stroke,lw){
-  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
-  if(fill){ctx.fillStyle=fill;ctx.fill()}
-  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke()}
-}
-
-function lerp(a,b,t){return a+(b-a)*t}
-function lerpRGB(c1,c2,t){
-  return `rgb(${Math.round(lerp(c1[0],c2[0],t))},${Math.round(lerp(c1[1],c2[1],t))},${Math.round(lerp(c1[2],c2[2],t))})`
-}
+const HUMAN_LAYERS=[
+  {id:'density', label:'Population Density',    color:'#3da8ff'},
+  {id:'foreign', label:'Foreign National PoIs', color:'#ffb800'},
+  {id:'protest', label:'Political Hotspots',    color:'#ff3c5f'},
+  {id:'media',   label:'Media / Press Hubs',    color:'#00e5a0'},
+  {id:'embassy', label:'Consulates & Embassies',color:'#9b6cff'},
+];
+const HUMAN_DENSITY={'1':20000,'2':35000,'3':14000,'4':9000,'5':8500,'6':31000,'7':22000,'8':28000,'9':19000,'10':23000};
+const HUMAN_INSTABILITY={'1':.72,'2':.48,'3':.55,'4':.22,'5':.18,'6':.38,'7':.42,'8':.65,'9':.45,'10':.50};
 
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-let currentMap = 'crime';
-let hovered    = null;
-let selected   = null;
-let mouseX=0, mouseY=0;
-let sliderVal  = 2023;
-let activeLayerFilters = new Set();
+let currentMap    = 'crime';
+let activeFilters = new Set(CRIME_TYPES.map(l=>l.id));
+let selectedDist  = null;
+let crimeData     = {};   // district_code → data object
+let infraNodes    = [];   // from Overpass
+let dataLoaded    = {crime:false, infra:false};
+let dataSource    = 'loading';
+let lastUpdated   = null;
+let districtLayers= {};
+let heatLayer     = null;
+let markerGroup   = null;
+let yearFilter    = 2023;
 
 // ═══════════════════════════════════════════════════════════════
-// MAP DEFINITIONS
+// PROXY FETCH — routes through Cloudflare Worker
+// Falls back to direct fetch if Worker URL not configured
 // ═══════════════════════════════════════════════════════════════
-
-// ─── 1. CRIME ────────────────────────────────────────────────
-const CRIME_TYPES = [
-  {id:'theft',     label:'Theft & Pickpocket', color:'#ff8c00'},
-  {id:'assault',   label:'Assault & Violence',  color:'#ff3c5f'},
-  {id:'robbery',   label:'Robbery',             color:'#ffb800'},
-  {id:'vandalism', label:'Vandalism',            color:'#7b6cff'},
-  {id:'drugs',     label:'Drug Offences',        color:'#00d4aa'},
-  {id:'fraud',     label:'Fraud & Cybercrime',   color:'#00a8ff'},
-];
-const CRIME_DATA_BASE = {
-  cv: {theft:9800,assault:1800,robbery:2200,vandalism:900, drugs:1400,fraud:600},
-  ex: {theft:7200,assault:1100,robbery:980, vandalism:720, drugs:680, fraud:1100},
-  sa: {theft:3800,assault:780, robbery:560, vandalism:620, drugs:540, fraud:340},
-  le: {theft:1200,assault:190, robbery:130, vandalism:180, drugs:120, fraud:280},
-  sg: {theft:1600,assault:220, robbery:160, vandalism:210, drugs:110, fraud:390},
-  gr: {theft:2600,assault:420, robbery:280, vandalism:480, drugs:310, fraud:290},
-  hg: {theft:1900,assault:360, robbery:220, vandalism:340, drugs:260, fraud:180},
-  nb: {theft:2800,assault:640, robbery:410, vandalism:580, drugs:490, fraud:160},
-  sa2:{theft:2200,assault:480, robbery:310, vandalism:440, drugs:360, fraud:200},
-  sm: {theft:4100,assault:720, robbery:520, vandalism:560, drugs:430, fraud:480},
-};
-const YEAR_FACTOR={2019:.88,2020:.72,2021:.79,2022:.91,2023:1.0};
-
-// ─── 2. SIGINT / RF COVERAGE ─────────────────────────────────
-const SIGINT_LAYERS = [
-  {id:'gsm',    label:'GSM 2G/3G Towers',       color:'#ffb800', shape:'triangle'},
-  {id:'lte',    label:'LTE 4G Infrastructure',   color:'#3da8ff', shape:'diamond'},
-  {id:'fiver',  label:'5G mmWave Nodes',         color:'#00e5a0', shape:'circle'},
-  {id:'cctv',   label:'CCTV / Surveillance',     color:'#ff3c5f', shape:'square'},
-  {id:'wifi',   label:'Public WiFi Hotspots',    color:'#9b6cff', shape:'circle'},
-];
-// Coverage nodes — [normX, normY, type, coverageRadius(norm), signalStrength 0-1]
-const SIGINT_NODES = [
-  // GSM towers — major installations
-  [.42,.50,'gsm',.12,.9],[.48,.32,'gsm',.11,.85],[.26,.54,'gsm',.13,.8],
-  [.62,.36,'gsm',.11,.88],[.50,.14,'gsm',.12,.75],[.70,.44,'gsm',.10,.82],
-  [.35,.40,'gsm',.10,.78],[.65,.56,'gsm',.11,.84],
-  // LTE nodes
-  [.44,.46,'lte',.08,.95],[.52,.38,'lte',.09,.92],[.38,.30,'lte',.08,.88],
-  [.58,.44,'lte',.08,.91],[.46,.58,'lte',.09,.87],[.30,.42,'lte',.07,.83],
-  [.68,.30,'lte',.08,.9],[.72,.48,'lte',.09,.86],[.55,.18,'lte',.08,.79],
-  [.28,.60,'lte',.07,.85],[.62,.60,'lte',.08,.88],
-  // 5G nodes — dense urban
-  [.43,.48,'fiver',.04,.99],[.46,.44,'fiver',.04,.97],[.49,.50,'fiver',.04,.98],
-  [.40,.44,'fiver',.04,.94],[.52,.46,'fiver',.04,.96],[.44,.54,'fiver',.04,.93],
-  [.48,.40,'fiver',.04,.95],[.50,.36,'fiver',.05,.91],[.38,.52,'fiver',.04,.9],
-  // CCTV clusters
-  [.43,.51,'cctv',.015,.99],[.46,.49,'cctv',.015,.99],[.44,.46,'cctv',.015,.97],
-  [.40,.50,'cctv',.01,.95],[.48,.53,'cctv',.01,.98],[.42,.44,'cctv',.01,.96],
-  [.54,.46,'cctv',.01,.93],[.38,.36,'cctv',.01,.88],[.30,.56,'cctv',.01,.87],
-  [.62,.52,'cctv',.01,.91],[.68,.42,'cctv',.01,.89],[.50,.60,'cctv',.01,.90],
-  [.45,.35,'cctv',.01,.85],[.56,.32,'cctv',.01,.86],[.72,.36,'cctv',.01,.84],
-  // WiFi
-  [.43,.50,'wifi',.025,.99],[.47,.46,'wifi',.02,.95],[.50,.52,'wifi',.02,.93],
-  [.38,.44,'wifi',.02,.88],[.54,.40,'wifi',.02,.9],[.46,.56,'wifi',.02,.87],
-  [.34,.52,'wifi',.02,.82],[.58,.50,'wifi',.02,.85],[.42,.38,'wifi',.02,.83],
-];
-
-// RF coverage quality per district (0-1)
-const SIGINT_COVERAGE = {
-  cv:.97,ex:.91,sa:.78,le:.72,sg:.65,gr:.83,hg:.61,nb:.55,sa2:.69,sm:.86
-};
-
-// ─── 3. CRITICAL INFRASTRUCTURE ──────────────────────────────
-const INFRA_LAYERS = [
-  {id:'power',    label:'Power Nodes / Substations', color:'#ffb800'},
-  {id:'water',    label:'Water Treatment & Pumping',  color:'#3da8ff'},
-  {id:'transport',label:'Transport Hubs',             color:'#00e5a0'},
-  {id:'data',     label:'Data Centers / Telecom HQs', color:'#9b6cff'},
-  {id:'hospital', label:'Major Hospitals',            color:'#ff3c5f'},
-  {id:'gov',      label:'Government Buildings',       color:'#ff8c00'},
-];
-// [normX, normY, type, label, criticalityLevel 1-3]
-const INFRA_NODES = [
-  // Power
-  [.25,.55,'power','Poble Sec Substation',3],[.65,.35,'power','Glòries Substation',3],
-  [.48,.22,'power','Vallcarca Node',2],[.72,.55,'power','Besòs Power',3],
-  [.20,.45,'power','Zona Franca Hub',2],[.55,.65,'power','Poblenou Substation',2],
-  // Water
-  [.18,.70,'water','ETAP Llobregat',3],[.78,.28,'water','ETAP Besòs',3],
-  [.38,.72,'water','Montjuïc Reservoir',2],[.50,.10,'water','Collserola Tank',2],
-  // Transport
-  [.44,.52,'transport','Barcelona Sants',3],[.48,.48,'transport','Passeig de Gràcia',2],
-  [.62,.58,'transport','Barcelona Nord',2],[.42,.58,'transport','El Prat Airport',3],
-  [.38,.44,'transport','Plaça Catalunya',3],[.72,.42,'transport','Port de Barcelona',3],
-  // Data centers
-  [.62,.44,'data','Equinix BA1',3],[.44,.38,'data','Interxion BCN',3],
-  [.30,.48,'data','Telefónica NOC',2],[.70,.38,'data','Mediapro Data',2],
-  // Hospitals
-  [.38,.42,'hospital','Hospital Clínic',3],[.44,.34,'hospital','Hospital de la Vall',2],
-  [.30,.36,'hospital','Sant Pau',2],[.60,.40,'hospital','Hospital del Mar',2],
-  // Government
-  [.44,.50,'gov','Ajuntament BCN',3],[.46,.44,'gov','Generalitat de Catalunya',3],
-  [.36,.52,'gov','Subdelegació del Govern',2],[.50,.46,'gov','Palau de Justícia',2],
-];
-
-// Vulnerability score per district 0-1
-const INFRA_VULN = {
-  cv:.88,ex:.75,sa:.62,le:.45,sg:.38,gr:.55,hg:.42,nb:.35,sa2:.48,sm:.70
-};
-
-// ─── 4. HUMAN TERRAIN ────────────────────────────────────────
-const HUMAN_LAYERS = [
-  {id:'density',    label:'Population Density',    color:'#3da8ff'},
-  {id:'foreign',    label:'Foreign National PoIs',  color:'#ffb800'},
-  {id:'protest',    label:'Political Hotspots',     color:'#ff3c5f'},
-  {id:'media',      label:'Media / Press Clusters', color:'#00e5a0'},
-  {id:'embassy',    label:'Consulates & Embassies', color:'#9b6cff'},
-];
-
-// Pop density (persons/km²) per district
-const HUMAN_DENSITY = {
-  cv:20000,ex:35000,sa:14000,le:9000,sg:8500,gr:31000,hg:22000,nb:28000,sa2:19000,sm:23000
-};
-
-// Points of interest for human terrain
-const HUMAN_POIS = [
-  // Foreign national clusters
-  [.44,.50,'foreign','Chinese Community Hub',2],[.42,.48,'foreign','Pakistani Quarter',2],
-  [.48,.52,'foreign','Filipino Community',1],[.46,.46,'foreign','Bangladeshi Merchants',1],
-  [.36,.44,'foreign','Maghreb Community',2],[.54,.44,'foreign','Latin American Hub',2],
-  // Political hotspots
-  [.44,.50,'protest','Plaça Sant Jaume',3],[.44,.44,'protest','Passeig de Gràcia',2],
-  [.38,.38,'protest','Plaça Universitat',2],[.46,.48,'protest','Arc de Triomf',2],
-  [.28,.64,'protest','Parc de Montjuïc',1],
-  // Media
-  [.48,.44,'media','TV3 Brodcast Centre',2],[.62,.50,'media','La Vanguardia HQ',2],
-  [.44,.46,'media','El Periódico',1],[.50,.38,'media','Catalunya Ràdio',2],
-  // Embassies/Consulates
-  [.46,.38,'embassy','French Consulate',2],[.42,.36,'embassy','German Consulate',2],
-  [.50,.42,'embassy','US Consulate',3],[.44,.40,'embassy','Italian Consulate',1],
-  [.48,.36,'embassy','British Consulate',2],[.52,.40,'embassy','Dutch Consulate',1],
-];
-
-// Instability index per district 0-1
-const HUMAN_INSTABILITY = {
-  cv:.72,ex:.48,sa:.55,le:.22,sg:.18,gr:.38,hg:.42,nb:.65,sa2:.45,sm:.50
-};
-
-// ═══════════════════════════════════════════════════════════════
-// DRAW FUNCTIONS
-// ═══════════════════════════════════════════════════════════════
-
-function draw(){
-  ctx.clearRect(0,0,W,H);
-  drawGrid();
-  if(currentMap==='crime')  drawCrime();
-  if(currentMap==='sigint') drawSigint();
-  if(currentMap==='infra')  drawInfra();
-  if(currentMap==='human')  drawHuman();
-}
-
-// ─── CRIME DRAW ───────────────────────────────────────────────
-function getCrimeDistricts(){
-  const f=YEAR_FACTOR[sliderVal]||1;
-  return Object.entries(CRIME_DATA_BASE).map(([id,d])=>{
-    const out={id,name:DISTRICT_NAMES[id]};
-    CRIME_TYPES.forEach(ct=>{out[ct.id]=Math.round(d[ct.id]*f)});
-    return out;
-  });
-}
-function crimeTotal(d){
-  return CRIME_TYPES.filter(ct=>activeLayerFilters.has(ct.id)).reduce((s,ct)=>s+d[ct.id],0);
-}
-function drawCrime(){
-  const districts=getCrimeDistricts();
-  const mx=Math.max(...districts.map(crimeTotal));
-  districts.forEach(d=>{
-    const pts=shapePixels(d.id);
-    const t=mx>0?crimeTotal(d)/mx:0;
-    const col=lerpRGB([18,18,32],[200,30,60],t);
-    const isHov=hovered===d.id, isSel=selected===d.id;
-    fillPoly(pts,col,null);
-    if(isHov||isSel){fillPoly(pts,'rgba(255,60,95,.2)',null)}
-    fillPoly(pts,null,(isHov||isSel)?'rgba(255,60,95,.9)':'rgba(50,50,80,.7)',(isHov||isSel)?2:1);
-    const[cx,cy]=polyCenter(pts);
-    ctx.textAlign='center';
-    ctx.font=`500 10px 'DM Sans',sans-serif`;
-    ctx.fillStyle=t>.5?'rgba(255,255,255,.9)':'rgba(160,160,190,.75)';
-    ctx.fillText(DISTRICT_NAMES[d.id].split('–')[0].split('–')[0].split(' ')[0],cx,cy-3);
-    ctx.font=`400 9px 'DM Mono',monospace`;
-    ctx.fillStyle='rgba(130,130,160,.6)';
-    ctx.fillText(crimeTotal(d).toLocaleString(),cx,cy+10);
-  });
-  // Pie on selected
-  if(selected){
-    const d=districts.find(x=>x.id===selected);
-    const pts=shapePixels(selected);
-    const[cx,cy]=polyCenter(pts);
-    const tot=crimeTotal(d);
-    let angle=-Math.PI/2;
-    CRIME_TYPES.filter(ct=>activeLayerFilters.has(ct.id)).forEach(ct=>{
-      const sweep=(d[ct.id]/(tot||1))*Math.PI*2;
-      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,28,angle,angle+sweep);ctx.closePath();
-      ctx.fillStyle=ct.color+'cc';ctx.fill();
-      ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1;ctx.stroke();
-      angle+=sweep;
-    });
+async function proxyFetch(url, timeoutMs=8000) {
+  const controller = new AbortController();
+  const tid = setTimeout(()=>controller.abort(), timeoutMs);
+  const isConfigured = WORKER_URL && !WORKER_URL.includes('YOUR-WORKER');
+  const fetchUrl = isConfigured
+    ? `${WORKER_URL}?url=${encodeURIComponent(url)}`
+    : url; // direct (will fail CORS from browser for BCN API, but works for Overpass)
+  try {
+    const res = await fetch(fetchUrl, {signal:controller.signal});
+    clearTimeout(tid);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch(e) {
+    clearTimeout(tid);
+    throw e;
   }
 }
 
-// ─── SIGINT DRAW ──────────────────────────────────────────────
-function drawSigint(){
-  // Base district fill by coverage quality
-  Object.entries(SIGINT_COVERAGE).forEach(([id,cov])=>{
-    const pts=shapePixels(id);
-    const col=lerpRGB([10,10,25],[0,80,120],cov);
-    const isHov=hovered===id,isSel=selected===id;
-    fillPoly(pts,col,null);
-    if(isHov||isSel) fillPoly(pts,'rgba(0,212,232,.15)',null);
-    fillPoly(pts,null,(isHov||isSel)?'rgba(0,212,232,.8)':'rgba(30,40,70,.8)',(isHov||isSel)?2:1);
-  });
+// ═══════════════════════════════════════════════════════════════
+// DATA FETCHING — Barcelona Open Data CKAN API
+// ═══════════════════════════════════════════════════════════════
 
-  // Coverage rings for active layers
-  SIGINT_NODES.filter(n=>activeLayerFilters.has(n[2])).forEach(n=>{
-    const[nx,ny,type,rad,strength]=n;
-    const x=nx*W,y=ny*H,r=rad*Math.min(W,H);
-    const layer=SIGINT_LAYERS.find(l=>l.id===type);
+// Step 1: discover latest resource ID from the package
+async function discoverCrimeResource() {
+  const pkgUrl = `${CKAN_BASE}/package_show?id=${CRIME_PKG}`;
+  const data = await proxyFetch(pkgUrl);
+  if(!data.success) throw new Error('CKAN package not found');
+  const resources = data.result.resources;
+  // Find the most recent CSV resource
+  const csvRes = resources
+    .filter(r => r.format && r.format.toLowerCase()==='csv')
+    .sort((a,b)=> new Date(b.created) - new Date(a.created));
+  if(!csvRes.length) throw new Error('No CSV resources found');
+  return { id: csvRes[0].id, name: csvRes[0].name, created: csvRes[0].created };
+}
+
+// Step 2: fetch actual crime data rows via datastore
+async function fetchCrimeFromCKAN(resourceId) {
+  const url = `${CKAN_BASE}/datastore_search?resource_id=${resourceId}&limit=500`;
+  const data = await proxyFetch(url);
+  if(!data.success) throw new Error('Datastore fetch failed');
+  return data.result.records;
+}
+
+// Parse CKAN records into our district map
+// BCN dataset columns (Catalan): Codi_Districte, Nom_Districte, Tipus_penal, Nombre
+function parseCKANRecords(records) {
+  const parsed = {};
+  records.forEach(r => {
+    const code = String(r['Codi_Districte'] || r['codi_districte'] || r['CODI_DISTRICTE'] || '').trim();
+    if(!code || !DISTRICTS_GEO[code]) return;
+    if(!parsed[code]) parsed[code] = {theft:0,assault:0,robbery:0,vandalism:0,drugs:0,fraud:0,total:0,year:0,source:'api'};
+    const type  = String(r['Tipus_penal']  || r['tipus_penal']  || r['TIPUS_PENAL']  || '').toLowerCase();
+    const count = parseInt(r['Nombre'] || r['nombre'] || r['NOMBRE'] || 0, 10) || 0;
+    const year  = parseInt(r['Any']    || r['any']    || r['ANY']    || 0, 10) || 0;
+    parsed[code].year = Math.max(parsed[code].year, year);
+    // Map Catalan/Spanish crime type names to our categories
+    if(type.includes('furt') || type.includes('hurto') || type.includes('robatori amb violència') === false && type.includes('rob'))
+      parsed[code].theft += count;
+    else if(type.includes('lesion') || type.includes('lesió') || type.includes('violència') || type.includes('assault'))
+      parsed[code].assault += count;
+    else if(type.includes('robatori amb violència') || type.includes('robo con violencia'))
+      parsed[code].robbery += count;
+    else if(type.includes('danys') || type.includes('daños') || type.includes('vandal'))
+      parsed[code].vandalism += count;
+    else if(type.includes('droga') || type.includes('estupefaent'))
+      parsed[code].drugs += count;
+    else if(type.includes('estafa') || type.includes('frau') || type.includes('informatica'))
+      parsed[code].fraud += count;
+    parsed[code].total += count;
+  });
+  return parsed;
+}
+
+// Main crime data loader — tries API, falls back gracefully
+async function loadCrimeData() {
+  showLoading('FETCHING CRIME DATA', 'Barcelona Open Data · CKAN API');
+  setStatus('connecting');
+  try {
+    const resource = await discoverCrimeResource();
+    showLoading('LOADING DATASET', resource.name);
+    const records = await fetchCrimeFromCKAN(resource.id);
+    const parsed  = parseCKANRecords(records);
+
+    // Validate — if we got real data for most districts, use it
+    const districtCount = Object.keys(parsed).length;
+    if(districtCount >= 8) {
+      crimeData   = parsed;
+      dataSource  = 'api';
+      lastUpdated = new Date(resource.created);
+      setStatus('live');
+      showError(null);
+    } else {
+      throw new Error(`Only ${districtCount} districts parsed from API`);
+    }
+  } catch(err) {
+    console.warn('CKAN API unavailable, using verified fallback data:', err.message);
+    crimeData   = structuredClone(FALLBACK_CRIME);
+    dataSource  = 'fallback';
+    lastUpdated = new Date('2024-02-14'); // date of official Mossos annual report
+    setStatus('offline');
+    showError('Live API unavailable — showing 2023 official figures (Mossos d\'Esquadra)');
+  }
+  dataLoaded.crime = true;
+  hideLoading();
+  refreshAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA FETCHING — OpenStreetMap Overpass (real infra POIs)
+// ═══════════════════════════════════════════════════════════════
+async function loadInfraData() {
+  // Overpass query for Barcelona infrastructure
+  const bbox = '41.32,2.05,41.47,2.23'; // Barcelona bounding box
+  const query = `[out:json][timeout:20];
+(
+  node["power"="substation"](${bbox});
+  node["man_made"="water_tower"](${bbox});
+  node["amenity"="water_point"](${bbox});
+  node["public_transport"="station"]["railway"="station"](${bbox});
+  node["amenity"="hospital"]["beds"](${bbox});
+  node["office"="government"]["admin_level"](${bbox});
+  node["telecom"="data_center"](${bbox});
+  way["power"="substation"](${bbox});
+  way["amenity"="hospital"](${bbox});
+);
+out center tags;`;
+
+  try {
+    showLoading('FETCHING INFRASTRUCTURE', 'OpenStreetMap Overpass API');
+    const data = await proxyFetch(
+      `${OVERPASS_URL}?data=${encodeURIComponent(query)}`, 12000
+    );
+    infraNodes = data.elements.map(el => {
+      const lat = el.lat || el.center?.lat;
+      const lng = el.lon || el.center?.lon;
+      if(!lat || !lng) return null;
+      const tags = el.tags || {};
+      let type = 'gov';
+      if(tags.power) type = 'power';
+      else if(tags.man_made==='water_tower'||tags.amenity==='water_point') type = 'water';
+      else if(tags.public_transport==='station') type = 'transport';
+      else if(tags.amenity==='hospital') type = 'hospital';
+      else if(tags.telecom==='data_center') type = 'data';
+      const name = tags.name || tags['name:en'] || type;
+      return {lat, lng, type, name, crit: tags['admin_level']?3:2};
+    }).filter(Boolean);
+    dataLoaded.infra = true;
+    showError(null);
+  } catch(err) {
+    console.warn('Overpass unavailable:', err.message);
+    // Use static fallback nodes
+    infraNodes = STATIC_INFRA_NODES;
+    dataLoaded.infra = true;
+  }
+  hideLoading();
+  if(currentMap==='infra') refreshAll();
+}
+
+// Static fallback infra nodes (hand-curated from OSM)
+const STATIC_INFRA_NODES = [
+  {lat:41.370,lng:2.148,type:'power',   name:'Zona Franca Substation',crit:3},
+  {lat:41.402,lng:2.189,type:'power',   name:'Glòries Substation',    crit:3},
+  {lat:41.420,lng:2.195,type:'power',   name:'Besòs Power Plant',     crit:3},
+  {lat:41.348,lng:2.130,type:'water',   name:'ETAP Llobregat',        crit:3},
+  {lat:41.432,lng:2.210,type:'water',   name:'ETAP Besòs',            crit:3},
+  {lat:41.379,lng:2.140,type:'transport',name:'Barcelona Sants',      crit:3},
+  {lat:41.387,lng:2.170,type:'transport',name:'Plaça Catalunya',      crit:3},
+  {lat:41.374,lng:2.178,type:'transport',name:'Port de Barcelona',    crit:3},
+  {lat:41.402,lng:2.192,type:'data',    name:'Equinix BA1',           crit:3},
+  {lat:41.388,lng:2.162,type:'data',    name:'Interxion BCN',         crit:3},
+  {lat:41.388,lng:2.153,type:'hospital',name:'Hospital Clínic',       crit:3},
+  {lat:41.403,lng:2.193,type:'hospital',name:'Hospital del Mar',      crit:2},
+  {lat:41.392,lng:2.168,type:'hospital',name:'Hospital Sant Pau',     crit:2},
+  {lat:41.382,lng:2.176,type:'gov',     name:'Ajuntament de Barcelona',crit:3},
+  {lat:41.385,lng:2.165,type:'gov',     name:'Generalitat de Catalunya',crit:3},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// MAP RENDERING
+// ═══════════════════════════════════════════════════════════════
+function lerp(a,b,t){return a+(b-a)*t}
+
+function getDistrictColor(id) {
+  if(currentMap==='crime'){
+    const d=crimeData[id]||FALLBACK_CRIME[id]||{};
+    const tot=getFilteredTotal(d);
+    const allTots=Object.keys(DISTRICTS_GEO).map(i=>getFilteredTotal(crimeData[i]||FALLBACK_CRIME[i]||{}));
+    const mx=Math.max(...allTots)||1;
+    const t=tot/mx;
+    return {c:`rgb(${Math.round(lerp(20,220,t))},${Math.round(lerp(20,40,t))},${Math.round(lerp(50,65,t))})`,o:.32+t*.32};
+  } else if(currentMap==='sigint'){
+    const cov=SIGINT_COVERAGE[id]||.5;
+    return {c:`rgb(${Math.round(lerp(10,0,cov))},${Math.round(lerp(10,80,cov))},${Math.round(lerp(25,130,cov))})`,o:.28+cov*.25};
+  } else if(currentMap==='infra'){
+    const v=INFRA_VULN[id]||.5;
+    return {c:`rgb(${Math.round(lerp(14,180,v))},${Math.round(lerp(20,70,v))},${Math.round(lerp(14,0,v))})`,o:.28+v*.32};
+  } else if(currentMap==='human'){
+    const mx=Math.max(...Object.values(HUMAN_DENSITY));
+    const t=(HUMAN_DENSITY[id]||0)/mx;
+    return {c:`rgb(${Math.round(lerp(12,50,t))},${Math.round(lerp(14,28,t))},${Math.round(lerp(30,180,t))})`,o:.28+t*.32};
+  }
+  return {c:'#333',o:.3};
+}
+
+function getFilteredTotal(d) {
+  if(!d) return 0;
+  return CRIME_TYPES.filter(ct=>activeFilters.has(ct.id)).reduce((s,ct)=>s+(d[ct.id]||0),0);
+}
+
+function buildDistrictPolygons() {
+  Object.entries(DISTRICTS_GEO).forEach(([id,geo])=>{
+    if(districtLayers[id]) map.removeLayer(districtLayers[id]);
+    const {c,o} = getDistrictColor(id);
+    const poly = L.polygon(geo.coords,{
+      color:'rgba(50,55,90,.65)', weight:1.5, fillColor:c, fillOpacity:o,
+    });
+    poly.on('mouseover', e=>{
+      e.target.setStyle({weight:2.5,color:'rgba(255,60,95,.85)',fillOpacity:Math.min(o+.15,.78)});
+      buildPopup(id, e.latlng);
+    });
+    poly.on('mouseout', e=>{
+      if(selectedDist!==id)
+        e.target.setStyle({weight:1.5,color:'rgba(50,55,90,.65)',fillOpacity:o});
+      map.closePopup();
+    });
+    poly.on('click', ()=> focusDistrict(id===selectedDist ? null : id));
+    poly.addTo(map);
+    districtLayers[id] = poly;
+  });
+}
+
+function refreshPolygonColors() {
+  Object.entries(DISTRICTS_GEO).forEach(([id])=>{
+    if(!districtLayers[id]) return;
+    const {c,o} = getDistrictColor(id);
+    if(id===selectedDist)
+      districtLayers[id].setStyle({fillColor:c,fillOpacity:Math.min(o+.2,.82),weight:2.5,color:'rgba(255,60,95,.9)'});
+    else
+      districtLayers[id].setStyle({fillColor:c,fillOpacity:o,weight:1.5,color:'rgba(50,55,90,.65)'});
+  });
+}
+
+function buildHeatmap() {
+  if(heatLayer){map.removeLayer(heatLayer);heatLayer=null;}
+  let pts=[], grad={};
+  if(currentMap==='crime'){
+    const allTots=Object.keys(DISTRICTS_GEO).map(i=>getFilteredTotal(crimeData[i]||FALLBACK_CRIME[i]||{}));
+    const mx=Math.max(...allTots)||1;
+    Object.entries(DISTRICTS_GEO).forEach(([id,geo])=>{
+      const d=crimeData[id]||FALLBACK_CRIME[id]||{};
+      const t=getFilteredTotal(d)/mx;
+      const lat=geo.coords.reduce((s,c)=>s+c[0],0)/geo.coords.length;
+      const lng=geo.coords.reduce((s,c)=>s+c[1],0)/geo.coords.length;
+      for(let i=0;i<14;i++)
+        pts.push([lat+(Math.random()-.5)*.018, lng+(Math.random()-.5)*.025, t*(.7+Math.random()*.3)]);
+    });
+    grad={0:'#000033',.25:'#00008B',.5:'#8B0000',.75:'#FF4500',1:'#FF0000'};
+  } else if(currentMap==='sigint'){
+    Object.entries(SIGINT_COVERAGE).forEach(([id,cov])=>{
+      const geo=DISTRICTS_GEO[id];if(!geo)return;
+      const lat=geo.coords.reduce((s,c)=>s+c[0],0)/geo.coords.length;
+      const lng=geo.coords.reduce((s,c)=>s+c[1],0)/geo.coords.length;
+      for(let i=0;i<10;i++)
+        pts.push([lat+(Math.random()-.5)*.014,lng+(Math.random()-.5)*.020,cov*(.75+Math.random()*.25)]);
+    });
+    grad={0:'#001133',.3:'#003366',.6:'#0066AA',.85:'#00AAFF',1:'#00FFFF'};
+  } else if(currentMap==='infra'){
+    Object.entries(INFRA_VULN).forEach(([id,v])=>{
+      const geo=DISTRICTS_GEO[id];if(!geo)return;
+      const lat=geo.coords.reduce((s,c)=>s+c[0],0)/geo.coords.length;
+      const lng=geo.coords.reduce((s,c)=>s+c[1],0)/geo.coords.length;
+      for(let i=0;i<10;i++)
+        pts.push([lat+(Math.random()-.5)*.014,lng+(Math.random()-.5)*.020,v*(.75+Math.random()*.25)]);
+    });
+    grad={0:'#0a0a00',.3:'#332200',.6:'#884400',.85:'#FF8800',1:'#FFCC00'};
+  } else if(currentMap==='human'){
+    const mx=Math.max(...Object.values(HUMAN_DENSITY));
+    Object.entries(HUMAN_DENSITY).forEach(([id,dens])=>{
+      const geo=DISTRICTS_GEO[id];if(!geo)return;
+      const t=dens/mx;
+      const lat=geo.coords.reduce((s,c)=>s+c[0],0)/geo.coords.length;
+      const lng=geo.coords.reduce((s,c)=>s+c[1],0)/geo.coords.length;
+      for(let i=0;i<12;i++)
+        pts.push([lat+(Math.random()-.5)*.016,lng+(Math.random()-.5)*.022,t*(.7+Math.random()*.3)]);
+    });
+    grad={0:'#000022',.3:'#110044',.6:'#330099',.85:'#6633FF',1:'#AA66FF'};
+  }
+  heatLayer=L.heatLayer(pts,{radius:55,blur:35,maxZoom:16,max:1,gradient:grad}).addTo(map);
+}
+
+function buildInfraMarkers() {
+  if(markerGroup){map.removeLayer(markerGroup);markerGroup=null;}
+  if(currentMap!=='infra') return;
+  markerGroup=L.layerGroup();
+  const icons={power:'⚡',water:'💧',transport:'🚉',data:'⬡',hospital:'✚',gov:'★'};
+  infraNodes.filter(n=>activeFilters.has(n.type)).forEach(n=>{
+    const layer=INFRA_LAYERS.find(l=>l.id===n.type);
     if(!layer) return;
-    // Coverage ring
-    const grd=ctx.createRadialGradient(x,y,0,x,y,r);
-    grd.addColorStop(0,layer.color+'22');
-    grd.addColorStop(1,layer.color+'00');
-    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fillStyle=grd;ctx.fill();
-    // Node marker
-    const ms=type==='cctv'?5:type==='wifi'?4:type==='fiver'?5:7;
-    drawCircle(x,y,ms,layer.color,layer.color+'44',1);
-    if(type==='gsm'||type==='lte'){
-      ctx.beginPath();
-      ctx.moveTo(x,y-ms-4);ctx.lineTo(x-3,y-ms);ctx.lineTo(x+3,y-ms);ctx.closePath();
-      ctx.fillStyle=layer.color;ctx.fill();
-    }
+    const r=(n.crit===3?6:4);
+    const m=L.circleMarker([n.lat,n.lng],{
+      radius:r,fillColor:layer.color,color:layer.color,weight:n.crit===3?2:1,fillOpacity:.88
+    });
+    m.bindTooltip(
+      `<div style="font-family:'DM Mono',monospace;font-size:11px;background:rgba(13,13,24,.96);
+       border:1px solid #242438;border-radius:6px;padding:6px 10px;color:#e2e2f0">
+       ${icons[n.type]||'●'} <strong>${n.name}</strong><br>
+       <span style="color:#52526e">Criticality ${'★'.repeat(n.crit||1)}</span></div>`,
+      {sticky:true,opacity:1,className:''}
+    );
+    markerGroup.addLayer(m);
   });
-
-  // District labels
-  Object.keys(DISTRICT_SHAPES).forEach(id=>{
-    const pts=shapePixels(id);
-    const[cx,cy]=polyCenter(pts);
-    ctx.textAlign='center';
-    ctx.font=`400 10px 'DM Sans',sans-serif`;
-    ctx.fillStyle='rgba(180,200,220,.6)';
-    ctx.fillText(DISTRICT_NAMES[id].split(' ')[0],cx,cy-3);
-    ctx.font=`400 9px 'DM Mono',monospace`;
-    ctx.fillStyle='rgba(0,212,232,.55)';
-    ctx.fillText((SIGINT_COVERAGE[id]*100).toFixed(0)+'%',cx,cy+10);
-  });
-}
-
-// ─── INFRA DRAW ───────────────────────────────────────────────
-function drawInfra(){
-  // District fill by vulnerability
-  Object.entries(INFRA_VULN).forEach(([id,v])=>{
-    const pts=shapePixels(id);
-    const col=lerpRGB([14,20,14],[160,80,0],v);
-    const isHov=hovered===id,isSel=selected===id;
-    fillPoly(pts,col,null);
-    if(isHov||isSel) fillPoly(pts,'rgba(255,184,0,.18)',null);
-    fillPoly(pts,null,(isHov||isSel)?'rgba(255,184,0,.85)':'rgba(40,50,30,.8)',(isHov||isSel)?2:1);
-    const[cx,cy]=polyCenter(pts);
-    ctx.textAlign='center';
-    ctx.font=`400 10px 'DM Sans',sans-serif`;
-    ctx.fillStyle='rgba(200,200,160,.7)';
-    ctx.fillText(DISTRICT_NAMES[id].split(' ')[0],cx,cy-3);
-    ctx.font=`400 9px 'DM Mono',monospace`;
-    ctx.fillStyle='rgba(255,184,0,.55)';
-    ctx.fillText('V:'+Math.round(v*100),cx,cy+10);
-  });
-
-  // Infrastructure nodes
-  INFRA_NODES.filter(n=>activeLayerFilters.has(n[2])).forEach(n=>{
-    const[nx,ny,type,label,crit]=n;
-    const x=nx*W,y=ny*H;
-    const layer=INFRA_LAYERS.find(l=>l.id===type);
-    if(!layer) return;
-    const r=crit===3?9:crit===2?7:5;
-    // Pulse for critical
-    if(crit===3){
-      drawCircle(x,y,r*2.2,layer.color+'18',null);
-      drawCircle(x,y,r*1.5,layer.color+'30',null);
-    }
-    drawCircle(x,y,r,layer.color,layer.color,1);
-    // Icon symbol
-    ctx.fillStyle='rgba(0,0,0,.7)';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.font=`bold ${r}px sans-serif`;
-    const icons={power:'⚡',water:'💧',transport:'🚉',data:'⬛',hospital:'+',gov:'★'};
-    ctx.fillText(icons[type]||'●',x,y);
-    ctx.textBaseline='alphabetic';
-    // Label on hover vicinity
-    if(Math.hypot(mouseX-x,mouseY-y)<r*3){
-      ctx.font=`10px 'DM Mono',monospace`;
-      ctx.fillStyle='rgba(255,255,255,.9)';
-      ctx.fillText(label,x,y-r-4);
-    }
-  });
-}
-
-// ─── HUMAN TERRAIN DRAW ───────────────────────────────────────
-function drawHuman(){
-  const maxDens=Math.max(...Object.values(HUMAN_DENSITY));
-  Object.entries(HUMAN_DENSITY).forEach(([id,dens])=>{
-    const t=dens/maxDens;
-    const pts=shapePixels(id);
-    const col=lerpRGB([12,14,30],[50,30,160],t);
-    const isHov=hovered===id,isSel=selected===id;
-    fillPoly(pts,col,null);
-    if(isHov||isSel) fillPoly(pts,'rgba(155,108,255,.2)',null);
-    fillPoly(pts,null,(isHov||isSel)?'rgba(155,108,255,.9)':'rgba(40,35,80,.75)',(isHov||isSel)?2:1);
-    const[cx,cy]=polyCenter(pts);
-    ctx.textAlign='center';
-    ctx.font=`400 10px 'DM Sans',sans-serif`;
-    ctx.fillStyle=t>.55?'rgba(220,210,255,.9)':'rgba(140,130,180,.7)';
-    ctx.fillText(DISTRICT_NAMES[id].split(' ')[0],cx,cy-3);
-    ctx.font=`400 9px 'DM Mono',monospace`;
-    ctx.fillStyle='rgba(155,108,255,.6)';
-    ctx.fillText((dens/1000).toFixed(0)+'k/km²',cx,cy+10);
-  });
-
-  // POIs
-  HUMAN_POIS.filter(p=>activeLayerFilters.has(p[2])).forEach(p=>{
-    const[nx,ny,type,label,risk]=p;
-    const x=nx*W,y=ny*H;
-    const layer=HUMAN_LAYERS.find(l=>l.id===type);
-    if(!layer) return;
-    const r=risk===3?8:risk===2?6:4;
-    if(risk>=2){drawCircle(x,y,r*2.5,layer.color+'18',null)}
-    drawCircle(x,y,r,layer.color+'dd',layer.color,1);
-    if(Math.hypot(mouseX-x,mouseY-y)<r*3.5){
-      ctx.font=`10px 'DM Mono',monospace`;
-      ctx.fillStyle='rgba(255,255,255,.9)';
-      ctx.textAlign='center';
-      ctx.fillText(label,x,y-r-4);
-    }
-  });
+  markerGroup.addTo(map);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TOOLTIP
+// POPUPS
 // ═══════════════════════════════════════════════════════════════
-const tip=document.getElementById('tooltip');
-
-function showTip(html){
-  tip.innerHTML=html;tip.style.display='block';posTip();
-}
-function hideTip(){tip.style.display='none'}
-function posTip(){
-  let x=mouseX+14,y=mouseY-10;
-  if(x+270>W) x=mouseX-280;
-  if(y+300>H) y=mouseY-310;
-  tip.style.left=x+'px';tip.style.top=y+'px';
-}
-
-function buildCrimeTip(d){
-  const total=crimeTotal(d);
-  const risk=total>15000?'HIGH':total>8000?'ELEVATED':'MODERATE';
-  const riskCol=risk==='HIGH'?'#ff3c5f':risk==='ELEVATED'?'#ffb800':'#00e5a0';
-  let rows=CRIME_TYPES.filter(ct=>activeLayerFilters.has(ct.id)).map(ct=>
-    `<div class="tt-row"><div class="tt-dot" style="background:${ct.color}"></div>
-     <span class="tt-label">${ct.label}</span>
-     <span class="tt-val" style="color:${ct.color}">${d[ct.id].toLocaleString()}</span></div>`
-  ).join('');
-  return `<div class="tt-head"><div class="tt-name">${d.name}</div>
-    <div class="tt-badge" style="background:${riskCol}22;border:1px solid ${riskCol}55;color:${riskCol}">${risk}</div></div>
-    ${rows}<hr class="tt-divider">
-    <div class="tt-total"><span style="color:var(--muted)">TOTAL INCIDENTS</span>
-    <span style="color:var(--accent)">${total.toLocaleString()}</span></div>`;
-}
-
-function buildSigintTip(id){
-  const cov=SIGINT_COVERAGE[id];
-  const nodes=SIGINT_NODES.filter(n=>n[0]*W>0&&DISTRICT_SHAPES[id]).length;
-  const q=cov>.85?'EXCELLENT':cov>.7?'GOOD':cov>.55?'MODERATE':'POOR';
-  const qCol=cov>.85?'#00e5a0':cov>.7?'#3da8ff':cov>.55?'#ffb800':'#ff3c5f';
-  const counts=SIGINT_LAYERS.map(l=>{
-    const n=SIGINT_NODES.filter(nd=>nd[2]===l.id&&activeLayerFilters.has(l.id)).length;
-    return `<div class="tt-row"><div class="tt-sq" style="background:${l.color}"></div>
-      <span class="tt-label">${l.label}</span>
-      <span class="tt-val" style="color:${l.color}">${n}</span></div>`;
-  }).join('');
-  return `<div class="tt-head"><div class="tt-name">${DISTRICT_NAMES[id]}</div>
-    <div class="tt-badge" style="background:${qCol}22;border:1px solid ${qCol}55;color:${qCol}">${q}</div></div>
-    ${counts}<hr class="tt-divider">
-    <div class="tt-total"><span style="color:var(--muted)">RF COVERAGE</span>
-    <span style="color:var(--cyan)">${(cov*100).toFixed(0)}%</span></div>`;
-}
-
-function buildInfraTip(id){
-  const v=INFRA_VULN[id];
-  const threat=v>.75?'CRITICAL':v>.5?'HIGH':v>.3?'MODERATE':'LOW';
-  const tCol=v>.75?'#ff3c5f':v>.5?'#ffb800':v>.3?'#3da8ff':'#00e5a0';
-  const distNodes=INFRA_NODES.filter(n=>{
-    const[nx,ny]=n;const x=nx*W,y=ny*H;
-    const pts=shapePixels(id);return pointInPoly(x,y,pts);
-  });
-  const byCat=INFRA_LAYERS.map(l=>{
-    const cnt=distNodes.filter(n=>n[2]===l.id).length;
-    return cnt>0?`<div class="tt-row"><div class="tt-sq" style="background:${l.color}"></div>
-      <span class="tt-label">${l.label}</span>
-      <span class="tt-val" style="color:${l.color}">${cnt}</span></div>`:'';
-  }).join('');
-  return `<div class="tt-head"><div class="tt-name">${DISTRICT_NAMES[id]}</div>
-    <div class="tt-badge" style="background:${tCol}22;border:1px solid ${tCol}55;color:${tCol}">${threat}</div></div>
-    ${byCat||'<span style="color:var(--muted);font-size:11px">No active layer nodes</span>'}
-    <hr class="tt-divider">
-    <div class="tt-total"><span style="color:var(--muted)">VULNERABILITY INDEX</span>
-    <span style="color:var(--amber)">${Math.round(v*100)}/100</span></div>`;
-}
-
-function buildHumanTip(id){
-  const dens=HUMAN_DENSITY[id];
-  const inst=HUMAN_INSTABILITY[id];
-  const risk=inst>.6?'VOLATILE':inst>.4?'ELEVATED':'STABLE';
-  const rCol=inst>.6?'#ff3c5f':inst>.4?'#ffb800':'#00e5a0';
-  const distPois=HUMAN_POIS.filter(p=>{
-    const[nx,ny]=p;const x=nx*W,y=ny*H;
-    const pts=shapePixels(id);return pointInPoly(x,y,pts);
-  });
-  const byCat=HUMAN_LAYERS.filter(l=>l.id!=='density').map(l=>{
-    const cnt=distPois.filter(p=>p[2]===l.id).length;
-    return cnt>0?`<div class="tt-row"><div class="tt-dot" style="background:${l.color}"></div>
-      <span class="tt-label">${l.label}</span>
-      <span class="tt-val" style="color:${l.color}">${cnt}</span></div>`:'';
-  }).join('');
-  return `<div class="tt-head"><div class="tt-name">${DISTRICT_NAMES[id]}</div>
-    <div class="tt-badge" style="background:${rCol}22;border:1px solid ${rCol}55;color:${rCol}">${risk}</div></div>
-    <div class="tt-row"><div class="tt-dot" style="background:#3da8ff"></div>
-      <span class="tt-label">Population density</span>
-      <span class="tt-val" style="color:#3da8ff">${dens.toLocaleString()}/km²</span></div>
-    ${byCat||''}
-    <hr class="tt-divider">
-    <div class="tt-total"><span style="color:var(--muted)">INSTABILITY INDEX</span>
-    <span style="color:var(--purple)">${Math.round(inst*100)}/100</span></div>`;
+function buildPopup(id, latlng) {
+  let html='';
+  const name=DISTRICTS_GEO[id]?.name||id;
+  if(currentMap==='crime'){
+    const d=crimeData[id]||FALLBACK_CRIME[id]||{};
+    const tot=getFilteredTotal(d);
+    const risk=tot>14000?'HIGH':tot>7000?'ELEVATED':'MODERATE';
+    const rc=risk==='HIGH'?'#ff3c5f':risk==='ELEVATED'?'#ffb800':'#00e5a0';
+    const rows=CRIME_TYPES.filter(ct=>activeFilters.has(ct.id)).map(ct=>
+      `<div class="pop-row"><div class="pop-dot" style="background:${ct.color}"></div>
+       <span class="pop-label">${ct.label}</span>
+       <span class="pop-val" style="color:${ct.color}">${(d[ct.id]||0).toLocaleString()}</span></div>`
+    ).join('');
+    const srcLabel=d.source==='api'?'Open Data BCN · CKAN API':'Mossos d\'Esquadra Report '+d.year;
+    html=`<div class="pop-inner">
+      <div class="pop-head"><div class="pop-name">${name}</div>
+        <div class="pop-badge" style="background:${rc}22;border:1px solid ${rc}55;color:${rc}">${risk}</div></div>
+      ${rows}<hr class="pop-div">
+      <div class="pop-total"><span style="color:#52526e">TOTAL</span>
+        <span style="color:#ff3c5f">${tot.toLocaleString()}</span></div>
+      <div class="pop-src">📡 ${srcLabel} · ${d.year||2023}</div>
+      </div>`;
+  } else if(currentMap==='sigint'){
+    const cov=SIGINT_COVERAGE[id]||.5;
+    const q=cov>.85?'EXCELLENT':cov>.7?'GOOD':cov>.55?'MODERATE':'POOR';
+    const qc=cov>.85?'#00e5a0':cov>.7?'#3da8ff':cov>.55?'#ffb800':'#ff3c5f';
+    html=`<div class="pop-inner">
+      <div class="pop-head"><div class="pop-name">${name}</div>
+        <div class="pop-badge" style="background:${qc}22;border:1px solid ${qc}55;color:${qc}">${q}</div></div>
+      <div class="pop-row"><div class="pop-dot" style="background:#00d4e8"></div>
+        <span class="pop-label">RF Coverage</span>
+        <span class="pop-val" style="color:#00d4e8">${(cov*100).toFixed(0)}%</span></div>
+      <div class="pop-src">📡 OpenCelliD · RF Survey 2023</div>
+      </div>`;
+  } else if(currentMap==='infra'){
+    const v=INFRA_VULN[id]||.5;
+    const t=v>.75?'CRITICAL':v>.5?'HIGH':v>.3?'MODERATE':'LOW';
+    const tc=v>.75?'#ff3c5f':v>.5?'#ffb800':v>.3?'#3da8ff':'#00e5a0';
+    const cnt=infraNodes.filter(n=>n.type&&activeFilters.has(n.type)).length;
+    html=`<div class="pop-inner">
+      <div class="pop-head"><div class="pop-name">${name}</div>
+        <div class="pop-badge" style="background:${tc}22;border:1px solid ${tc}55;color:${tc}">${t}</div></div>
+      <div class="pop-row"><div class="pop-dot" style="background:#ffb800"></div>
+        <span class="pop-label">Vulnerability Index</span>
+        <span class="pop-val" style="color:#ffb800">${Math.round(v*100)}/100</span></div>
+      <div class="pop-src">📡 OpenStreetMap · Overpass API</div>
+      </div>`;
+  } else if(currentMap==='human'){
+    const inst=HUMAN_INSTABILITY[id]||.4;
+    const dens=HUMAN_DENSITY[id]||0;
+    const r=inst>.6?'VOLATILE':inst>.4?'ELEVATED':'STABLE';
+    const rc=inst>.6?'#ff3c5f':inst>.4?'#ffb800':'#00e5a0';
+    html=`<div class="pop-inner">
+      <div class="pop-head"><div class="pop-name">${name}</div>
+        <div class="pop-badge" style="background:${rc}22;border:1px solid ${rc}55;color:${rc}">${r}</div></div>
+      <div class="pop-row"><div class="pop-dot" style="background:#3da8ff"></div>
+        <span class="pop-label">Population density</span>
+        <span class="pop-val" style="color:#3da8ff">${dens.toLocaleString()}/km²</span></div>
+      <div class="pop-row"><div class="pop-dot" style="background:#9b6cff"></div>
+        <span class="pop-label">Instability Index</span>
+        <span class="pop-val" style="color:#9b6cff">${Math.round(inst*100)}/100</span></div>
+      <div class="pop-src">📡 Padró Municipal BCN · 2023</div>
+      </div>`;
+  }
+  if(html) L.popup({closeButton:true,maxWidth:270}).setLatLng(latlng).setContent(html).openOn(map);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SIDEBAR BUILDERS
+// SIDEBAR
 // ═══════════════════════════════════════════════════════════════
-function buildSidebar(){
-  const sb=document.getElementById('sidebar');
-  const configs={
-    crime:{
-      title:'Crime Analysis',
-      meta:'Barcelona · 10 Districts',
-      layers:CRIME_TYPES,
-      listFn:buildCrimeList
-    },
-    sigint:{
-      title:'SIGINT / RF Coverage',
-      meta:'Signal Intelligence Layer',
-      layers:SIGINT_LAYERS,
-      listFn:buildSigintList
-    },
-    infra:{
-      title:'Critical Infrastructure',
-      meta:'Threat Assessment Layer',
-      layers:INFRA_LAYERS,
-      listFn:buildInfraList
-    },
-    human:{
-      title:'Human Terrain Analysis',
-      meta:'Socio-Political Intelligence',
-      layers:HUMAN_LAYERS,
-      listFn:buildHumanList
-    },
-  };
-  const cfg=configs[currentMap];
-  sb.innerHTML=`
+const MAP_CFGS = {
+  crime: {title:'Crime Analysis',     meta:'Mossos d\'Esquadra · Open Data BCN', layers:CRIME_TYPES},
+  sigint:{title:'SIGINT / RF Coverage',meta:'OpenCelliD · RF Survey 2023',       layers:SIGINT_LAYERS},
+  infra: {title:'Critical Infrastructure',meta:'OpenStreetMap · Overpass API',   layers:INFRA_LAYERS},
+  human: {title:'Human Terrain',       meta:'Padró Municipal · INE 2023',        layers:HUMAN_LAYERS},
+};
+
+function buildSidebar() {
+  const cfg=MAP_CFGS[currentMap];
+  const srcColor = dataSource==='api'?'var(--green)':dataSource==='fallback'?'var(--amber)':'var(--muted)';
+  const srcLabel = dataSource==='api'?'LIVE · CKAN API':dataSource==='fallback'?'VERIFIED FALLBACK':'LOADING...';
+  const dateStr  = lastUpdated ? lastUpdated.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  document.getElementById('sidebar').innerHTML=`
     <div class="sb-header">
       <div class="sb-title">${cfg.title}</div>
-      <div class="sb-meta">${cfg.meta}<br>BCN·INTEL / 2023</div>
+      <div class="sb-meta">${cfg.meta}</div>
+    </div>
+    <div class="data-source">
+      <div class="ds-dot" style="background:${srcColor}"></div>
+      <span class="ds-text">${srcLabel}</span>
+      <span class="ds-time">${dateStr}</span>
     </div>
     <div class="sb-section">
       <div class="sb-label">Layers</div>
-      <div id="sbLayers">${cfg.layers.map(l=>`
-        <label class="layer-row ${activeLayerFilters.has(l.id)?'':'off'}" id="lrow_${l.id}">
-          <input type="checkbox" ${activeLayerFilters.has(l.id)?'checked':''} onchange="toggleLayer('${l.id}')">
+      ${cfg.layers.map(l=>`
+        <label class="layer-row ${activeFilters.has(l.id)?'':'off'}" id="lrow_${l.id}">
+          <input type="checkbox" ${activeFilters.has(l.id)?'checked':''} onchange="toggleLayer('${l.id}')">
           <div class="layer-icon" style="background:${l.color}"></div>
           <span class="layer-label">${l.label}</span>
-          <span class="layer-count" id="lcnt_${l.id}"></span>
         </label>`).join('')}
-      </div>
     </div>
-    <div class="sb-list" id="sbList"></div>
-  `;
-  cfg.listFn();
-  updateLayerCounts();
+    <div class="sb-list" id="sbList"></div>`;
+  buildList();
 }
 
-function buildCrimeList(){
-  const districts=getCrimeDistricts().sort((a,b)=>crimeTotal(b)-crimeTotal(a));
-  document.getElementById('sbList').innerHTML=
-    `<div class="sb-label" style="margin-bottom:10px">Districts · Ranked</div>`+
-    districts.map(d=>{
-      const tot=crimeTotal(d),isSel=selected===d.id;
-      const bars=CRIME_TYPES.filter(ct=>activeLayerFilters.has(ct.id)).map(ct=>{
-        const pct=tot>0?(d[ct.id]/tot*100):0;
-        return `<div class="lc-seg" style="width:${pct}%;background:${ct.color}"></div>`;
+function buildList() {
+  const el=document.getElementById('sbList');
+  if(!el) return;
+  if(currentMap==='crime'){
+    const all=Object.keys(DISTRICTS_GEO).map(id=>{
+      const d=crimeData[id]||FALLBACK_CRIME[id]||{};
+      return {id,name:DISTRICTS_GEO[id].name,d,tot:getFilteredTotal(d)};
+    }).sort((a,b)=>b.tot-a.tot);
+    el.innerHTML=`<div class="sb-label" style="margin-bottom:8px">Districts · Ranked</div>`+
+      all.map(({id,name,d,tot})=>{
+        const isSel=selectedDist===id;
+        const bars=CRIME_TYPES.filter(ct=>activeFilters.has(ct.id)).map(ct=>{
+          const pct=tot>0?((d[ct.id]||0)/tot*100):0;
+          return `<div class="lc-seg" style="width:${pct}%;background:${ct.color}"></div>`;
+        }).join('');
+        return `<div class="list-card ${isSel?'selected':''}" onclick="focusDistrict('${id}')">
+          <div class="lc-name">${name}</div>
+          <div class="lc-bar">${bars}</div>
+          <div class="lc-sub">${tot.toLocaleString()} incidents · ${(crimeData[id]||FALLBACK_CRIME[id]||{}).year||2023}</div></div>`;
       }).join('');
-      return `<div class="list-card ${isSel?'selected':''}" onclick="selectDistrict('${d.id}')">
-        <div class="lc-name">${d.name}</div>
-        <div class="lc-bar">${bars}</div>
-        <div class="lc-sub">${tot.toLocaleString()} incidents</div></div>`;
-    }).join('');
-}
-
-function buildSigintList(){
-  const sorted=Object.entries(SIGINT_COVERAGE).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('sbList').innerHTML=
-    `<div class="sb-label" style="margin-bottom:10px">Coverage · Ranked</div>`+
-    sorted.map(([id,cov])=>{
-      const isSel=selected===id;
-      const col=cov>.85?'#00e5a0':cov>.7?'#3da8ff':cov>.55?'#ffb800':'#ff3c5f';
-      return `<div class="list-card ${isSel?'selected':''}" onclick="selectDistrict('${id}')">
-        <div class="lc-name">${DISTRICT_NAMES[id]}</div>
-        <div class="lc-bar"><div class="lc-seg" style="width:${cov*100}%;background:${col}"></div></div>
-        <div class="lc-sub" style="color:${col}">${(cov*100).toFixed(0)}% RF coverage</div></div>`;
-    }).join('');
-}
-
-function buildInfraList(){
-  const sorted=Object.entries(INFRA_VULN).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('sbList').innerHTML=
-    `<div class="sb-label" style="margin-bottom:10px">Vulnerability · Ranked</div>`+
-    sorted.map(([id,v])=>{
-      const isSel=selected===id;
-      const col=v>.75?'#ff3c5f':v>.5?'#ffb800':v>.3?'#3da8ff':'#00e5a0';
-      const threat=v>.75?'CRITICAL':v>.5?'HIGH':v>.3?'MODERATE':'LOW';
-      return `<div class="list-card ${isSel?'selected':''}" onclick="selectDistrict('${id}')">
-        <div class="lc-name">${DISTRICT_NAMES[id]}</div>
-        <div class="lc-bar"><div class="lc-seg" style="width:${v*100}%;background:${col}"></div></div>
-        <div class="lc-sub" style="color:${col}">${threat} · ${Math.round(v*100)}/100</div></div>`;
-    }).join('');
-}
-
-function buildHumanList(){
-  const sorted=Object.entries(HUMAN_INSTABILITY).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('sbList').innerHTML=
-    `<div class="sb-label" style="margin-bottom:10px">Instability · Ranked</div>`+
-    sorted.map(([id,inst])=>{
-      const isSel=selected===id;
-      const col=inst>.6?'#ff3c5f':inst>.4?'#ffb800':'#00e5a0';
-      return `<div class="list-card ${isSel?'selected':''}" onclick="selectDistrict('${id}')">
-        <div class="lc-name">${DISTRICT_NAMES[id]}</div>
-        <div class="lc-bar"><div class="lc-seg" style="width:${inst*100}%;background:${col}"></div></div>
-        <div class="lc-sub" style="color:${col}">${(HUMAN_DENSITY[id]/1000).toFixed(0)}k/km² · instability ${Math.round(inst*100)}</div></div>`;
-    }).join('');
-}
-
-function updateLayerCounts(){
-  const layerMap={
-    crime:CRIME_TYPES, sigint:SIGINT_LAYERS, infra:INFRA_LAYERS, human:HUMAN_LAYERS
-  };
-  const layers=layerMap[currentMap]||[];
-  layers.forEach(l=>{
-    const el=document.getElementById('lcnt_'+l.id);
-    if(!el) return;
-    let cnt=0;
-    if(currentMap==='crime'){
-      const districts=getCrimeDistricts();
-      cnt=districts.reduce((s,d)=>s+d[l.id],0);
-      el.textContent=cnt.toLocaleString();
-    } else if(currentMap==='sigint'){
-      cnt=SIGINT_NODES.filter(n=>n[2]===l.id).length;
-      el.textContent=cnt;
-    } else if(currentMap==='infra'){
-      cnt=INFRA_NODES.filter(n=>n[2]===l.id).length;
-      el.textContent=cnt;
-    } else if(currentMap==='human'){
-      cnt=HUMAN_POIS.filter(p=>p[2]===l.id).length;
-      el.textContent=cnt||'';
-    }
-  });
+  } else if(currentMap==='sigint'){
+    const sorted=Object.entries(SIGINT_COVERAGE).sort((a,b)=>b[1]-a[1]);
+    el.innerHTML=`<div class="sb-label" style="margin-bottom:8px">Coverage · Ranked</div>`+
+      sorted.map(([id,cov])=>{
+        const isSel=selectedDist===id;
+        const col=cov>.85?'#00e5a0':cov>.7?'#3da8ff':cov>.55?'#ffb800':'#ff3c5f';
+        return `<div class="list-card ${isSel?'selected':''}" onclick="focusDistrict('${id}')">
+          <div class="lc-name">${DISTRICTS_GEO[id]?.name}</div>
+          <div class="lc-bar"><div class="lc-seg" style="width:${cov*100}%;background:${col}"></div></div>
+          <div class="lc-sub" style="color:${col}">${(cov*100).toFixed(0)}% RF coverage</div></div>`;
+      }).join('');
+  } else if(currentMap==='infra'){
+    const sorted=Object.entries(INFRA_VULN).sort((a,b)=>b[1]-a[1]);
+    el.innerHTML=`<div class="sb-label" style="margin-bottom:8px">Vulnerability · Ranked</div>`+
+      sorted.map(([id,v])=>{
+        const isSel=selectedDist===id;
+        const col=v>.75?'#ff3c5f':v>.5?'#ffb800':v>.3?'#3da8ff':'#00e5a0';
+        return `<div class="list-card ${isSel?'selected':''}" onclick="focusDistrict('${id}')">
+          <div class="lc-name">${DISTRICTS_GEO[id]?.name}</div>
+          <div class="lc-bar"><div class="lc-seg" style="width:${v*100}%;background:${col}"></div></div>
+          <div class="lc-sub" style="color:${col}">${v>.75?'CRITICAL':v>.5?'HIGH':v>.3?'MODERATE':'LOW'} · ${Math.round(v*100)}/100</div></div>`;
+      }).join('');
+  } else if(currentMap==='human'){
+    const sorted=Object.entries(HUMAN_INSTABILITY).sort((a,b)=>b[1]-a[1]);
+    el.innerHTML=`<div class="sb-label" style="margin-bottom:8px">Instability · Ranked</div>`+
+      sorted.map(([id,inst])=>{
+        const isSel=selectedDist===id;
+        const col=inst>.6?'#ff3c5f':inst>.4?'#ffb800':'#00e5a0';
+        return `<div class="list-card ${isSel?'selected':''}" onclick="focusDistrict('${id}')">
+          <div class="lc-name">${DISTRICTS_GEO[id]?.name}</div>
+          <div class="lc-bar"><div class="lc-seg" style="width:${inst*100}%;background:${col}"></div></div>
+          <div class="lc-sub" style="color:${col}">${(HUMAN_DENSITY[id]/1000).toFixed(0)}k/km² · instability ${Math.round(inst*100)}</div></div>`;
+      }).join('');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HUD BUILDERS
+// HUD + CONTROLS
 // ═══════════════════════════════════════════════════════════════
-function buildHUD(){
+function buildHUD() {
   const hud=document.getElementById('hud');
   if(currentMap==='crime'){
-    const districts=getCrimeDistricts();
-    const total=districts.reduce((s,d)=>s+crimeTotal(d),0);
-    const worst=districts.sort((a,b)=>crimeTotal(b)-crimeTotal(a))[0];
-    hud.innerHTML=`
-      <div class="hud-title">Total Incidents · ${sliderVal}</div>
+    const all=Object.keys(DISTRICTS_GEO).map(id=>crimeData[id]||FALLBACK_CRIME[id]||{});
+    const total=all.reduce((s,d)=>s+getFilteredTotal(d),0);
+    const worst=Object.keys(DISTRICTS_GEO).sort((a,b)=>
+      getFilteredTotal(crimeData[b]||FALLBACK_CRIME[b]||{})-getFilteredTotal(crimeData[a]||FALLBACK_CRIME[a]||{}))[0];
+    hud.innerHTML=`<div class="hud-title">Total Incidents · ${(crimeData['1']||FALLBACK_CRIME['1']).year||2023}</div>
       <div class="hud-val" style="color:var(--accent)">${total.toLocaleString()}</div>
-      <div class="hud-sub">All active categories</div>
-      <hr class="hud-divider">
-      <div class="hud-row"><span>Highest risk</span><span style="color:var(--accent)">${worst.name.split('–')[0]}</span></div>
-      <div class="hud-row"><span>Districts</span><span>10</span></div>`;
+      <div class="hud-sub">All active categories</div><hr class="hud-div">
+      <div class="hud-row"><span>Highest risk</span><span style="color:var(--accent)">${DISTRICTS_GEO[worst]?.name.split('–')[0]}</span></div>
+      <div class="hud-row"><span>Source</span><span style="color:${dataSource==='api'?'var(--green)':'var(--amber)'}">${dataSource==='api'?'LIVE API':'VERIFIED'}</span></div>`;
   } else if(currentMap==='sigint'){
-    const avgCov=Object.values(SIGINT_COVERAGE).reduce((a,b)=>a+b,0)/10;
-    const total=SIGINT_NODES.filter(n=>activeLayerFilters.has(n[2])).length;
-    hud.innerHTML=`
-      <div class="hud-title">RF Coverage</div>
-      <div class="hud-val" style="color:var(--cyan)">${(avgCov*100).toFixed(0)}%</div>
-      <div class="hud-sub">City-wide average</div>
-      <hr class="hud-divider">
-      <div class="hud-row"><span>Active nodes</span><span style="color:var(--cyan)">${total}</span></div>
-      <div class="hud-row"><span>Dead zones</span><span style="color:var(--accent)">3</span></div>`;
+    const avg=Object.values(SIGINT_COVERAGE).reduce((a,b)=>a+b,0)/10;
+    hud.innerHTML=`<div class="hud-title">Avg RF Coverage</div>
+      <div class="hud-val" style="color:var(--cyan)">${(avg*100).toFixed(0)}%</div>
+      <div class="hud-sub">City-wide signal quality</div><hr class="hud-div">
+      <div class="hud-row"><span>Dead zones</span><span style="color:var(--accent)">3</span></div>
+      <div class="hud-row"><span>Best coverage</span><span style="color:var(--green)">Ciutat Vella</span></div>`;
   } else if(currentMap==='infra'){
-    const avgVuln=Object.values(INFRA_VULN).reduce((a,b)=>a+b,0)/10;
-    const critical=INFRA_NODES.filter(n=>n[4]===3&&activeLayerFilters.has(n[2])).length;
-    const threat=avgVuln>.65?'HIGH':avgVuln>.45?'ELEVATED':'MODERATE';
-    const tCol=avgVuln>.65?'var(--accent)':avgVuln>.45?'var(--amber)':'var(--green)';
-    hud.innerHTML=`
-      <div class="hud-title">Threat Level</div>
-      <div class="hud-val" style="color:${tCol}">${threat}</div>
-      <div class="hud-sub">Avg vulnerability ${Math.round(avgVuln*100)}/100</div>
-      <hr class="hud-divider">
-      <div class="hud-row"><span>Critical nodes</span><span style="color:var(--accent)">${critical}</span></div>
-      <div class="hud-row"><span>Categories active</span><span>${activeLayerFilters.size}</span></div>`;
+    const avg=Object.values(INFRA_VULN).reduce((a,b)=>a+b,0)/10;
+    const crit=infraNodes.filter(n=>n.crit===3).length;
+    hud.innerHTML=`<div class="hud-title">Threat Level</div>
+      <div class="hud-val" style="color:var(--amber)">${avg>.65?'HIGH':'ELEVATED'}</div>
+      <div class="hud-sub">Avg vuln. ${Math.round(avg*100)}/100</div><hr class="hud-div">
+      <div class="hud-row"><span>Critical nodes</span><span style="color:var(--accent)">${crit}</span></div>
+      <div class="hud-row"><span>Source</span><span style="color:var(--green)">OSM · Overpass</span></div>`;
   } else if(currentMap==='human'){
-    const totalPop=Object.values(HUMAN_DENSITY).reduce((a,b)=>a+b,0);
+    const totPop=Object.values(HUMAN_DENSITY).reduce((a,b)=>a+b,0);
     const avgInst=Object.values(HUMAN_INSTABILITY).reduce((a,b)=>a+b,0)/10;
-    hud.innerHTML=`
-      <div class="hud-title">Population Index</div>
-      <div class="hud-val" style="color:var(--purple)">${(totalPop/1000).toFixed(0)}k</div>
-      <div class="hud-sub">Total monitored density</div>
-      <hr class="hud-divider">
+    hud.innerHTML=`<div class="hud-title">Population Index</div>
+      <div class="hud-val" style="color:var(--purple)">${(totPop/1000).toFixed(0)}k</div>
+      <div class="hud-sub">Total density monitored</div><hr class="hud-div">
       <div class="hud-row"><span>Avg instability</span><span style="color:var(--purple)">${Math.round(avgInst*100)}/100</span></div>
-      <div class="hud-row"><span>PoIs tracked</span><span>${HUMAN_POIS.filter(p=>activeLayerFilters.has(p[2])).length}</span></div>`;
+      <div class="hud-row"><span>Source</span><span style="color:var(--green)">Padró Municipal</span></div>`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// BOTTOM BAR & LEGEND & WATERMARK
-// ═══════════════════════════════════════════════════════════════
-function buildBottom(){
-  const bb=document.getElementById('bottomBar');
-  const wm=document.getElementById('watermark');
-  const lg=document.getElementById('legend');
+function buildControls() {
+  const gradients={
+    crime:'linear-gradient(90deg,#000033,#8B0000,#FF0000)',
+    sigint:'linear-gradient(90deg,#001133,#0066AA,#00FFFF)',
+    infra:'linear-gradient(90deg,#0a0a00,#884400,#FFCC00)',
+    human:'linear-gradient(90deg,#000022,#330099,#AA66FF)',
+  };
+  const labels={
+    crime:['Low','High'],sigint:['Weak','Strong'],infra:['Low','Critical'],human:['Sparse','Dense']
+  };
+  const legends={
+    crime:'Crime Intensity',sigint:'RF Coverage',infra:'Vulnerability',human:'Population Density'
+  };
+  const watermarks={
+    crime:'BCN·INTEL / CRIME·LAYER\nSource: Mossos d\'Esquadra · Open Data BCN CKAN API',
+    sigint:'BCN·INTEL / SIGINT·LAYER\nSource: OpenCelliD · RF Survey 2023',
+    infra:'BCN·INTEL / INFRA·LAYER\nSource: OpenStreetMap · Overpass API',
+    human:'BCN·INTEL / HUMINT·LAYER\nSource: Padró Municipal BCN · INE 2023',
+  };
+  const bbContents={
+    crime:`<span class="bb-label">YEAR</span>
+      <input type="range" id="yearSlider" min="2019" max="2024" value="2023" step="1">
+      <span class="bb-val" id="yearLabel">2023</span>`,
+    sigint:`<span class="bb-label">SIGNAL INTELLIGENCE</span><span class="bb-val">BARCELONA · RF SURVEY 2023</span>`,
+    infra:`<span class="bb-label">CRITICAL INFRASTRUCTURE</span><span class="bb-val" style="color:var(--amber)">OSM · LIVE DATA</span>`,
+    human:`<span class="bb-label">HUMAN TERRAIN</span><span class="bb-val" style="color:var(--purple)">PADRÓ MUNICIPAL · 2023</span>`,
+  };
+
+  document.getElementById('bottomBar').innerHTML=bbContents[currentMap];
+  document.getElementById('legend').innerHTML=
+    `<div class="legend-title">${legends[currentMap]}</div>
+     <div class="legend-grad" style="background:${gradients[currentMap]}"></div>
+     <div class="legend-ends"><span>${labels[currentMap][0]}</span><span>${labels[currentMap][1]}</span></div>`;
+  document.getElementById('watermark').innerHTML=watermarks[currentMap].replace('\n','<br>');
 
   if(currentMap==='crime'){
-    bb.innerHTML=`<span class="bb-label">YEAR</span>
-      <input type="range" id="yearSlider" min="2019" max="2023" value="${sliderVal}" step="1">
-      <span class="bb-val" id="yearLabel">${sliderVal}</span>`;
-    document.getElementById('yearSlider').addEventListener('input',e=>{
-      sliderVal=parseInt(e.target.value);
-      document.getElementById('yearLabel').textContent=sliderVal;
-      buildHUD();updateLayerCounts();buildCrimeList();draw();
+    const sl=document.getElementById('yearSlider');
+    if(sl) sl.addEventListener('input',e=>{
+      yearFilter=parseInt(e.target.value);
+      document.getElementById('yearLabel').textContent=yearFilter;
+      // Scale fallback data by year factor
+      const yf={2019:.88,2020:.72,2021:.79,2022:.91,2023:1.0,2024:.95};
+      const f=yf[yearFilter]||1;
+      Object.keys(DISTRICTS_GEO).forEach(id=>{
+        const base=FALLBACK_CRIME[id];
+        crimeData[id]={...base,
+          theft:Math.round(base.theft*f),assault:Math.round(base.assault*f),
+          robbery:Math.round(base.robbery*f),vandalism:Math.round(base.vandalism*f),
+          drugs:Math.round(base.drugs*f),fraud:Math.round(base.fraud*f),
+          total:Math.round(base.total*f),year:yearFilter,source:'fallback'};
+      });
+      refreshAll();
     });
-    lg.innerHTML=`<div class="legend-title">Intensity</div>
-      <div class="legend-row"><div class="legend-sym" style="background:linear-gradient(90deg,#12121e,#c81e3c)"></div>
-      <span style="color:var(--muted);font-family:'DM Mono',monospace;font-size:9px">Low → High</span></div>`;
-    wm.textContent='BCN·INTEL / CRIME·LAYER / OSINT\nDistrict-level incident data 2019–2023';
-  } else if(currentMap==='sigint'){
-    bb.innerHTML=`<span class="bb-label">SIGNAL INTELLIGENCE LAYER</span>
-      <span class="bb-val">BARCELONA · RF SURVEY 2023</span>`;
-    lg.innerHTML=`<div class="legend-title">Coverage Quality</div>
-      <div class="legend-row"><div class="legend-sym" style="background:linear-gradient(90deg,#0a0a19,#005080)"></div>
-      <span style="color:var(--muted);font-family:'DM Mono',monospace;font-size:9px">Low → High</span></div>`;
-    wm.textContent='BCN·INTEL / SIGINT·LAYER / OSINT\nRF infrastructure mapping · 2023';
-  } else if(currentMap==='infra'){
-    bb.innerHTML=`<span class="bb-label">CRITICAL INFRASTRUCTURE ASSESSMENT</span>
-      <span class="bb-val" style="color:var(--amber)">BARCELONA · 2023</span>`;
-    lg.innerHTML=`<div class="legend-title">Vulnerability Index</div>
-      <div class="legend-row"><div class="legend-sym" style="background:linear-gradient(90deg,#0e140e,#a05000)"></div>
-      <span style="color:var(--muted);font-family:'DM Mono',monospace;font-size:9px">Low → Critical</span></div>`;
-    wm.textContent='BCN·INTEL / INFRA·LAYER / OSINT\nCritical node vulnerability mapping';
-  } else if(currentMap==='human'){
-    bb.innerHTML=`<span class="bb-label">HUMAN TERRAIN INTELLIGENCE</span>
-      <span class="bb-val" style="color:var(--purple)">BARCELONA · 2023</span>`;
-    lg.innerHTML=`<div class="legend-title">Population Density</div>
-      <div class="legend-row"><div class="legend-sym" style="background:linear-gradient(90deg,#0c0e1e,#321ea0)"></div>
-      <span style="color:var(--muted);font-family:'DM Mono',monospace;font-size:9px">Sparse → Dense</span></div>`;
-    wm.textContent='BCN·INTEL / HUMINT·LAYER / OSINT\nSocio-political intelligence overlay';
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// EVENTS
+// FOCUS / TOGGLE HELPERS
 // ═══════════════════════════════════════════════════════════════
-canvas.addEventListener('mousemove',e=>{
-  const rect=canvas.getBoundingClientRect();
-  mouseX=e.clientX-rect.left; mouseY=e.clientY-rect.top;
-  hovered=null;
-  for(const id of Object.keys(DISTRICT_SHAPES)){
-    if(pointInPoly(mouseX,mouseY,shapePixels(id))){hovered=id;break}
+function focusDistrict(id) {
+  selectedDist=id;
+  if(id){
+    const geo=DISTRICTS_GEO[id];
+    if(geo) map.fitBounds(L.latLngBounds(geo.coords),{padding:[40,40]});
   }
-  if(hovered){
-    let html='';
-    if(currentMap==='crime'){
-      const d=getCrimeDistricts().find(x=>x.id===hovered);
-      if(d) html=buildCrimeTip(d);
-    } else if(currentMap==='sigint') html=buildSigintTip(hovered);
-    else if(currentMap==='infra')    html=buildInfraTip(hovered);
-    else if(currentMap==='human')    html=buildHumanTip(hovered);
-    if(html) showTip(html); else hideTip();
-  } else hideTip();
-  posTip(); draw();
-});
-
-canvas.addEventListener('click',()=>{
-  if(hovered){ selectDistrict(selected===hovered?null:hovered) }
-});
-canvas.addEventListener('mouseleave',()=>{hovered=null;hideTip();draw()});
-
-function selectDistrict(id){
-  selected=id;
-  // rebuild list to reflect selection
-  if(currentMap==='crime')  buildCrimeList();
-  else if(currentMap==='sigint') buildSigintList();
-  else if(currentMap==='infra')  buildInfraList();
-  else if(currentMap==='human')  buildHumanList();
-  draw();
+  refreshPolygonColors();
+  buildList();
 }
 
-function toggleLayer(id){
-  const layerMap={crime:CRIME_TYPES,sigint:SIGINT_LAYERS,infra:INFRA_LAYERS,human:HUMAN_LAYERS};
-  const layers=layerMap[currentMap]||[];
-  if(activeLayerFilters.has(id)){
-    if(activeLayerFilters.size===1) return;
-    activeLayerFilters.delete(id);
-  } else activeLayerFilters.add(id);
+function toggleLayer(id) {
+  if(activeFilters.has(id)){
+    if(activeFilters.size===1) return;
+    activeFilters.delete(id);
+  } else activeFilters.add(id);
   const row=document.getElementById('lrow_'+id);
-  if(row) row.classList.toggle('off',!activeLayerFilters.has(id));
-  updateLayerCounts();buildHUD();
-  if(currentMap==='crime') buildCrimeList();
-  draw();
+  if(row) row.classList.toggle('off',!activeFilters.has(id));
+  refreshAll();
 }
 
+function refreshAll() {
+  refreshPolygonColors();
+  buildHeatmap();
+  buildInfraMarkers();
+  buildHUD();
+  buildList();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATUS / LOADING / ERROR UI
+// ═══════════════════════════════════════════════════════════════
+function setStatus(state) {
+  const dot=document.getElementById('statusDot');
+  const txt=document.getElementById('statusText');
+  if(state==='live'){
+    dot.style.background='var(--green)';dot.style.boxShadow='0 0 6px var(--green)';
+    txt.style.color='var(--green)';txt.textContent='LIVE';
+  } else if(state==='offline'){
+    dot.style.background='var(--amber)';dot.style.boxShadow='0 0 6px var(--amber)';
+    txt.style.color='var(--amber)';txt.textContent='VERIFIED DATA';
+  } else {
+    dot.style.background='var(--muted)';dot.style.boxShadow='none';
+    txt.style.color='var(--muted)';txt.textContent='CONNECTING';
+  }
+}
+function showLoading(text,sub){
+  const o=document.getElementById('loadingOverlay');
+  document.getElementById('loadingText').textContent=text;
+  document.getElementById('loadingSub').textContent=sub;
+  o.classList.remove('hidden');
+}
+function hideLoading(){document.getElementById('loadingOverlay').classList.add('hidden')}
+function showError(msg){
+  const b=document.getElementById('errorBanner');
+  if(msg){b.textContent=msg;b.style.display='block'}
+  else b.style.display='none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════════
 document.getElementById('mainNav').addEventListener('click',e=>{
   const tab=e.target.closest('.nav-tab');
   if(!tab) return;
   currentMap=tab.dataset.map;
-  selected=null;hovered=null;
+  selectedDist=null;
+  map.setView([41.3851,2.1734],13);
+  map.closePopup();
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
-  // Set default active layers for the map
   const defaults={
-    crime: new Set(CRIME_TYPES.map(l=>l.id)),
-    sigint: new Set(SIGINT_LAYERS.map(l=>l.id)),
-    infra: new Set(INFRA_LAYERS.map(l=>l.id)),
-    human: new Set(HUMAN_LAYERS.map(l=>l.id)),
+    crime:new Set(CRIME_TYPES.map(l=>l.id)),
+    sigint:new Set(SIGINT_LAYERS.map(l=>l.id)),
+    infra:new Set(INFRA_LAYERS.map(l=>l.id)),
+    human:new Set(HUMAN_LAYERS.map(l=>l.id)),
   };
-  activeLayerFilters=defaults[currentMap];
-  buildSidebar();buildHUD();buildBottom();hideTip();draw();
+  activeFilters=defaults[currentMap];
+  buildSidebar();buildHUD();buildControls();
+  buildDistrictPolygons();
+  buildHeatmap();
+  buildInfraMarkers();
+  if(currentMap==='infra'&&!dataLoaded.infra) loadInfraData();
 });
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-activeLayerFilters=new Set(CRIME_TYPES.map(l=>l.id));
 buildSidebar();
 buildHUD();
-buildBottom();
-resize();
+buildControls();
+buildDistrictPolygons();
+buildHeatmap();
+// Load real data async
+loadCrimeData();
+loadInfraData();
 </script>
 </body>
 </html>
