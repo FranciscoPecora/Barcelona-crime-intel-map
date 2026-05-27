@@ -531,11 +531,10 @@ async function loadCrimeData() {
   showLoading('FETCHING CRIME DATA', 'Mossos d\'Esquadra · Generalitat de Catalunya');
   setStatus('connecting');
   try {
-    // Fetch 2024 data for all Barcelona districts — no proxy needed, CORS open
+    // Fetch 2024 data for all Barcelona districts via Cloudflare Worker (CORS proxy)
     const url = `${MOSSOS_API}?$where=regi_policial_rp=%27RP%20Metropolitana%20Barcelona%27&any=2024&$limit=5000`;
-    const res = await fetch(url, {signal: AbortSignal.timeout(10000)});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const records = await res.json();
+    const data = await proxyFetch(url, 12000);
+    const records = Array.isArray(data) ? data : [];
     if(!records.length) throw new Error('No records returned');
 
     // Aggregate by district and crime type
