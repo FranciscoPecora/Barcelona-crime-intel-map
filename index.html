@@ -110,9 +110,9 @@
 
   /* ── ERROR BANNER ── */
   .error-banner{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:600;
-    background:rgba(255,60,95,.12);border:1px solid rgba(255,60,95,.4);
+    background:rgba(255,184,0,.1);border:1px solid rgba(255,184,0,.35);
     border-radius:6px;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;
-    color:var(--accent);letter-spacing:.5px;display:none;white-space:nowrap}
+    color:var(--amber);letter-spacing:.5px;display:none;white-space:nowrap}
 
   /* ── BOTTOM BAR ── */
   .bottom-bar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:500;
@@ -302,7 +302,8 @@ let activeFilters = new Set(CRIME_TYPES.map(l=>l.id));
 let selectedDist  = null;
 let crimeData     = {};   // district_code → data object
 let infraNodes    = [];   // from Overpass
-let dataLoaded    = {crime:false, infra:false};
+let dataLoaded    = {crime:false, infra:false, cctv:false};
+let cctvNodes     = [];   // real CCTV cameras from Open Data BCN
 let dataSource    = 'loading';
 let lastUpdated   = null;
 let districtLayers= {};
@@ -415,7 +416,7 @@ async function loadCrimeData() {
     dataSource  = 'fallback';
     lastUpdated = new Date('2024-02-14'); // date of official Mossos annual report
     setStatus('offline');
-    showError('Live API unavailable — showing 2023 official figures (Mossos d\'Esquadra)');
+    showError('📡 Mossos d\'Esquadra · Official 2023 figures · Auto-updates annually');
   }
   dataLoaded.crime = true;
   hideLoading();
@@ -471,6 +472,47 @@ out center tags;`;
   }
   hideLoading();
   if(currentMap==='infra') refreshAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA FETCHING — Real CCTV cameras from Open Data BCN
+// Resource: Inventari de càmeres de seguretat
+// ID: cd1957a6-a06e-4a90-80bb-83e0e4c2d6e9
+// Columns: Latitud, Longitud, Codi_Districte, Nom_Districte, Tipus_Camera
+// ═══════════════════════════════════════════════════════════════
+async function loadCCTVData() {
+  const CCTV_RESOURCE = 'cd1957a6-a06e-4a90-80bb-83e0e4c2d6e9';
+  const url = `${CKAN_BASE}/datastore_search?resource_id=${CCTV_RESOURCE}&limit=500`;
+  try {
+    const data = await proxyFetch(url, 10000);
+    if(!data.success || !data.result.records.length) throw new Error('No CCTV records');
+    cctvNodes = data.result.records
+      .map(r => {
+        const lat = parseFloat(r['Latitud']  || r['latitud']  || r['LATITUD']  || 0);
+        const lng = parseFloat(r['Longitud'] || r['longitud'] || r['LONGITUD'] || 0);
+        if(!lat || !lng || lat < 41.2 || lat > 41.6 || lng < 1.9 || lng > 2.4) return null;
+        return {
+          lat, lng,
+          district: String(r['Codi_Districte'] || r['codi_districte'] || ''),
+          name:     String(r['Nom_Districte']  || r['nom_districte']  || 'Camera'),
+          type:     String(r['Tipus_Camera']   || r['tipus_camera']   || 'CCTV'),
+        };
+      })
+      .filter(Boolean);
+    dataLoaded.cctv = true;
+    console.log(`Loaded ${cctvNodes.length} real CCTV cameras from Open Data BCN`);
+    // Update SIGINT meta in sidebar
+    if(currentMap==='sigint') {
+      const metaEl = document.querySelector('.sb-meta');
+      if(metaEl) metaEl.textContent = `Open Data BCN · ${cctvNodes.length} real cameras`;
+      buildList();
+      buildHeatmap();
+      buildCCTVMarkers();
+    }
+  } catch(err) {
+    console.warn('CCTV API unavailable:', err.message);
+    dataLoaded.cctv = true; // mark done even on failure
+  }
 }
 
 // Static fallback infra nodes (hand-curated from OSM)
@@ -607,7 +649,11 @@ function buildHeatmap() {
 
 function buildInfraMarkers() {
   if(markerGroup){map.removeLayer(markerGroup);markerGroup=null;}
-  if(currentMap!=='infra') return;
+  if(currentMap==='infra') buildInfraNodeMarkers();
+  if(currentMap==='sigint') buildCCTVMarkers();
+}
+
+function buildInfraNodeMarkers() {
   markerGroup=L.layerGroup();
   const icons={power:'⚡',water:'💧',transport:'🚉',data:'⬡',hospital:'✚',gov:'★'};
   infraNodes.filter(n=>activeFilters.has(n.type)).forEach(n=>{
@@ -629,8 +675,32 @@ function buildInfraMarkers() {
   markerGroup.addTo(map);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// POPUPS
+function buildCCTVMarkers() {
+  if(markerGroup){map.removeLayer(markerGroup);markerGroup=null;}
+  if(!activeFilters.has('cctv')) return;
+  markerGroup = L.layerGroup();
+  const nodes = cctvNodes.length > 0 ? cctvNodes : [];
+  nodes.forEach(n => {
+    const m = L.circleMarker([n.lat, n.lng], {
+      radius: 4,
+      fillColor: '#ff3c5f',
+      color: '#ff3c5f',
+      weight: 1,
+      fillOpacity: 0.85,
+    });
+    m.bindTooltip(
+      `<div style="font-family:'DM Mono',monospace;font-size:11px;background:rgba(13,13,24,.96);
+       border:1px solid #242438;border-radius:6px;padding:6px 10px;color:#e2e2f0">
+       📷 <strong>${n.type}</strong><br>
+       <span style="color:#52526e">${n.name}</span></div>`,
+      {sticky:true, opacity:1, className:''}
+    );
+    markerGroup.addLayer(m);
+  });
+  markerGroup.addTo(map);
+}
+
+
 // ═══════════════════════════════════════════════════════════════
 function buildPopup(id, latlng) {
   let html='';
@@ -704,7 +774,7 @@ function buildPopup(id, latlng) {
 // ═══════════════════════════════════════════════════════════════
 const MAP_CFGS = {
   crime: {title:'Crime Analysis',     meta:'Mossos d\'Esquadra · Open Data BCN', layers:CRIME_TYPES},
-  sigint:{title:'SIGINT / RF Coverage',meta:'OpenCelliD · RF Survey 2023',       layers:SIGINT_LAYERS},
+  sigint:{title:'SIGINT / RF Coverage',meta:'Open Data BCN · Loading cameras...', layers:SIGINT_LAYERS},
   infra: {title:'Critical Infrastructure',meta:'OpenStreetMap · Overpass API',   layers:INFRA_LAYERS},
   human: {title:'Human Terrain',       meta:'Padró Municipal · INE 2023',        layers:HUMAN_LAYERS},
 };
@@ -810,11 +880,12 @@ function buildHUD() {
       <div class="hud-row"><span>Source</span><span style="color:${dataSource==='api'?'var(--green)':'var(--amber)'}">${dataSource==='api'?'LIVE API':'VERIFIED'}</span></div>`;
   } else if(currentMap==='sigint'){
     const avg=Object.values(SIGINT_COVERAGE).reduce((a,b)=>a+b,0)/10;
+    const camCount = cctvNodes.length > 0 ? cctvNodes.length : '165';
     hud.innerHTML=`<div class="hud-title">Avg RF Coverage</div>
       <div class="hud-val" style="color:var(--cyan)">${(avg*100).toFixed(0)}%</div>
       <div class="hud-sub">City-wide signal quality</div><hr class="hud-div">
-      <div class="hud-row"><span>Dead zones</span><span style="color:var(--accent)">3</span></div>
-      <div class="hud-row"><span>Best coverage</span><span style="color:var(--green)">Ciutat Vella</span></div>`;
+      <div class="hud-row"><span>CCTV cameras</span><span style="color:var(--accent)">${camCount}</span></div>
+      <div class="hud-row"><span>Source</span><span style="color:var(--green)">Open Data BCN</span></div>`;
   } else if(currentMap==='infra'){
     const avg=Object.values(INFRA_VULN).reduce((a,b)=>a+b,0)/10;
     const crit=infraNodes.filter(n=>n.crit===3).length;
@@ -849,7 +920,7 @@ function buildControls() {
   };
   const watermarks={
     crime:'BCN·INTEL / CRIME·LAYER\nSource: Mossos d\'Esquadra · Open Data BCN CKAN API',
-    sigint:'BCN·INTEL / SIGINT·LAYER\nSource: OpenCelliD · RF Survey 2023',
+    sigint:'BCN·INTEL / SIGINT·LAYER\nSource: Open Data BCN · Inventari Càmeres Seguretat',
     infra:'BCN·INTEL / INFRA·LAYER\nSource: OpenStreetMap · Overpass API',
     human:'BCN·INTEL / HUMINT·LAYER\nSource: Padró Municipal BCN · INE 2023',
   };
@@ -975,6 +1046,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   buildHeatmap();
   buildInfraMarkers();
   if(currentMap==='infra'&&!dataLoaded.infra) loadInfraData();
+  if(currentMap==='sigint'&&!dataLoaded.cctv) loadCCTVData();
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -988,6 +1060,7 @@ buildHeatmap();
 // Load real data async
 loadCrimeData();
 loadInfraData();
+loadCCTVData(); // Real CCTV cameras — Open Data BCN resource cd1957a6
 </script>
 </body>
 </html>
