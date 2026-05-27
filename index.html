@@ -493,87 +493,80 @@ async function proxyFetch(url, timeoutMs=8000) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DATA FETCHING — Barcelona Open Data CKAN API
+// DATA FETCHING — Mossos d'Esquadra crime data
+// Source: Generalitat de Catalunya Open Data (Socrata API)
+// Dataset: Fets penals coneguts, fets coneguts resolts i detencions
+// ID: qnyt-emjc · Updated monthly · No bot protection
+// Districts via rea_b_sica_policial_abp field (ABP = Area Bàsica Policial)
 // ═══════════════════════════════════════════════════════════════
+const MOSSOS_API = 'https://analisi.transparenciacatalunya.cat/resource/qnyt-emjc.json';
 
-// Step 1: discover latest resource ID from the package
-async function discoverCrimeResource() {
-  const pkgUrl = `${CKAN_BASE}/package_show?id=${CRIME_PKG}`;
-  const data = await proxyFetch(pkgUrl);
-  if(!data.success) throw new Error('CKAN package not found');
-  const resources = data.result.resources;
-  // Find the most recent CSV resource
-  const csvRes = resources
-    .filter(r => r.format && r.format.toLowerCase()==='csv')
-    .sort((a,b)=> new Date(b.created) - new Date(a.created));
-  if(!csvRes.length) throw new Error('No CSV resources found');
-  return { id: csvRes[0].id, name: csvRes[0].name, created: csvRes[0].created };
+// Map ABP names to our district codes
+const ABP_TO_DISTRICT = {
+  'ABP Ciutat Vella':       '1',
+  'ABP Eixample':           '2',
+  'ABP Sants-Montjuïc':     '3',
+  'ABP Les Corts':          '4',
+  'ABP Sarrià-Sant Gervasi':'5',
+  'ABP Gràcia':             '6',
+  'ABP Horta-Guinardó':     '7',
+  'ABP Nou Barris':         '8',
+  'ABP Sant Andreu':        '9',
+  'ABP Sant Martí':        '10',
+};
+
+// Map Catalan crime type strings to our categories
+function mapCrimeType(tipus) {
+  const t = tipus.toLowerCase();
+  if(t.includes('furt') || t.includes('robatori i furt d\'ús')) return 'theft';
+  if(t.includes('lesion') || t.includes('lesió') || t.includes('homicidi') || t.includes('agressions sexuals')) return 'assault';
+  if(t.includes('robatori amb violència') || t.includes('robatori amb força')) return 'robbery';
+  if(t.includes('danys')) return 'vandalism';
+  if(t.includes('droga') || t.includes('estupefaent') || t.includes('salut pública')) return 'drugs';
+  if(t.includes('estaf') || t.includes('frau') || t.includes('falsedad') || t.includes('falsedats')) return 'fraud';
+  return null;
 }
 
-// Step 2: fetch actual crime data rows via datastore
-async function fetchCrimeFromCKAN(resourceId) {
-  const url = `${CKAN_BASE}/datastore_search?resource_id=${resourceId}&limit=500`;
-  const data = await proxyFetch(url);
-  if(!data.success) throw new Error('Datastore fetch failed');
-  return data.result.records;
-}
-
-// Parse CKAN records into our district map
-// BCN dataset columns (Catalan): Codi_Districte, Nom_Districte, Tipus_penal, Nombre
-function parseCKANRecords(records) {
-  const parsed = {};
-  records.forEach(r => {
-    const code = String(r['Codi_Districte'] || r['codi_districte'] || r['CODI_DISTRICTE'] || '').trim();
-    if(!code || !DISTRICTS_GEO[code]) return;
-    if(!parsed[code]) parsed[code] = {theft:0,assault:0,robbery:0,vandalism:0,drugs:0,fraud:0,total:0,year:0,source:'api'};
-    const type  = String(r['Tipus_penal']  || r['tipus_penal']  || r['TIPUS_PENAL']  || '').toLowerCase();
-    const count = parseInt(r['Nombre'] || r['nombre'] || r['NOMBRE'] || 0, 10) || 0;
-    const year  = parseInt(r['Any']    || r['any']    || r['ANY']    || 0, 10) || 0;
-    parsed[code].year = Math.max(parsed[code].year, year);
-    // Map Catalan/Spanish crime type names to our categories
-    if(type.includes('furt') || type.includes('hurto') || type.includes('robatori amb violència') === false && type.includes('rob'))
-      parsed[code].theft += count;
-    else if(type.includes('lesion') || type.includes('lesió') || type.includes('violència') || type.includes('assault'))
-      parsed[code].assault += count;
-    else if(type.includes('robatori amb violència') || type.includes('robo con violencia'))
-      parsed[code].robbery += count;
-    else if(type.includes('danys') || type.includes('daños') || type.includes('vandal'))
-      parsed[code].vandalism += count;
-    else if(type.includes('droga') || type.includes('estupefaent'))
-      parsed[code].drugs += count;
-    else if(type.includes('estafa') || type.includes('frau') || type.includes('informatica'))
-      parsed[code].fraud += count;
-    parsed[code].total += count;
-  });
-  return parsed;
-}
-
-// Main crime data loader — tries API, falls back gracefully
 async function loadCrimeData() {
-  showLoading('FETCHING CRIME DATA', 'Barcelona Open Data · CKAN API');
+  showLoading('FETCHING CRIME DATA', 'Mossos d\'Esquadra · Generalitat de Catalunya');
   setStatus('connecting');
   try {
-    const resource = await discoverCrimeResource();
-    showLoading('LOADING DATASET', resource.name);
-    const records = await fetchCrimeFromCKAN(resource.id);
-    const parsed  = parseCKANRecords(records);
+    // Fetch 2024 data for all Barcelona districts — no proxy needed, CORS open
+    const url = `${MOSSOS_API}?$where=regi_policial_rp=%27RP%20Metropolitana%20Barcelona%27&any=2024&$limit=5000`;
+    const res = await fetch(url, {signal: AbortSignal.timeout(10000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const records = await res.json();
+    if(!records.length) throw new Error('No records returned');
 
-    // Validate — if we got real data for most districts, use it
+    // Aggregate by district and crime type
+    const parsed = {};
+    records.forEach(r => {
+      const abp  = r['rea_b_sica_policial_abp'] || '';
+      const code = ABP_TO_DISTRICT[abp];
+      if(!code) return;
+      if(!parsed[code]) parsed[code] = {theft:0,assault:0,robbery:0,vandalism:0,drugs:0,fraud:0,total:0,year:2024,source:'api'};
+      const count   = parseInt(r['coneguts'] || 0, 10) || 0;
+      const category = mapCrimeType(r['tipus_de_fet'] || '');
+      if(category) parsed[code][category] += count;
+      parsed[code].total += count;
+    });
+
     const districtCount = Object.keys(parsed).length;
     if(districtCount >= 8) {
       crimeData   = parsed;
       dataSource  = 'api';
-      lastUpdated = new Date(resource.created);
+      lastUpdated = new Date();
       setStatus('live');
       showError(null);
+      console.log(`Loaded real 2024 Mossos crime data for ${districtCount} districts`);
     } else {
-      throw new Error(`Only ${districtCount} districts parsed from API`);
+      throw new Error(`Only ${districtCount} districts parsed`);
     }
   } catch(err) {
-    console.warn('CKAN API unavailable, using verified fallback data:', err.message);
+    console.warn('Mossos API unavailable, using fallback:', err.message);
     crimeData   = structuredClone(FALLBACK_CRIME);
     dataSource  = 'fallback';
-    lastUpdated = new Date('2024-02-14'); // date of official Mossos annual report
+    lastUpdated = new Date('2024-02-14');
     setStatus('offline');
     showError('Mossos d\'Esquadra · Official 2023 figures · Auto-updates annually');
   }
@@ -1076,7 +1069,7 @@ function buildPopup(id, latlng) {
 // SIDEBAR
 // ═══════════════════════════════════════════════════════════════
 const MAP_CFGS = {
-  crime: {title:'Crime Analysis',     meta:'Mossos d\'Esquadra · BCN OpenData', layers:CRIME_TYPES},
+  crime: {title:'Crime Analysis',     meta:'Mossos d\'Esquadra · Generalitat 2024', layers:CRIME_TYPES},
   sigint:{title:'SIGINT / RF Coverage',meta:'OpenCelliD 2025 · 885 real towers', layers:SIGINT_LAYERS},
   infra: {title:'Critical Infrastructure',meta:'OpenStreetMap · Overpass API · Live', layers:INFRA_LAYERS},
   human: {title:'Human Terrain',       meta:'Padró Municipal BCN · 2025 · Live',      layers:HUMAN_LAYERS},
@@ -1251,7 +1244,7 @@ function buildControls() {
     crime:'Crime Intensity',sigint:'RF Coverage',infra:'Asset Density',human:'Population Density'
   };
   const watermarks={
-    crime:'BCN·INTEL / CRIME·LAYER\nSource: Mossos d\'Esquadra · Open Data BCN CKAN API',
+    crime:'BCN·INTEL / CRIME·LAYER\nSource: Mossos d\'Esquadra · Generalitat de Catalunya · 2024',
     sigint:'BCN·INTEL / SIGINT·LAYER\nSource: OpenCelliD 2025 · Open Data BCN CCTV',
     infra:'BCN·INTEL / INFRA·LAYER\nSource: OpenStreetMap · Overpass API',
     human:'BCN·INTEL / HUMINT·LAYER\nSource: Padró Municipal BCN · INE 2023',
