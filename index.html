@@ -345,7 +345,9 @@ L.control.attribution({position:'bottomright',prefix:''})
 // ═══════════════════════════════════════════════════════════════
 // DISTRICT GEOMETRY (precise lat/lng)
 // ═══════════════════════════════════════════════════════════════
-const DISTRICTS_GEO = {
+// District geometry — loaded from official BCN GeoJSON (martgnz/bcn-geodata, CC-BY)
+// Falls back to approximate coords if GeoJSON unavailable
+let DISTRICTS_GEO = {
   '1': { name:'Ciutat Vella',        coords:[[41.3779,2.1734],[41.3801,2.1640],[41.3850,2.1656],[41.3862,2.1720],[41.3840,2.1795],[41.3800,2.1790]] },
   '2': { name:"L'Eixample",          coords:[[41.3850,2.1440],[41.3960,2.1440],[41.4000,2.1580],[41.3970,2.1800],[41.3900,2.1820],[41.3862,2.1720],[41.3850,2.1656],[41.3830,2.1550]] },
   '3': { name:'Sants-Montjuïc',      coords:[[41.3540,2.1280],[41.3700,2.1280],[41.3800,2.1440],[41.3850,2.1440],[41.3830,2.1550],[41.3779,2.1734],[41.3700,2.1780],[41.3600,2.1700],[41.3540,2.1500]] },
@@ -357,6 +359,39 @@ const DISTRICTS_GEO = {
   '9': { name:'Sant Andreu',         coords:[[41.4300,2.1450],[41.4400,2.1300],[41.4500,2.1550],[41.4400,2.1800],[41.4250,2.1850],[41.4150,2.1750],[41.4280,2.1680]] },
   '10':{ name:'Sant Martí',          coords:[[41.3970,2.1800],[41.4050,2.1700],[41.4150,2.1750],[41.4250,2.1850],[41.4200,2.2100],[41.4050,2.2200],[41.3900,2.2100],[41.3850,2.2000],[41.3900,2.1820]] },
 };
+
+// Load official GeoJSON boundaries from CartoBCN via GitHub
+async function loadDistrictGeoJSON() {
+  try {
+    const url = 'https://raw.githubusercontent.com/martgnz/bcn-geodata/master/districtes/districtes.geojson';
+    const res  = await fetch(url);
+    if(!res.ok) throw new Error('GeoJSON fetch failed');
+    const geo  = await res.json();
+    geo.features.forEach(f => {
+      const code = String(parseInt(f.properties.c_distri || f.properties.DISTRICTE || 0));
+      const name = f.properties.n_distri   || f.properties.NOM        || DISTRICTS_GEO[code]?.name;
+      if(!code || !DISTRICTS_GEO[code]) return;
+      // Convert GeoJSON [lng,lat] to our [lat,lng] format, simplify to 30 points max
+      let coords = f.geometry.type === 'Polygon'
+        ? f.geometry.coordinates[0]
+        : f.geometry.coordinates[0][0];
+      // Simplify — take every Nth point to keep ~40 points
+      const step = Math.max(1, Math.floor(coords.length / 40));
+      coords = coords.filter((_,i) => i % step === 0);
+      DISTRICTS_GEO[code] = { name, coords: coords.map(([lng,lat]) => [lat,lng]) };
+    });
+    console.log('Loaded official BCN district boundaries from CartoBCN');
+    // Rebuild polygons with real boundaries
+    Object.values(districtLayers).forEach(l => map.removeLayer(l));
+    Object.keys(districtLayers).forEach(k => delete districtLayers[k]);
+    buildDistrictPolygons();
+    buildHeatmap();
+    buildInfraMarkers();
+  } catch(e) {
+    console.warn('GeoJSON unavailable, using approximate boundaries:', e.message);
+  }
+}
+
 
 // Fallback data (2023 official figures from Mossos d'Esquadra annual report)
 // Used if API is unavailable. Source: Barcelona Local Security Board, Feb 2024
@@ -539,7 +574,7 @@ async function loadCrimeData() {
     dataSource  = 'fallback';
     lastUpdated = new Date('2024-02-14'); // date of official Mossos annual report
     setStatus('offline');
-    showError('📡 Mossos d\'Esquadra · Official 2023 figures · Auto-updates annually');
+    showError('Mossos d\'Esquadra · Official 2023 figures · Auto-updates annually');
   }
   dataLoaded.crime = true;
   hideLoading();
@@ -833,7 +868,7 @@ function buildInfraMarkers() {
 
 function buildInfraNodeMarkers() {
   markerGroup=L.layerGroup();
-  const icons={power:'⚡',water:'💧',transport:'🚉',data:'⬡',hospital:'✚',gov:'★'};
+  const icons={power:'PWR',water:'H2O',transport:'TRN',data:'DC',hospital:'MED',gov:'GOV'};
   infraNodes.filter(n=>activeFilters.has(n.type)).forEach(n=>{
     const layer=INFRA_LAYERS.find(l=>l.id===n.type);
     if(!layer) return;
@@ -845,7 +880,7 @@ function buildInfraNodeMarkers() {
       `<div style="font-family:'DM Mono',monospace;font-size:11px;background:rgba(13,13,24,.96);
        border:1px solid #242438;border-radius:6px;padding:6px 10px;color:#e2e2f0">
        ${icons[n.type]||'●'} <strong>${n.name}</strong><br>
-       <span style="color:#52526e">Criticality ${'★'.repeat(n.crit||1)}</span></div>`,
+       <span style="color:#52526e">Criticality ${'*'.repeat(n.crit||1)}</span></div>`,
       {sticky:true,opacity:1,className:''}
     );
     markerGroup.addLayer(m);
@@ -898,7 +933,7 @@ function buildCCTVMarkers() {
     });
     m.bindTooltip(
       `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,14,18,.96);border:1px solid #252a34;padding:6px 10px;color:#c8cdd8">
-       📡 <strong>${t.r}</strong> Tower<br><span style="color:#4a5060">${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}</span></div>`,
+       <strong>${t.r}</strong> Tower<br><span style="color:#4a5060">${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}</span></div>`,
       {sticky:true,opacity:1,className:''}
     );
     markerGroup.addLayer(m);
@@ -911,7 +946,7 @@ function buildCCTVMarkers() {
       });
       m.bindTooltip(
         `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,14,18,.96);border:1px solid #252a34;padding:6px 10px;color:#c8cdd8">
-         📷 <strong>${n.type}</strong><br><span style="color:#4a5060">${n.name}</span></div>`,
+         <strong>${n.type}</strong><br><span style="color:#4a5060">${n.name}</span></div>`,
         {sticky:true,opacity:1,className:''}
       );
       markerGroup.addLayer(m);
@@ -942,7 +977,7 @@ function buildPopup(id, latlng) {
       ${rows}<hr class="pop-div">
       <div class="pop-total"><span style="color:#52526e">TOTAL</span>
         <span style="color:#ff3c5f">${tot.toLocaleString()}</span></div>
-      <div class="pop-src">📡 ${srcLabel} · ${d.year||2023}</div>
+      <div class="pop-src">${srcLabel} · ${d.year||2023}</div>
       </div>`;
   } else if(currentMap==='sigint'){
     const cov=SIGINT_COVERAGE[id]||.5;
@@ -954,7 +989,7 @@ function buildPopup(id, latlng) {
       <div class="pop-row"><div class="pop-dot" style="background:#00d4e8"></div>
         <span class="pop-label">RF Coverage</span>
         <span class="pop-val" style="color:#00d4e8">${(cov*100).toFixed(0)}%</span></div>
-      <div class="pop-src">📡 OpenCelliD · RF Survey 2023</div>
+      <div class="pop-src">OpenCelliD · RF Survey 2023</div>
       </div>`;
   } else if(currentMap==='infra'){
     const v=INFRA_VULN[id]||.5;
@@ -967,7 +1002,7 @@ function buildPopup(id, latlng) {
       <div class="pop-row"><div class="pop-dot" style="background:#ffb800"></div>
         <span class="pop-label">Vulnerability Index</span>
         <span class="pop-val" style="color:#ffb800">${Math.round(v*100)}/100</span></div>
-      <div class="pop-src">📡 OpenStreetMap · Overpass API</div>
+      <div class="pop-src">OpenStreetMap · Overpass API</div>
       </div>`;
   } else if(currentMap==='human'){
     const dens=HUMAN_DENSITY[id]||0;
@@ -985,7 +1020,7 @@ function buildPopup(id, latlng) {
       <div class="pop-row"><div class="pop-dot" style="background:#ffb800"></div>
         <span class="pop-label">Foreign nationals</span>
         <span class="pop-val" style="color:#ffb800">${foreign.toLocaleString()}</span></div>
-      <div class="pop-src">📡 Padró Municipal BCN · 2025 · Live</div>
+      <div class="pop-src">Padró Municipal BCN · 2025 · Live</div>
       </div>`;
   }
   if(html) L.popup({closeButton:true,maxWidth:270}).setLatLng(latlng).setContent(html).openOn(map);
@@ -1308,7 +1343,8 @@ buildHeatmap();
 loadCrimeData();
 loadInfraData();
 loadCCTVData();
-loadPopulationData(); // Real 2025 population · Padró Municipal BCN
+loadPopulationData();
+loadDistrictGeoJSON(); // Official BCN district boundaries · CartoBCN CC-BY
 </script>
 </body>
 </html>
