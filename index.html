@@ -533,15 +533,16 @@ async function loadCrimeData() {
   setStatus('connecting');
   try {
     // Fetch 2024 data for all Barcelona districts via Cloudflare Worker (CORS proxy)
-    // Fetch all 10 Barcelona districts in parallel — simple queries, no $where needed
+    // Fetch all 10 Barcelona districts in parallel with hard 8s timeout
     const ABP_NAMES = Object.keys(ABP_TO_DISTRICT);
-    const fetches = ABP_NAMES.map(async abp => {
+    const fetches = ABP_NAMES.map(abp => {
       const encoded = encodeURIComponent(abp);
       const apiUrl  = `${MOSSOS_API}?rea_b_sica_policial_abp=${encoded}&any=2024&$limit=500`;
       const workerUrl = `${WORKER_URL}?url=${apiUrl}`;
-      const r = await fetch(workerUrl);
-      if(!r.ok) throw new Error(`HTTP ${r.status} for ${abp}`);
-      return r.json();
+      return Promise.race([
+        fetch(workerUrl).then(r => r.json()),
+        new Promise((_,reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+      ]).catch(() => []);
     });
     const results = await Promise.all(fetches);
     const data = results.flat();
