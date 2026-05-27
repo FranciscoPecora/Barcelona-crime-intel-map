@@ -532,7 +532,7 @@ async function loadCrimeData() {
   setStatus('connecting');
   try {
     // Fetch 2024 data for all Barcelona districts via Cloudflare Worker (CORS proxy)
-    const url = `${MOSSOS_API}?%24where=regi_policial_rp%3D%27RP+Metropolitana+Barcelona%27&any=2024&%24limit=5000`;
+    const url = `${MOSSOS_API}?$where=regi_policial_rp%3D'RP%20Metropolitana%20Barcelona'&any=2024&$limit=5000`;
     const controller = new AbortController();
     const tid = setTimeout(()=>controller.abort(), 15000);
     const res = await fetch(url, {signal: controller.signal});
