@@ -645,7 +645,7 @@ async function loadCCTVData() {
 // NACIONALITAT_G: 1=Spanish, 2=EU foreign, 3=Non-EU foreign, 4=Stateless
 // ═══════════════════════════════════════════════════════════════
 async function loadPopulationData() {
-  const url = `${CKAN_BASE}/datastore_search?resource_id=${POPULATION_RESOURCE}&limit=5000`;
+  const url = `${CKAN_BASE}/datastore_search?resource_id=${POPULATION_RESOURCE}&limit=7000`;
   try {
     const data = await proxyFetch(url, 12000);
     if(!data.success || !data.result.records.length) throw new Error('No population records');
@@ -655,7 +655,8 @@ async function loadPopulationData() {
     const foreignByDistrict = {};
 
     data.result.records.forEach(r => {
-      const code = String(r['Codi_Districte'] || '').trim();
+      const rawCode = r['Codi_Districte'] || r['codi_districte'] || '';
+      const code = String(parseInt(rawCode) || '').trim(); // normalise "01" → "1"
       if(!code || !DISTRICTS_GEO[code]) return;
       const nat  = parseInt(r['NACIONALITAT_G'] || 0);
       const val  = parseInt(r['Valor'] || 0) || 0;
