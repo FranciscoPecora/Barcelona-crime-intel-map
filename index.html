@@ -438,7 +438,8 @@ const INFRA_LAYERS=[
   {id:'hospital', label:'Major Hospitals',      color:'#ff3c5f'},
   {id:'gov',      label:'Government Buildings', color:'#ff8c00'},
 ];
-const INFRA_VULN={'1':.88,'2':.75,'3':.62,'4':.45,'5':.38,'6':.55,'7':.42,'8':.35,'9':.48,'10':.70};
+// Vulnerability index removed — replaced with real critical node counts from OpenStreetMap
+// Node counts per district computed dynamically from infraNodes array
 
 const HUMAN_LAYERS=[
   {id:'density', label:'Population Density',     color:'#3da8ff'},
@@ -752,6 +753,34 @@ const STATIC_INFRA_NODES = [
 // ═══════════════════════════════════════════════════════════════
 function lerp(a,b,t){return a+(b-a)*t}
 
+// Count infrastructure nodes per district from real OSM data
+function getNodesForDistrict(districtId) {
+  if(!infraNodes.length) return [];
+  const geo = DISTRICTS_GEO[districtId];
+  if(!geo) return [];
+  return infraNodes.filter(n => {
+    return pointInLatLng(n.lat, n.lng, geo.coords);
+  });
+}
+
+function getNodeCountByDistrict() {
+  const counts = {};
+  Object.keys(DISTRICTS_GEO).forEach(id => {
+    counts[id] = getNodesForDistrict(id).length;
+  });
+  return counts;
+}
+
+// Compute district color for infra map based on real node density
+function getInfraNodeDensity(id) {
+  const nodes = getNodesForDistrict(id);
+  const criticalCount = nodes.filter(n => n.crit === 3).length;
+  const totalCount = nodes.length;
+  return { totalCount, criticalCount };
+}
+
+
+
 function getDistrictColor(id) {
   if(currentMap==='crime'){
     const d=crimeData[id]||FALLBACK_CRIME[id]||{};
@@ -764,8 +793,11 @@ function getDistrictColor(id) {
     const cov=SIGINT_COVERAGE[id]||.5;
     return {c:`rgb(${Math.round(lerp(10,0,cov))},${Math.round(lerp(10,80,cov))},${Math.round(lerp(25,130,cov))})`,o:.15+cov*.18};
   } else if(currentMap==='infra'){
-    const v=INFRA_VULN[id]||.5;
-    return {c:`rgb(${Math.round(lerp(14,180,v))},${Math.round(lerp(20,70,v))},${Math.round(lerp(14,0,v))})`,o:.15+v*.22};
+    const {totalCount} = getInfraNodeDensity(id);
+    const allCounts = Object.keys(DISTRICTS_GEO).map(i => getInfraNodeDensity(i).totalCount);
+    const mx = Math.max(...allCounts) || 1;
+    const t = totalCount / mx;
+    return {c:`rgb(${Math.round(lerp(14,180,t))},${Math.round(lerp(20,70,t))},${Math.round(lerp(14,0,t))})`,o:.15+t*.22};
   } else if(currentMap==='human'){
     const mx=Math.max(...Object.values(HUMAN_DENSITY));
     const t=(HUMAN_DENSITY[id]||0)/mx;
@@ -837,12 +869,15 @@ function buildHeatmap() {
     });
     grad={0:'#001133',.3:'#003366',.6:'#0066AA',.85:'#00AAFF',1:'#00FFFF'};
   } else if(currentMap==='infra'){
-    Object.entries(INFRA_VULN).forEach(([id,v])=>{
+    const allCounts=Object.keys(DISTRICTS_GEO).map(id=>getInfraNodeDensity(id).totalCount);
+    const mx=Math.max(...allCounts)||1;
+    Object.keys(DISTRICTS_GEO).forEach(id=>{
       const geo=DISTRICTS_GEO[id];if(!geo)return;
+      const t=getInfraNodeDensity(id).totalCount/mx;
       const lat=geo.coords.reduce((s,c)=>s+c[0],0)/geo.coords.length;
       const lng=geo.coords.reduce((s,c)=>s+c[1],0)/geo.coords.length;
       for(let i=0;i<10;i++)
-        pts.push([lat+(Math.random()-.5)*.014,lng+(Math.random()-.5)*.020,v*(.75+Math.random()*.25)]);
+        pts.push([lat+(Math.random()-.5)*.014,lng+(Math.random()-.5)*.020,t*(.75+Math.random()*.25)]);
     });
     grad={0:'#0a0a00',.3:'#332200',.6:'#884400',.85:'#FF8800',1:'#FFCC00'};
   } else if(currentMap==='human'){
@@ -992,17 +1027,28 @@ function buildPopup(id, latlng) {
       <div class="pop-src">OpenCelliD · RF Survey 2023</div>
       </div>`;
   } else if(currentMap==='infra'){
-    const v=INFRA_VULN[id]||.5;
-    const t=v>.75?'CRITICAL':v>.5?'HIGH':v>.3?'MODERATE':'LOW';
-    const tc=v>.75?'#ff3c5f':v>.5?'#ffb800':v>.3?'#3da8ff':'#00e5a0';
-    const cnt=infraNodes.filter(n=>n.type&&activeFilters.has(n.type)).length;
+    const {totalCount, criticalCount} = getInfraNodeDensity(id);
+    const allCounts = Object.keys(DISTRICTS_GEO).map(i => getInfraNodeDensity(i).totalCount);
+    const mx = Math.max(...allCounts) || 1;
+    const t = totalCount / mx;
+    const tier = t>.7?'HIGH DENSITY':t>.4?'MODERATE':'LOW DENSITY';
+    const tc = t>.7?'#ff3c5f':t>.4?'#ffb800':'#00e5a0';
+    const nodesByType = INFRA_LAYERS.map(l => {
+      const cnt = infraNodes.filter(n => n.type===l.id && pointInLatLng(
+        n.lat, n.lng, DISTRICTS_GEO[id]?.coords||[])).length;
+      return cnt > 0 ? `<div class="pop-row"><div class="pop-dot" style="background:${l.color}"></div>
+        <span class="pop-label">${l.label}</span>
+        <span class="pop-val" style="color:${l.color}">${cnt}</span></div>` : '';
+    }).join('');
     html=`<div class="pop-inner">
       <div class="pop-head"><div class="pop-name">${name}</div>
-        <div class="pop-badge" style="background:${tc}22;border:1px solid ${tc}55;color:${tc}">${t}</div></div>
-      <div class="pop-row"><div class="pop-dot" style="background:#ffb800"></div>
-        <span class="pop-label">Vulnerability Index</span>
-        <span class="pop-val" style="color:#ffb800">${Math.round(v*100)}/100</span></div>
-      <div class="pop-src">OpenStreetMap · Overpass API</div>
+        <div class="pop-badge" style="background:${tc}22;border:1px solid ${tc}55;color:${tc}">${tier}</div></div>
+      ${nodesByType}
+      <hr class="pop-div">
+      <div class="pop-total"><span style="color:#52526e">CRITICAL NODES</span>
+        <span style="color:#ffb800">${criticalCount}</span></div>
+      <div class="pop-src">OpenStreetMap · Overpass API · Live</div>
+      </div>`;
       </div>`;
   } else if(currentMap==='human'){
     const dens=HUMAN_DENSITY[id]||0;
@@ -1032,7 +1078,7 @@ function buildPopup(id, latlng) {
 const MAP_CFGS = {
   crime: {title:'Crime Analysis',     meta:'Mossos d\'Esquadra · BCN OpenData', layers:CRIME_TYPES},
   sigint:{title:'SIGINT / RF Coverage',meta:'OpenCelliD 2025 · 885 real towers', layers:SIGINT_LAYERS},
-  infra: {title:'Critical Infrastructure',meta:'OpenStreetMap · Overpass API', layers:INFRA_LAYERS},
+  infra: {title:'Critical Infrastructure',meta:'OpenStreetMap · Overpass API · Live', layers:INFRA_LAYERS},
   human: {title:'Human Terrain',       meta:'Padró Municipal BCN · 2025 · Live',      layers:HUMAN_LAYERS},
 };
 
@@ -1097,15 +1143,20 @@ function buildList() {
           <div class="lc-sub" style="color:${col}">${(cov*100).toFixed(0)}% RF coverage</div></div>`;
       }).join('');
   } else if(currentMap==='infra'){
-    const sorted=Object.entries(INFRA_VULN).sort((a,b)=>b[1]-a[1]);
-    el.innerHTML=`<div class="sb-list-label">Vulnerability · Ranked</div>`+
-      sorted.map(([id,v])=>{
+    const counts = Object.keys(DISTRICTS_GEO).map(id => ({
+      id, count: getInfraNodeDensity(id).totalCount,
+      critical: getInfraNodeDensity(id).criticalCount
+    })).sort((a,b)=>b.count-a.count);
+    const mx = counts[0]?.count || 1;
+    el.innerHTML=`<div class="sb-list-label">Critical Assets · Ranked</div>`+
+      counts.map(({id, count, critical})=>{
         const isSel=selectedDist===id;
-        const col=v>.75?'#ff3c5f':v>.5?'#ffb800':v>.3?'#3da8ff':'#00e5a0';
+        const pct=(count/mx)*100;
+        const col=pct>70?'#ff3c5f':pct>40?'#ffb800':'#3da8ff';
         return `<div class="list-card ${isSel?'selected':''}" onclick="focusDistrict('${id}')">
           <div class="lc-name">${DISTRICTS_GEO[id]?.name}</div>
-          <div class="lc-bar"><div class="lc-seg" style="width:${v*100}%;background:${col}"></div></div>
-          <div class="lc-sub" style="color:${col}">${v>.75?'CRITICAL':v>.5?'HIGH':v>.3?'MODERATE':'LOW'} · ${Math.round(v*100)}/100</div></div>`;
+          <div class="lc-bar"><div class="lc-seg" style="width:${pct}%;background:${col}"></div></div>
+          <div class="lc-sub" style="color:${col}">${count} nodes · ${critical} critical</div></div>`;
       }).join('');
   } else if(currentMap==='human'){
     const sorted=Object.keys(DISTRICTS_GEO).sort((a,b)=>(foreignPopByDistrict[b]||0)-(foreignPopByDistrict[a]||0));
@@ -1158,15 +1209,17 @@ function buildHUD() {
         <div class="hud-row"><span>Source</span><span style="color:var(--green)">OpenCelliD · Live</span></div>
       </div>`;
   } else if(currentMap==='infra'){
-    const avg=Object.values(INFRA_VULN).reduce((a,b)=>a+b,0)/10;
-    const crit=infraNodes.filter(n=>n.crit===3).length;
+    const totalNodes = infraNodes.filter(n=>activeFilters.has(n.type)).length;
+    const critNodes  = infraNodes.filter(n=>n.crit===3&&activeFilters.has(n.type)).length;
+    const categories = INFRA_LAYERS.filter(l=>activeFilters.has(l.id)).length;
     hud.innerHTML=`
-      <div class="hud-header">Threat Assessment</div>
+      <div class="hud-header">Critical Infrastructure</div>
       <div class="hud-body">
-        <div class="hud-val" style="color:var(--amber)">${avg>.65?'HIGH':'ELEVATED'}</div>
-        <div class="hud-sub">Avg vulnerability ${Math.round(avg*100)}/100</div>
+        <div class="hud-val" style="color:var(--amber)">${totalNodes}</div>
+        <div class="hud-sub">Total mapped assets</div>
         <hr class="hud-div">
-        <div class="hud-row"><span>Critical nodes</span><span style="color:var(--red)">${crit}</span></div>
+        <div class="hud-row"><span>Critical (tier 1)</span><span style="color:var(--red)">${critNodes}</span></div>
+        <div class="hud-row"><span>Categories</span><span>${categories}</span></div>
         <div class="hud-row"><span>Source</span><span style="color:var(--green)">OSM · Overpass</span></div>
       </div>`;
   } else if(currentMap==='human'){
@@ -1195,7 +1248,7 @@ function buildControls() {
     crime:['Low','High'],sigint:['Weak','Strong'],infra:['Low','Critical'],human:['Sparse','Dense']
   };
   const legends={
-    crime:'Crime Intensity',sigint:'RF Coverage',infra:'Vulnerability',human:'Population Density'
+    crime:'Crime Intensity',sigint:'RF Coverage',infra:'Asset Density',human:'Population Density'
   };
   const watermarks={
     crime:'BCN·INTEL / CRIME·LAYER\nSource: Mossos d\'Esquadra · Open Data BCN CKAN API',
