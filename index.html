@@ -329,13 +329,13 @@ const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 // MAP INIT
 // ═══════════════════════════════════════════════════════════════
 const map = L.map('map', {
-  center:[41.3851,2.1734], zoom:13,
+  center:[41.3951,2.1734], zoom:12,
   zoomControl:false, attributionControl:false,
 });
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
-// Labels-only overlay — street names without large city labels
+// Subtle street-level labels only
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{
-  maxZoom:19, opacity:0.5, zIndex:200,
+  maxZoom:19, opacity:0.35, zIndex:200,
 }).addTo(map);
 L.control.zoom({position:'topright'}).addTo(map);
 L.control.attribution({position:'bottomright',prefix:''})
@@ -1165,7 +1165,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   if(!tab) return;
   currentMap=tab.dataset.map;
   selectedDist=null;
-  map.setView([41.3851,2.1734],13);
+  map.setView([41.3951,2.1734],12);
   map.closePopup();
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
