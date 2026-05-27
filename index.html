@@ -106,7 +106,7 @@
     text-transform:uppercase;color:var(--accent);margin-bottom:4px;
   }
   .sb-title{font-size:13px;font-weight:600;color:#e2e6ed;margin-bottom:1px;letter-spacing:.01em}
-  .sb-meta{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.04em}
+  .sb-meta{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   /* data source strip */
   .data-source{
@@ -332,7 +332,11 @@ const map = L.map('map', {
   center:[41.3851,2.1734], zoom:13,
   zoomControl:false, attributionControl:false,
 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+// Labels-only overlay — street names without large city labels
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{
+  maxZoom:19, opacity:0.5, zIndex:200,
+}).addTo(map);
 L.control.zoom({position:'topright'}).addTo(map);
 L.control.attribution({position:'bottomright',prefix:''})
   .addAttribution('© CartoDB · © OpenStreetMap · © Open Data BCN').addTo(map);
@@ -658,17 +662,17 @@ function getDistrictColor(id) {
     const allTots=Object.keys(DISTRICTS_GEO).map(i=>getFilteredTotal(crimeData[i]||FALLBACK_CRIME[i]||{}));
     const mx=Math.max(...allTots)||1;
     const t=tot/mx;
-    return {c:`rgb(${Math.round(lerp(20,220,t))},${Math.round(lerp(20,40,t))},${Math.round(lerp(50,65,t))})`,o:.32+t*.32};
+    return {c:`rgb(${Math.round(lerp(20,220,t))},${Math.round(lerp(20,40,t))},${Math.round(lerp(50,65,t))})`,o:.18+t*.22};
   } else if(currentMap==='sigint'){
     const cov=SIGINT_COVERAGE[id]||.5;
-    return {c:`rgb(${Math.round(lerp(10,0,cov))},${Math.round(lerp(10,80,cov))},${Math.round(lerp(25,130,cov))})`,o:.28+cov*.25};
+    return {c:`rgb(${Math.round(lerp(10,0,cov))},${Math.round(lerp(10,80,cov))},${Math.round(lerp(25,130,cov))})`,o:.15+cov*.18};
   } else if(currentMap==='infra'){
     const v=INFRA_VULN[id]||.5;
-    return {c:`rgb(${Math.round(lerp(14,180,v))},${Math.round(lerp(20,70,v))},${Math.round(lerp(14,0,v))})`,o:.28+v*.32};
+    return {c:`rgb(${Math.round(lerp(14,180,v))},${Math.round(lerp(20,70,v))},${Math.round(lerp(14,0,v))})`,o:.15+v*.22};
   } else if(currentMap==='human'){
     const mx=Math.max(...Object.values(HUMAN_DENSITY));
     const t=(HUMAN_DENSITY[id]||0)/mx;
-    return {c:`rgb(${Math.round(lerp(12,50,t))},${Math.round(lerp(14,28,t))},${Math.round(lerp(30,180,t))})`,o:.28+t*.32};
+    return {c:`rgb(${Math.round(lerp(12,50,t))},${Math.round(lerp(14,28,t))},${Math.round(lerp(30,180,t))})`,o:.15+t*.22};
   }
   return {c:'#333',o:.3};
 }
@@ -885,10 +889,10 @@ function buildPopup(id, latlng) {
 // SIDEBAR
 // ═══════════════════════════════════════════════════════════════
 const MAP_CFGS = {
-  crime: {title:'Crime Analysis',     meta:'Mossos d\'Esquadra · Open Data BCN', layers:CRIME_TYPES},
-  sigint:{title:'SIGINT / RF Coverage',meta:'Open Data BCN · Loading cameras...', layers:SIGINT_LAYERS},
-  infra: {title:'Critical Infrastructure',meta:'OpenStreetMap · Overpass API',   layers:INFRA_LAYERS},
-  human: {title:'Human Terrain',       meta:'Padró Municipal · INE 2023',        layers:HUMAN_LAYERS},
+  crime: {title:'Crime Analysis',     meta:'Mossos d\'Esquadra · BCN OpenData', layers:CRIME_TYPES},
+  sigint:{title:'SIGINT / RF Coverage',meta:'Open Data BCN · CCTV Inventory', layers:SIGINT_LAYERS},
+  infra: {title:'Critical Infrastructure',meta:'OpenStreetMap · Overpass API', layers:INFRA_LAYERS},
+  human: {title:'Human Terrain',       meta:'Padró Municipal · INE 2023',      layers:HUMAN_LAYERS},
 };
 
 function buildSidebar() {
