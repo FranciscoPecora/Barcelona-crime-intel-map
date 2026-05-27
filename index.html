@@ -532,13 +532,7 @@ async function loadCrimeData() {
   setStatus('connecting');
   try {
     // Fetch 2024 data for all Barcelona districts via Cloudflare Worker (CORS proxy)
-    // Generalitat API has open CORS — fetch directly, no Worker needed
-    const params = new URLSearchParams({
-      '$where': "regi_policial_rp='RP Metropolitana Barcelona'",
-      'any': '2024',
-      '$limit': '5000'
-    });
-    const url = `${MOSSOS_API}?${params.toString()}`;
+    const url = `${MOSSOS_API}?%24where=regi_policial_rp%3D%27RP+Metropolitana+Barcelona%27&any=2024&%24limit=5000`;
     const controller = new AbortController();
     const tid = setTimeout(()=>controller.abort(), 15000);
     const res = await fetch(url, {signal: controller.signal});
