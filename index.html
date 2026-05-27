@@ -529,8 +529,15 @@ function mapCrimeType(tipus) {
 }
 
 async function loadCrimeData() {
-  showLoading('FETCHING CRIME DATA', 'Mossos d\'Esquadra · Generalitat de Catalunya');
   setStatus('connecting');
+  // Load fallback immediately so map shows right away
+  crimeData = structuredClone(FALLBACK_CRIME);
+  dataSource = 'fallback';
+  lastUpdated = new Date('2024-02-14');
+  dataLoaded.crime = true;
+  hideLoading();
+  refreshAll();
+  // Then try to fetch real data in background
   try {
     // Fetch 2024 data for all Barcelona districts via Cloudflare Worker (CORS proxy)
     // Fetch all 10 Barcelona districts in parallel with hard 8s timeout
@@ -570,20 +577,15 @@ async function loadCrimeData() {
       setStatus('live');
       showError(null);
       console.log(`Loaded real 2024 Mossos crime data for ${districtCount} districts`);
+      if(currentMap==='crime') refreshAll();
     } else {
       throw new Error(`Only ${districtCount} districts parsed`);
     }
   } catch(err) {
     console.warn('Mossos API unavailable, using fallback:', err.message);
-    crimeData   = structuredClone(FALLBACK_CRIME);
-    dataSource  = 'fallback';
-    lastUpdated = new Date('2024-02-14');
     setStatus('offline');
     showError('Mossos d\'Esquadra · Official 2023 figures · Auto-updates annually');
   }
-  dataLoaded.crime = true;
-  hideLoading();
-  refreshAll();
 }
 
 // ═══════════════════════════════════════════════════════════════
