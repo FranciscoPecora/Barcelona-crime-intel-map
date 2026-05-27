@@ -644,7 +644,6 @@ async function loadCCTVData() {
 async function loadPopulationData() {
   const url = `${CKAN_BASE}/datastore_search?resource_id=${POPULATION_RESOURCE}&limit=5000`;
   try {
-    showLoading('FETCHING POPULATION DATA', 'Padró Municipal BCN · 2025');
     const data = await proxyFetch(url, 12000);
     if(!data.success || !data.result.records.length) throw new Error('No population records');
 
@@ -674,6 +673,7 @@ async function loadPopulationData() {
 
     dataLoaded.population = true;
     console.log('Loaded real 2025 population data:', totalByDistrict);
+    setStatus('live');
 
     // Update sidebar meta
     if(currentMap==='human'){
@@ -687,7 +687,6 @@ async function loadPopulationData() {
     HUMAN_DENSITY = {...HUMAN_DENSITY_FALLBACK};
     dataLoaded.population = true;
   }
-  hideLoading();
 }
 
 // Static fallback infra nodes (hand-curated from OSM)
