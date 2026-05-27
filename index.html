@@ -532,13 +532,18 @@ async function loadCrimeData() {
   setStatus('connecting');
   try {
     // Fetch 2024 data for all Barcelona districts via Cloudflare Worker (CORS proxy)
-    const url = `${MOSSOS_API}?$where=regi_policial_rp%3D'RP%20Metropolitana%20Barcelona'&any=2024&$limit=5000`;
-    const controller = new AbortController();
-    const tid = setTimeout(()=>controller.abort(), 15000);
-    const res = await fetch(url, {signal: controller.signal});
-    clearTimeout(tid);
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    // Fetch all 10 Barcelona districts in parallel — simple queries, no $where needed
+    const ABP_NAMES = Object.keys(ABP_TO_DISTRICT);
+    const fetches = ABP_NAMES.map(async abp => {
+      const encoded = encodeURIComponent(abp);
+      const apiUrl  = `${MOSSOS_API}?rea_b_sica_policial_abp=${encoded}&any=2024&$limit=500`;
+      const workerUrl = `${WORKER_URL}?url=${apiUrl}`;
+      const r = await fetch(workerUrl);
+      if(!r.ok) throw new Error(`HTTP ${r.status} for ${abp}`);
+      return r.json();
+    });
+    const results = await Promise.all(fetches);
+    const data = results.flat();
     const records = Array.isArray(data) ? data : [];
     if(!records.length) throw new Error('No records returned');
 
