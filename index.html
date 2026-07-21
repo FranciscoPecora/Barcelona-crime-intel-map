@@ -38,7 +38,6 @@
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
 
-  /* ── HEADER ── */
   header{
     position:fixed;top:0;left:0;right:0;z-index:1000;
     height:44px;display:flex;align-items:stretch;
@@ -74,7 +73,6 @@
     content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
     background:var(--accent);box-shadow:0 0 8px var(--accent);
   }
-  /* Header right — real-time feed status */
   .header-right{
     display:flex;align-items:center;gap:0;padding:0;
     border-left:1px solid var(--border2);flex-shrink:0;
@@ -97,7 +95,6 @@
   .sys-clock .clock-val{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:.08em}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-  /* ── LAYOUT ── */
   .app{display:flex;height:100vh;padding-top:44px}
   .sidebar{
     width:210px;flex-shrink:0;background:var(--surface);
@@ -108,7 +105,6 @@
   #map{width:100%;height:100%}
   .leaflet-container{background:#040c18 !important}
 
-  /* Providence grid overlay — subtle lat/lng reference grid */
   .map-grid-overlay{
     position:absolute;inset:0;pointer-events:none;z-index:350;
     background-image:
@@ -116,7 +112,6 @@
       linear-gradient(90deg, rgba(0,200,255,.04) 1px, transparent 1px);
     background-size:80px 80px;
   }
-  /* Edge vignette */
   .map-edge{
     position:absolute;inset:0;pointer-events:none;z-index:351;
     background:radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(4,12,24,.7) 100%);
@@ -131,7 +126,6 @@
   .leaflet-control-zoom a:hover{background:var(--surface2) !important;color:var(--text) !important}
 
 
-  /* ── SIDEBAR ── */
   .sb-header{
     padding:12px 14px 10px;border-bottom:1px solid var(--border2);
     flex-shrink:0;
@@ -143,7 +137,6 @@
   .sb-title{font-family:var(--mono);font-size:11px;font-weight:500;color:#c8d4e8;margin-bottom:1px;letter-spacing:.06em;text-transform:uppercase}
   .sb-meta{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  /* data source strip */
   .data-source{
     display:flex;align-items:center;gap:8px;
     padding:5px 14px;border-bottom:1px solid var(--border);
@@ -153,7 +146,6 @@
   .ds-text{font-family:var(--mono);font-size:8px;letter-spacing:.08em;flex:1;text-transform:uppercase}
   .ds-time{font-family:var(--mono);font-size:8px;color:var(--muted)}
 
-  /* layers */
   .sb-section{padding:8px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0}
   .sb-label{
     font-family:var(--mono);font-size:8px;letter-spacing:.16em;
@@ -170,7 +162,6 @@
   .layer-row.off .layer-label{color:var(--muted)}
   .layer-row input{display:none}
 
-  /* district list */
   .sb-list{padding:6px 0;flex:1;overflow-y:auto}
   .sb-list::-webkit-scrollbar{width:2px}
   .sb-list::-webkit-scrollbar-thumb{background:var(--border2)}
@@ -191,7 +182,6 @@
   .lc-seg{height:100%;position:absolute;left:0;top:0;transition:width .3s}
   .lc-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.06em}
 
-  /* ── HUD PANELS ── */
   .hud{
     position:absolute;top:52px;right:10px;z-index:500;
     background:rgba(4,12,24,.92);border:1px solid var(--border2);
@@ -236,7 +226,6 @@
     100%{transform:translate(-50%,-50%) scale(2.8);opacity:0}
   }
 
-  /* ── ACTIVITY FEED ── */
   .activity-feed{
     position:absolute;bottom:40px;left:220px;z-index:500;
     width:280px;max-height:120px;overflow:hidden;
@@ -253,10 +242,7 @@
   .activity-text{color:var(--text2)}
   .activity-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-top:3px}
 
-  /* ── LOADING ── */
 
-
-  /* ── INFO STRIP (replaces error banner) ── */
   .error-banner{
     position:absolute;top:0;left:0;right:0;z-index:600;
     background:var(--amber-dim);border-bottom:1px solid rgba(245,158,11,.2);
@@ -265,7 +251,6 @@
     display:none;
   }
 
-  /* ── BOTTOM BAR ── */
   .bottom-bar{
     position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:500;
     background:rgba(10,13,21,.85);border:1px solid var(--border2);
@@ -281,7 +266,6 @@
     border:1px solid var(--border);padding:4px 10px;
   }
 
-  /* ── LEGEND ── */
   .legend{
     position:absolute;bottom:12px;right:12px;z-index:500;
     background:var(--surface);border:1px solid var(--border2);
@@ -299,7 +283,6 @@
     font-family:var(--mono);font-size:9px;color:var(--muted);width:110px;
   }
 
-  /* ── WATERMARK ── */
   .watermark{
     position:absolute;bottom:12px;left:12px;z-index:500;
     font-family:var(--mono);font-size:8px;
@@ -307,7 +290,6 @@
     text-transform:uppercase;opacity:.6;
   }
 
-  /* ── LEAFLET POPUP ── */
   .leaflet-popup-content-wrapper{
     background:rgba(4,12,24,.96) !important;border:1px solid var(--border2) !important;
     border-radius:0 !important;box-shadow:0 4px 32px rgba(0,0,0,.8),0 0 0 1px rgba(0,200,255,.1) !important;
@@ -337,9 +319,6 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     PROVIDENCE LANDING — shows on first load, fades to dashboard
-     ═══════════════════════════════════════════════════════════════ -->
 <div id="landingOverlay" style="position:fixed;inset:0;z-index:9000;background:#000;overflow:hidden;cursor:none">
   <div class="cursor" id="cursor"></div>
   <div class="cursor-ring" id="cursorRing"></div>
@@ -368,7 +347,6 @@
 </div>
 
 <style>
-/* Landing overlay styles */
 #landingOverlay *{margin:0;padding:0;box-sizing:border-box}
 #landingOverlay{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
 #landingOverlay::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:10;
@@ -425,6 +403,7 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <button class="nav-tab" data-map="human">Human Terrain</button>
     <button class="nav-tab" data-map="maritime">Maritime</button>
     <button class="nav-tab" data-map="aircraft">Air Traffic</button>
+    <button class="nav-tab" data-map="transit">Transit</button>
     <button class="nav-tab" data-map="analysis">Analysis</button>
   </nav>
   <div class="header-right">
@@ -441,6 +420,10 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
       <div class="feed-val offline" id="adsbFeedStatus">—</div>
     </div>
     <div class="feed-status">
+      <div class="feed-label">Rail</div>
+      <div class="feed-val offline" id="railFeedStatus">—</div>
+    </div>
+    <div class="feed-status">
       <div class="feed-label">Padró</div>
       <div class="feed-val offline" id="popFeedStatus">—</div>
     </div>
@@ -455,12 +438,8 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
   </div>
 </header>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     SOURCES & METHODS PANEL
-     ═══════════════════════════════════════════════════════════════ -->
 <div id="sourcesPanel" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,12,24,.92);backdrop-filter:blur(12px);overflow-y:auto">
   <div id="sourcesPanelContent" style="max-width:860px;margin:0 auto;padding:48px 32px 80px">
-    <!-- Built by buildSourcesPanel() in JavaScript -->
   </div>
 </div>
 
@@ -472,7 +451,6 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <div class="map-edge"></div>
     <div class="activity-feed" id="activityFeed"></div>
 
-    <!-- ANALYSIS PANEL — shown when analysis tab active -->
     <div id="analysisPanel" style="display:none;position:absolute;inset:0;z-index:600;background:var(--bg);overflow-y:auto;padding:24px 28px 60px">
     </div>
 
@@ -482,29 +460,19 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <div class="coord-display" id="coordDisplay">Move cursor over map</div>
     <div class="legend" id="legend"></div>
     <div class="watermark" id="watermark"></div>
-    <div style="position:absolute;top:60px;right:12px;z-index:500;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(82,82,110,.5)">v28</div>
+    <div style="position:absolute;top:60px;right:12px;z-index:500;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(82,82,110,.5)">v29</div>
   </main>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CONFIG — paste your Cloudflare Worker URL here after deploying
-// ═══════════════════════════════════════════════════════════════
 const WORKER_URL = 'https://cicero.franzpec2017.workers.dev';
 
-// Barcelona Open Data CKAN — known stable resource IDs for crime by district
-// These are the "Fets penals coneguts" datasets published by Mossos d'Esquadra
-// The app will auto-discover the latest year's resource ID via the CKAN API
 const CKAN_BASE   = 'https://opendata-ajuntament.barcelona.cat/data/api/3/action';
-const POPULATION_RESOURCE = '190095dd-feaf-4c50-9fc7-d0578a52297a'; // Padró Municipal 2025 · nationality by district
-const CRIME_PKG   = 'seguretat-fets-penals-tipus-penal-districte'; // dataset slug
+const POPULATION_RESOURCE = '190095dd-feaf-4c50-9fc7-d0578a52297a';
+const CRIME_PKG   = 'seguretat-fets-penals-tipus-penal-districte';
 
-// Overpass API for real infrastructure POIs from OpenStreetMap
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
-// ═══════════════════════════════════════════════════════════════
-// MAP INIT
-// ═══════════════════════════════════════════════════════════════
 const map = L.map('map', {
   center:[41.3951,2.1734], zoom:12,
   minZoom:10, maxZoom:17,
@@ -512,7 +480,6 @@ const map = L.map('map', {
   closePopupOnClick:false,
 });
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:19,opacity:0.9}).addTo(map);
-// Very faint labels only
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{
   maxZoom:19, opacity:0.2, zIndex:200,
 }).addTo(map);
@@ -520,17 +487,11 @@ L.control.zoom({position:'topleft'}).addTo(map);
 L.control.attribution({position:'bottomright',prefix:''})
   .addAttribution('© CartoDB · © OpenStreetMap · © Open Data BCN').addTo(map);
 
-// Live coordinate display
 map.on('mousemove', e => {
   const el = document.getElementById('coordDisplay');
   if(el) el.textContent = `${e.latlng.lat.toFixed(4)}°N  ${e.latlng.lng.toFixed(4)}°E`;
 });
 
-// ═══════════════════════════════════════════════════════════════
-// DISTRICT GEOMETRY (precise lat/lng)
-// ═══════════════════════════════════════════════════════════════
-// District geometry — loaded from official BCN GeoJSON (martgnz/bcn-geodata, CC-BY)
-// Falls back to approximate coords if GeoJSON unavailable
 let DISTRICTS_GEO = {
   '1': { name:'Ciutat Vella',        coords:[[41.3779,2.1734],[41.3801,2.1640],[41.3850,2.1656],[41.3862,2.1720],[41.3840,2.1795],[41.3800,2.1790]] },
   '2': { name:"L'Eixample",          coords:[[41.3850,2.1440],[41.3960,2.1440],[41.4000,2.1580],[41.3970,2.1800],[41.3900,2.1820],[41.3862,2.1720],[41.3850,2.1656],[41.3830,2.1550]] },
@@ -544,7 +505,6 @@ let DISTRICTS_GEO = {
   '10':{ name:'Sant Martí',          coords:[[41.3970,2.1800],[41.4050,2.1700],[41.4150,2.1750],[41.4250,2.1850],[41.4200,2.2100],[41.4050,2.2200],[41.3900,2.2100],[41.3850,2.2000],[41.3900,2.1820]] },
 };
 
-// Load official GeoJSON boundaries from CartoBCN via GitHub
 async function loadDistrictGeoJSON() {
   try {
     const url = 'https://raw.githubusercontent.com/martgnz/bcn-geodata/master/districtes/districtes.geojson';
@@ -555,21 +515,17 @@ async function loadDistrictGeoJSON() {
       const code = String(parseInt(f.properties.c_distri || f.properties.DISTRICTE || 0));
       const name = f.properties.n_distri   || f.properties.NOM        || DISTRICTS_GEO[code]?.name;
       if(!code || !DISTRICTS_GEO[code]) return;
-      // Convert GeoJSON [lng,lat] to our [lat,lng] format, simplify to 30 points max
       let coords = f.geometry.type === 'Polygon'
         ? f.geometry.coordinates[0]
         : f.geometry.coordinates[0][0];
-      // Simplify — take every Nth point to keep ~40 points
       const step = Math.max(1, Math.floor(coords.length / 40));
       coords = coords.filter((_,i) => i % step === 0);
       DISTRICTS_GEO[code] = { name, coords: coords.map(([lng,lat]) => [lat,lng]) };
     });
     console.log('Loaded official BCN district boundaries from CartoBCN');
-    // Recompute RF coverage with real boundaries
     const recomputed = computeRealCoverage();
     Object.assign(SIGINT_COVERAGE, recomputed.coverage);
     Object.assign(TOWER_COUNTS, recomputed.counts);
-    // Rebuild polygons with real boundaries
     Object.values(districtLayers).forEach(l => map.removeLayer(l));
     Object.keys(districtLayers).forEach(k => delete districtLayers[k]);
     buildDistrictPolygons();
@@ -581,8 +537,6 @@ async function loadDistrictGeoJSON() {
 }
 
 
-// Fallback data (2023 official figures from Mossos d'Esquadra annual report)
-// Used if API is unavailable. Source: Barcelona Local Security Board, Feb 2024
 const FALLBACK_CRIME = {
   '1':{total:15700,theft:9800,assault:1800,robbery:2200,vandalism:900,drugs:1400,fraud:600,year:2023,source:'fallback'},
   '2':{total:11780,theft:7200,assault:1100,robbery:980, vandalism:720,drugs:680, fraud:1100,year:2023,source:'fallback'},
@@ -613,10 +567,7 @@ const SIGINT_LAYERS=[
   {id:'umts',  label:'UMTS 3G Nodes',          color:'#9b6cff'},
 ];
 
-// Real cell tower data from OpenCelliD · Spain dataset · 2025
-// 885 towers filtered to Barcelona bounding box (41.32-41.47N, 2.05-2.23E)
 const REAL_CELL_TOWERS=[{r:"GSM",lng:2.1759,lat:41.3719},{r:"GSM",lng:2.1729,lat:41.3745},{r:"GSM",lng:2.1744,lat:41.3754},{r:"GSM",lng:2.1776,lat:41.3768},{r:"GSM",lng:2.1582,lat:41.3791},{r:"GSM",lng:2.1697,lat:41.377},{r:"GSM",lng:2.1816,lat:41.3788},{r:"GSM",lng:2.1751,lat:41.3742},{r:"GSM",lng:2.1721,lat:41.3987},{r:"GSM",lng:2.1029,lat:41.3347},{r:"GSM",lng:2.1168,lat:41.349},{r:"GSM",lng:2.1132,lat:41.3411},{r:"GSM",lng:2.1146,lat:41.3957},{r:"GSM",lng:2.2042,lat:41.4479},{r:"GSM",lng:2.086,lat:41.3275},{r:"GSM",lng:2.0811,lat:41.3301},{r:"GSM",lng:2.1097,lat:41.322},{r:"GSM",lng:2.0897,lat:41.3237},{r:"GSM",lng:2.1578,lat:41.3527},{r:"GSM",lng:2.1421,lat:41.3474},{r:"GSM",lng:2.1531,lat:41.3437},{r:"GSM",lng:2.1451,lat:41.3361},{r:"GSM",lng:2.1416,lat:41.3329},{r:"GSM",lng:2.221,lat:41.4097},{r:"GSM",lng:2.1353,lat:41.334},{r:"GSM",lng:2.1413,lat:41.3423},{r:"GSM",lng:2.1203,lat:41.3216},{r:"GSM",lng:2.1422,lat:41.3806},{r:"GSM",lng:2.1952,lat:41.4533},{r:"GSM",lng:2.1524,lat:41.3747},{r:"GSM",lng:2.0892,lat:41.3602},{r:"GSM",lng:2.114,lat:41.3982},{r:"GSM",lng:2.0928,lat:41.353},{r:"GSM",lng:2.1355,lat:41.4128},{r:"GSM",lng:2.1012,lat:41.3814},{r:"GSM",lng:2.1083,lat:41.3887},{r:"GSM",lng:2.1402,lat:41.4198},{r:"GSM",lng:2.1252,lat:41.4056},{r:"GSM",lng:2.1978,lat:41.4503},{r:"GSM",lng:2.1517,lat:41.43},{r:"GSM",lng:2.153,lat:41.4313},{r:"GSM",lng:2.1782,lat:41.4451},{r:"GSM",lng:2.1911,lat:41.4484},{r:"GSM",lng:2.2032,lat:41.4455},{r:"GSM",lng:2.1902,lat:41.4463},{r:"GSM",lng:2.1554,lat:41.3811},{r:"GSM",lng:2.1523,lat:41.3764},{r:"GSM",lng:2.1398,lat:41.3683},{r:"GSM",lng:2.1629,lat:41.3864},{r:"GSM",lng:2.1706,lat:41.3911},{r:"GSM",lng:2.1699,lat:41.3883},{r:"GSM",lng:2.1827,lat:41.4459},{r:"GSM",lng:2.1702,lat:41.376},{r:"GSM",lng:2.1683,lat:41.3758},{r:"GSM",lng:2.1695,lat:41.3743},{r:"GSM",lng:2.1595,lat:41.3747},{r:"GSM",lng:2.166,lat:41.3866},{r:"GSM",lng:2.1626,lat:41.3831},{r:"GSM",lng:2.0682,lat:41.3505},{r:"GSM",lng:2.0614,lat:41.3577},{r:"GSM",lng:2.0772,lat:41.3341},{r:"GSM",lng:2.1218,lat:41.4005},{r:"GSM",lng:2.1478,lat:41.4295},{r:"GSM",lng:2.1519,lat:41.3794},{r:"GSM",lng:2.1536,lat:41.3779},{r:"GSM",lng:2.1567,lat:41.3759},{r:"GSM",lng:2.1533,lat:41.3752},{r:"GSM",lng:2.1546,lat:41.4381},{r:"GSM",lng:2.1174,lat:41.4021},{r:"GSM",lng:2.2035,lat:41.3933},{r:"GSM",lng:2.0521,lat:41.3591},{r:"GSM",lng:2.0883,lat:41.3486},{r:"GSM",lng:2.1868,lat:41.4583},{r:"GSM",lng:2.1773,lat:41.3746},{r:"GSM",lng:2.0756,lat:41.3649},{r:"GSM",lng:2.2138,lat:41.4082},{r:"GSM",lng:2.1905,lat:41.3826},{r:"GSM",lng:2.1703,lat:41.3607},{r:"GSM",lng:2.179,lat:41.4679},{r:"GSM",lng:2.1958,lat:41.3877},{r:"GSM",lng:2.1866,lat:41.3872},{r:"GSM",lng:2.1838,lat:41.4272},{r:"GSM",lng:2.2236,lat:41.4166},{r:"GSM",lng:2.2225,lat:41.4179},{r:"GSM",lng:2.2141,lat:41.4031},{r:"GSM",lng:2.2177,lat:41.4195},{r:"GSM",lng:2.2098,lat:41.4377},{r:"GSM",lng:2.1849,lat:41.4593},{r:"GSM",lng:2.1558,lat:41.4102},{r:"GSM",lng:2.1622,lat:41.3944},{r:"GSM",lng:2.169,lat:41.391},{r:"GSM",lng:2.1637,lat:41.3913},{r:"GSM",lng:2.1616,lat:41.3908},{r:"GSM",lng:2.1677,lat:41.3941},{r:"GSM",lng:2.177,lat:41.3925},{r:"GSM",lng:2.1744,lat:41.3935},{r:"GSM",lng:2.1773,lat:41.3966},{r:"LTE",lng:2.1693,lat:41.3866},{r:"LTE",lng:2.1693,lat:41.3882},{r:"LTE",lng:2.1431,lat:41.3796},{r:"GSM",lng:2.2076,lat:41.4177},{r:"GSM",lng:2.1861,lat:41.406},{r:"GSM",lng:2.1182,lat:41.4077},{r:"GSM",lng:2.1218,lat:41.4072},{r:"UMTS",lng:2.1558,lat:41.4118},{r:"UMTS",lng:2.1903,lat:41.4044},{r:"GSM",lng:2.1614,lat:41.3823},{r:"GSM",lng:2.2009,lat:41.4138},{r:"GSM",lng:2.1487,lat:41.3816},{r:"LTE",lng:2.1507,lat:41.3773},{r:"GSM",lng:2.1704,lat:41.389},{r:"LTE",lng:2.1333,lat:41.3784},{r:"GSM",lng:2.1556,lat:41.3797},{r:"GSM",lng:2.1654,lat:41.3955},{r:"UMTS",lng:2.1794,lat:41.4153},{r:"LTE",lng:2.1571,lat:41.3885},{r:"LTE",lng:2.1684,lat:41.3916},{r:"LTE",lng:2.1167,lat:41.3615},{r:"LTE",lng:2.1449,lat:41.3923},{r:"LTE",lng:2.1651,lat:41.387},{r:"GSM",lng:2.2108,lat:41.422},{r:"GSM",lng:2.2056,lat:41.3962},{r:"GSM",lng:2.143,lat:41.3761},{r:"GSM",lng:2.1646,lat:41.378},{r:"LTE",lng:2.1546,lat:41.3864},{r:"GSM",lng:2.1724,lat:41.363},{r:"GSM",lng:2.2048,lat:41.4397},{r:"GSM",lng:2.2167,lat:41.428},{r:"GSM",lng:2.1633,lat:41.3546},{r:"GSM",lng:2.2152,lat:41.4114},{r:"LTE",lng:2.1629,lat:41.3593},{r:"LTE",lng:2.202,lat:41.4035},{r:"LTE",lng:2.1941,lat:41.3864},{r:"LTE",lng:2.1851,lat:41.3959},{r:"LTE",lng:2.1842,lat:41.3934},{r:"LTE",lng:2.0974,lat:41.337},{r:"LTE",lng:2.1042,lat:41.3407},{r:"LTE",lng:2.1103,lat:41.3414},{r:"GSM",lng:2.0827,lat:41.3668},{r:"GSM",lng:2.1725,lat:41.3725},{r:"GSM",lng:2.1924,lat:41.4471},{r:"LTE",lng:2.1853,lat:41.3858},{r:"LTE",lng:2.1831,lat:41.4027},{r:"LTE",lng:2.1706,lat:41.3649},{r:"LTE",lng:2.1388,lat:41.3788},{r:"LTE",lng:2.1652,lat:41.3856},{r:"LTE",lng:2.1649,lat:41.3854},{r:"LTE",lng:2.1658,lat:41.3878},{r:"LTE",lng:2.1774,lat:41.3719},{r:"LTE",lng:2.192,lat:41.3898},{r:"LTE",lng:2.1892,lat:41.4037},{r:"GSM",lng:2.2253,lat:41.4401},{r:"LTE",lng:2.1951,lat:41.3871},{r:"LTE",lng:2.1639,lat:41.3853},{r:"LTE",lng:2.1917,lat:41.3867},{r:"LTE",lng:2.1443,lat:41.3663},{r:"LTE",lng:2.1482,lat:41.3709},{r:"UMTS",lng:2.1622,lat:41.4184},{r:"LTE",lng:2.1289,lat:41.3659},{r:"LTE",lng:2.1235,lat:41.366},{r:"LTE",lng:2.201,lat:41.4011},{r:"LTE",lng:2.1508,lat:41.384},{r:"LTE",lng:2.1561,lat:41.386},{r:"LTE",lng:2.1978,lat:41.4493},{r:"LTE",lng:2.1976,lat:41.3878},{r:"LTE",lng:2.1486,lat:41.379},{r:"LTE",lng:2.1291,lat:41.3781},{r:"LTE",lng:2.1984,lat:41.387},{r:"LTE",lng:2.1433,lat:41.4168},{r:"LTE",lng:2.1319,lat:41.4159},{r:"GSM",lng:2.091,lat:41.3389},{r:"LTE",lng:2.2117,lat:41.4092},{r:"GSM",lng:2.0835,lat:41.3633},{r:"GSM",lng:2.0961,lat:41.3759},{r:"GSM",lng:2.0964,lat:41.3418},{r:"GSM",lng:2.0854,lat:41.3528},{r:"GSM",lng:2.0899,lat:41.3454},{r:"LTE",lng:2.0662,lat:41.3228},{r:"LTE",lng:2.074,lat:41.3244},{r:"LTE",lng:2.0892,lat:41.3519},{r:"LTE",lng:2.0909,lat:41.3368},{r:"LTE",lng:2.0866,lat:41.3446},{r:"LTE",lng:2.1693,lat:41.3849},{r:"LTE",lng:2.1709,lat:41.3881},{r:"LTE",lng:2.1867,lat:41.3935},{r:"LTE",lng:2.1793,lat:41.3752},{r:"LTE",lng:2.1807,lat:41.3991},{r:"LTE",lng:2.0769,lat:41.3237},{r:"LTE",lng:2.1669,lat:41.3864},{r:"LTE",lng:2.1367,lat:41.3764},{r:"LTE",lng:2.186,lat:41.4017},{r:"LTE",lng:2.1934,lat:41.3802},{r:"LTE",lng:2.1581,lat:41.3822},{r:"LTE",lng:2.1666,lat:41.3903},{r:"LTE",lng:2.1502,lat:41.3761},{r:"GSM",lng:2.1382,lat:41.3466},{r:"GSM",lng:2.1274,lat:41.3622},{r:"GSM",lng:2.114,lat:41.345},{r:"GSM",lng:2.1682,lat:41.3862},{r:"LTE",lng:2.1406,lat:41.3736},{r:"LTE",lng:2.1402,lat:41.3766},{r:"LTE",lng:2.148,lat:41.3742},{r:"LTE",lng:2.1456,lat:41.3665},{r:"LTE",lng:2.122,lat:41.3623},{r:"LTE",lng:2.1346,lat:41.3642},{r:"LTE",lng:2.1204,lat:41.3534},{r:"LTE",lng:2.1389,lat:41.359},{r:"LTE",lng:2.0995,lat:41.3776},{r:"LTE",lng:2.116,lat:41.3591},{r:"LTE",lng:2.1227,lat:41.3662},{r:"LTE",lng:2.1313,lat:41.3617},{r:"LTE",lng:2.1414,lat:41.3867},{r:"LTE",lng:2.148,lat:41.3762},{r:"LTE",lng:2.1584,lat:41.3781},{r:"LTE",lng:2.1501,lat:41.3789},{r:"LTE",lng:2.1509,lat:41.3727},{r:"LTE",lng:2.1062,lat:41.3587},{r:"LTE",lng:2.12,lat:41.3672},{r:"LTE",lng:2.1057,lat:41.3614},{r:"LTE",lng:2.1137,lat:41.3745},{r:"LTE",lng:2.1225,lat:41.3562},{r:"LTE",lng:2.1407,lat:41.3557},{r:"LTE",lng:2.0967,lat:41.3599},{r:"LTE",lng:2.1704,lat:41.4067},{r:"LTE",lng:2.1831,lat:41.4065},{r:"LTE",lng:2.1892,lat:41.4097},{r:"LTE",lng:2.1418,lat:41.3785},{r:"LTE",lng:2.1396,lat:41.3681},{r:"LTE",lng:2.1579,lat:41.3809},{r:"LTE",lng:2.1573,lat:41.3898},{r:"LTE",lng:2.1593,lat:41.381},{r:"LTE",lng:2.1339,lat:41.3756},{r:"LTE",lng:2.1207,lat:41.3743},{r:"LTE",lng:2.1021,lat:41.3593},{r:"LTE",lng:2.1059,lat:41.3552},{r:"LTE",lng:2.1456,lat:41.359},{r:"LTE",lng:2.1411,lat:41.3725},{r:"LTE",lng:2.1578,lat:41.3753},{r:"LTE",lng:2.1521,lat:41.3754},{r:"LTE",lng:2.1454,lat:41.3801},{r:"LTE",lng:2.1671,lat:41.3736},{r:"LTE",lng:2.1542,lat:41.3772},{r:"LTE",lng:2.1542,lat:41.3829},{r:"LTE",lng:2.1511,lat:41.3716},{r:"LTE",lng:2.1511,lat:41.3751},{r:"LTE",lng:2.1017,lat:41.3644},{r:"LTE",lng:2.0935,lat:41.3652},{r:"LTE",lng:2.1052,lat:41.3542},{r:"LTE",lng:2.1037,lat:41.3576},{r:"LTE",lng:2.1227,lat:41.3589},{r:"LTE",lng:2.1901,lat:41.4043},{r:"LTE",lng:2.1803,lat:41.3983},{r:"LTE",lng:2.1611,lat:41.3824},{r:"LTE",lng:2.1348,lat:41.3726},{r:"LTE",lng:2.1529,lat:41.3885},{r:"LTE",lng:2.145,lat:41.3726},{r:"LTE",lng:2.1521,lat:41.373},{r:"LTE",lng:2.1338,lat:41.3631},{r:"LTE",lng:2.1464,lat:41.3675},{r:"LTE",lng:2.1477,lat:41.3608},{r:"LTE",lng:2.1048,lat:41.3672},{r:"LTE",lng:2.1215,lat:41.373},{r:"LTE",lng:2.1326,lat:41.3735},{r:"LTE",lng:2.1291,lat:41.3598},{r:"LTE",lng:2.134,lat:41.3643},{r:"LTE",lng:2.0972,lat:41.3629},{r:"LTE",lng:2.1562,lat:41.3768},{r:"LTE",lng:2.1396,lat:41.3703},{r:"LTE",lng:2.1425,lat:41.3705},{r:"LTE",lng:2.1296,lat:41.3676},{r:"LTE",lng:2.0968,lat:41.3674},{r:"LTE",lng:2.1291,lat:41.3749},{r:"LTE",lng:2.1406,lat:41.3579},{r:"LTE",lng:2.124,lat:41.3537},{r:"LTE",lng:2.1177,lat:41.3529},{r:"LTE",lng:2.124,lat:41.3562},{r:"LTE",lng:2.1402,lat:41.3548},{r:"LTE",lng:2.1793,lat:41.4022},{r:"LTE",lng:2.1925,lat:41.4275},{r:"LTE",lng:2.1826,lat:41.4031},{r:"LTE",lng:2.1468,lat:41.3858},{r:"LTE",lng:2.1545,lat:41.3821},{r:"LTE",lng:2.1675,lat:41.3902},{r:"LTE",lng:2.1703,lat:41.3924},{r:"LTE",lng:2.1672,lat:41.3885},{r:"LTE",lng:2.1697,lat:41.3903},{r:"LTE",lng:2.1725,lat:41.3903},{r:"LTE",lng:2.1617,lat:41.3885},{r:"LTE",lng:2.1338,lat:41.4015},{r:"LTE",lng:2.1802,lat:41.4379},{r:"LTE",lng:2.1834,lat:41.4347},{r:"LTE",lng:2.1833,lat:41.4354},{r:"LTE",lng:2.1234,lat:41.406},{r:"LTE",lng:2.1436,lat:41.4259},{r:"LTE",lng:2.1682,lat:41.4346},{r:"LTE",lng:2.1763,lat:41.4308},{r:"LTE",lng:2.1718,lat:41.435},{r:"LTE",lng:2.1744,lat:41.4365},{r:"LTE",lng:2.175,lat:41.4288},{r:"LTE",lng:2.1754,lat:41.4288},{r:"LTE",lng:2.1317,lat:41.4132},{r:"LTE",lng:2.1452,lat:41.4292},{r:"LTE",lng:2.1707,lat:41.4414},{r:"LTE",lng:2.1735,lat:41.4403},{r:"LTE",lng:2.1426,lat:41.384},{r:"LTE",lng:2.1383,lat:41.3775},{r:"LTE",lng:2.1431,lat:41.3868},{r:"LTE",lng:2.139,lat:41.3911},{r:"LTE",lng:2.1442,lat:41.3904},{r:"LTE",lng:2.1324,lat:41.3808},{r:"LTE",lng:2.1394,lat:41.3759},{r:"LTE",lng:2.1354,lat:41.3814},{r:"LTE",lng:2.1407,lat:41.3798},{r:"LTE",lng:2.1433,lat:41.3893},{r:"LTE",lng:2.1415,lat:41.3827},{r:"LTE",lng:2.1418,lat:41.3801},{r:"LTE",lng:2.1367,lat:41.3801},{r:"LTE",lng:2.1458,lat:41.382},{r:"LTE",lng:2.1305,lat:41.3797},{r:"LTE",lng:2.1384,lat:41.3763},{r:"LTE",lng:2.1347,lat:41.3751},{r:"LTE",lng:2.1168,lat:41.3622},{r:"LTE",lng:2.1159,lat:41.3589},{r:"LTE",lng:2.1013,lat:41.3812},{r:"LTE",lng:2.1352,lat:41.3756},{r:"LTE",lng:2.1105,lat:41.3688},{r:"LTE",lng:2.1312,lat:41.3712},{r:"LTE",lng:2.108,lat:41.3834},{r:"LTE",lng:2.1536,lat:41.3661},{r:"LTE",lng:2.1595,lat:41.3689},{r:"LTE",lng:2.1506,lat:41.3676},{r:"LTE",lng:2.1643,lat:41.3696},{r:"LTE",lng:2.1438,lat:41.3796},{r:"LTE",lng:2.2184,lat:41.4072},{r:"LTE",lng:2.1435,lat:41.353},{r:"LTE",lng:2.1541,lat:41.3801},{r:"LTE",lng:2.1529,lat:41.3769},{r:"LTE",lng:2.1637,lat:41.3686},{r:"LTE",lng:2.1527,lat:41.3693},{r:"LTE",lng:2.1564,lat:41.3796},{r:"LTE",lng:2.2215,lat:41.4102},{r:"LTE",lng:2.2143,lat:41.4048},{r:"LTE",lng:2.1512,lat:41.3707},{r:"LTE",lng:2.1217,lat:41.405},{r:"LTE",lng:2.1215,lat:41.3773},{r:"LTE",lng:2.1349,lat:41.3902},{r:"LTE",lng:2.1307,lat:41.3825},{r:"LTE",lng:2.1203,lat:41.3863},{r:"LTE",lng:2.1194,lat:41.3876},{r:"LTE",lng:2.1217,lat:41.3741},{r:"LTE",lng:2.1662,lat:41.414},{r:"LTE",lng:2.1622,lat:41.4116},{r:"LTE",lng:2.1775,lat:41.4235},{r:"LTE",lng:2.1741,lat:41.4111},{r:"LTE",lng:2.1576,lat:41.4149},{r:"LTE",lng:2.1677,lat:41.4076},{r:"LTE",lng:2.1836,lat:41.421},{r:"LTE",lng:2.1715,lat:41.4092},{r:"LTE",lng:2.179,lat:41.4263},{r:"LTE",lng:2.1795,lat:41.4221},{r:"LTE",lng:2.174,lat:41.4065},{r:"LTE",lng:2.1711,lat:41.422},{r:"LTE",lng:2.1861,lat:41.4218},{r:"LTE",lng:2.187,lat:41.4056},{r:"LTE",lng:2.1806,lat:41.3991},{r:"LTE",lng:2.1827,lat:41.3983},{r:"LTE",lng:2.1752,lat:41.3815},{r:"LTE",lng:2.174,lat:41.408},{r:"LTE",lng:2.1883,lat:41.4038},{r:"LTE",lng:2.1739,lat:41.414},{r:"LTE",lng:2.1623,lat:41.3928},{r:"LTE",lng:2.1504,lat:41.4042},{r:"LTE",lng:2.1619,lat:41.395},{r:"LTE",lng:2.1633,lat:41.405},{r:"LTE",lng:2.1573,lat:41.3912},{r:"LTE",lng:2.1548,lat:41.401},{r:"LTE",lng:2.1134,lat:41.324},{r:"LTE",lng:2.1604,lat:41.3969},{r:"LTE",lng:2.1157,lat:41.3505},{r:"LTE",lng:2.1652,lat:41.398},{r:"LTE",lng:2.1567,lat:41.4023},{r:"LTE",lng:2.0737,lat:41.3338},{r:"LTE",lng:2.1567,lat:41.3955},{r:"LTE",lng:2.0871,lat:41.3351},{r:"LTE",lng:2.1101,lat:41.3475},{r:"LTE",lng:2.178,lat:41.4447},{r:"LTE",lng:2.1758,lat:41.4446},{r:"LTE",lng:2.1909,lat:41.4558},{r:"LTE",lng:2.068,lat:41.324},{r:"LTE",lng:2.1737,lat:41.3848},{r:"LTE",lng:2.1864,lat:41.4484},{r:"LTE",lng:2.1695,lat:41.3899},{r:"LTE",lng:2.1601,lat:41.3845},{r:"LTE",lng:2.1781,lat:41.39},{r:"LTE",lng:2.1696,lat:41.3883},{r:"LTE",lng:2.1721,lat:41.3829},{r:"GSM",lng:2.2089,lat:41.4406},{r:"GSM",lng:2.1688,lat:41.3888},{r:"GSM",lng:2.1597,lat:41.3855},{r:"GSM",lng:2.1604,lat:41.3971},{r:"GSM",lng:2.1766,lat:41.3954},{r:"LTE",lng:2.1556,lat:41.3939},{r:"LTE",lng:2.1432,lat:41.411},{r:"GSM",lng:2.1379,lat:41.368},{r:"GSM",lng:2.1628,lat:41.3817},{r:"GSM",lng:2.1589,lat:41.3817},{r:"GSM",lng:2.162,lat:41.3798},{r:"GSM",lng:2.2218,lat:41.4182},{r:"GSM",lng:2.1691,lat:41.3793},{r:"GSM",lng:2.1861,lat:41.4647},{r:"GSM",lng:2.1933,lat:41.4352},{r:"GSM",lng:2.1903,lat:41.4133},{r:"UMTS",lng:2.1556,lat:41.4027},{r:"LTE",lng:2.125,lat:41.3707},{r:"GSM",lng:2.1733,lat:41.3987},{r:"GSM",lng:2.1698,lat:41.3954},{r:"GSM",lng:2.0761,lat:41.3325},{r:"GSM",lng:2.1655,lat:41.3943},{r:"GSM",lng:2.0794,lat:41.3208},{r:"GSM",lng:2.0857,lat:41.3358},{r:"GSM",lng:2.0957,lat:41.3751},{r:"GSM",lng:2.0924,lat:41.3624},{r:"GSM",lng:2.1696,lat:41.3866},{r:"GSM",lng:2.1687,lat:41.3946},{r:"GSM",lng:2.066,lat:41.3495},{r:"GSM",lng:2.1668,lat:41.389},{r:"GSM",lng:2.1686,lat:41.3975},{r:"GSM",lng:2.0789,lat:41.3639},{r:"GSM",lng:2.1829,lat:41.3787},{r:"GSM",lng:2.1786,lat:41.4126},{r:"GSM",lng:2.1768,lat:41.4007},{r:"GSM",lng:2.1634,lat:41.3757},{r:"GSM",lng:2.1671,lat:41.3754},{r:"GSM",lng:2.1863,lat:41.421},{r:"GSM",lng:2.1859,lat:41.4258},{r:"GSM",lng:2.1771,lat:41.4034},{r:"GSM",lng:2.1506,lat:41.4293},{r:"GSM",lng:2.1801,lat:41.3993},{r:"GSM",lng:2.1839,lat:41.407},{r:"GSM",lng:2.1858,lat:41.4023},{r:"GSM",lng:2.1501,lat:41.3835},{r:"GSM",lng:2.186,lat:41.4095},{r:"GSM",lng:2.1606,lat:41.3739},{r:"GSM",lng:2.1555,lat:41.3802},{r:"GSM",lng:2.2067,lat:41.3963},{r:"GSM",lng:2.2031,lat:41.4159},{r:"GSM",lng:2.2052,lat:41.4309},{r:"GSM",lng:2.1903,lat:41.4149},{r:"GSM",lng:2.1828,lat:41.4306},{r:"GSM",lng:2.1048,lat:41.3317},{r:"GSM",lng:2.1236,lat:41.3941},{r:"GSM",lng:2.1833,lat:41.4012},{r:"GSM",lng:2.2177,lat:41.441},{r:"GSM",lng:2.1337,lat:41.3639},{r:"GSM",lng:2.1884,lat:41.4247},{r:"GSM",lng:2.1188,lat:41.3542},{r:"GSM",lng:2.2103,lat:41.4329},{r:"GSM",lng:2.2259,lat:41.4633},{r:"GSM",lng:2.2127,lat:41.4498},{r:"GSM",lng:2.2282,lat:41.4443},{r:"GSM",lng:2.1789,lat:41.4322},{r:"GSM",lng:2.1794,lat:41.4019},{r:"GSM",lng:2.184,lat:41.4358},{r:"GSM",lng:2.1147,lat:41.3484},{r:"GSM",lng:2.2225,lat:41.4338},{r:"GSM",lng:2.1377,lat:41.4164},{r:"GSM",lng:2.1903,lat:41.4421},{r:"GSM",lng:2.225,lat:41.4544},{r:"GSM",lng:2.1306,lat:41.3616},{r:"GSM",lng:2.1235,lat:41.3722},{r:"UMTS",lng:2.1876,lat:41.4593},{r:"LTE",lng:2.1549,lat:41.3542},{r:"LTE",lng:2.0784,lat:41.3266},{r:"LTE",lng:2.094,lat:41.3351},{r:"LTE",lng:2.1603,lat:41.4074},{r:"LTE",lng:2.1745,lat:41.3658},{r:"LTE",lng:2.0817,lat:41.3295},{r:"LTE",lng:2.199,lat:41.4408},{r:"LTE",lng:2.1995,lat:41.4399},{r:"LTE",lng:2.2171,lat:41.4269},{r:"LTE",lng:2.1802,lat:41.3775},{r:"LTE",lng:2.2225,lat:41.4359},{r:"LTE",lng:2.1843,lat:41.4014},{r:"LTE",lng:2.1828,lat:41.3944},{r:"LTE",lng:2.1512,lat:41.3951},{r:"LTE",lng:2.142,lat:41.3796},{r:"LTE",lng:2.0963,lat:41.3381},{r:"LTE",lng:2.084,lat:41.3306},{r:"LTE",lng:2.2185,lat:41.4268},{r:"LTE",lng:2.1483,lat:41.3981},{r:"LTE",lng:2.1914,lat:41.4065},{r:"LTE",lng:2.1796,lat:41.4011},{r:"LTE",lng:2.1688,lat:41.3887},{r:"LTE",lng:2.1755,lat:41.3948},{r:"LTE",lng:2.1928,lat:41.3908},{r:"LTE",lng:2.181,lat:41.3788},{r:"UMTS",lng:2.1609,lat:41.3882},{r:"LTE",lng:2.1545,lat:41.3883},{r:"LTE",lng:2.1484,lat:41.3971},{r:"LTE",lng:2.1803,lat:41.3917},{r:"LTE",lng:2.1259,lat:41.3739},{r:"LTE",lng:2.129,lat:41.3762},{r:"LTE",lng:2.1777,lat:41.3935},{r:"LTE",lng:2.1778,lat:41.3956},{r:"LTE",lng:2.1543,lat:41.3908},{r:"LTE",lng:2.1522,lat:41.3946},{r:"LTE",lng:2.1267,lat:41.3772},{r:"LTE",lng:2.1227,lat:41.377},{r:"LTE",lng:2.124,lat:41.3795},{r:"LTE",lng:2.1267,lat:41.3756},{r:"UMTS",lng:2.1271,lat:41.3751},{r:"UMTS",lng:2.1367,lat:41.3786},{r:"UMTS",lng:2.1566,lat:41.4083},{r:"UMTS",lng:2.1692,lat:41.4071},{r:"LTE",lng:2.0978,lat:41.366},{r:"LTE",lng:2.1281,lat:41.381},{r:"LTE",lng:2.1628,lat:41.4129},{r:"LTE",lng:2.1519,lat:41.351},{r:"LTE",lng:2.1664,lat:41.3906},{r:"LTE",lng:2.1824,lat:41.4392},{r:"LTE",lng:2.2128,lat:41.423},{r:"LTE",lng:2.0687,lat:41.4021},{r:"LTE",lng:2.1985,lat:41.4496},{r:"LTE",lng:2.1184,lat:41.3642},{r:"LTE",lng:2.1257,lat:41.3676},{r:"LTE",lng:2.1148,lat:41.3381},{r:"LTE",lng:2.1472,lat:41.3844},{r:"LTE",lng:2.1495,lat:41.4113},{r:"UMTS",lng:2.0531,lat:41.3357},{r:"LTE",lng:2.1773,lat:41.4103},{r:"LTE",lng:2.1825,lat:41.4071},{r:"LTE",lng:2.1761,lat:41.4259},{r:"LTE",lng:2.0898,lat:41.3604},{r:"LTE",lng:2.1132,lat:41.38},{r:"LTE",lng:2.1378,lat:41.355},{r:"LTE",lng:2.2158,lat:41.41},{r:"LTE",lng:2.1301,lat:41.3689},{r:"LTE",lng:2.1499,lat:41.372},{r:"LTE",lng:2.093,lat:41.3272},{r:"UMTS",lng:2.1747,lat:41.4654},{r:"LTE",lng:2.111,lat:41.376},{r:"LTE",lng:2.1579,lat:41.4045},{r:"LTE",lng:2.1726,lat:41.4388},{r:"LTE",lng:2.1161,lat:41.3592},{r:"LTE",lng:2.1294,lat:41.3705},{r:"LTE",lng:2.1942,lat:41.4088},{r:"LTE",lng:2.1563,lat:41.4007},{r:"UMTS",lng:2.1802,lat:41.4617},{r:"LTE",lng:2.1559,lat:41.3796},{r:"LTE",lng:2.1508,lat:41.381},{r:"LTE",lng:2.1265,lat:41.3792},{r:"LTE",lng:2.1703,lat:41.4062},{r:"LTE",lng:2.1128,lat:41.374},{r:"LTE",lng:2.1202,lat:41.3711},{r:"LTE",lng:2.1158,lat:41.3627},{r:"LTE",lng:2.1677,lat:41.407},{r:"LTE",lng:2.1737,lat:41.4123},{r:"LTE",lng:2.1483,lat:41.3698},{r:"LTE",lng:2.11,lat:41.3617},{r:"LTE",lng:2.1134,lat:41.3654},{r:"LTE",lng:2.1475,lat:41.376},{r:"LTE",lng:2.228,lat:41.4582},{r:"LTE",lng:2.1302,lat:41.3903},{r:"LTE",lng:2.2076,lat:41.395},{r:"LTE",lng:2.2056,lat:41.3961},{r:"LTE",lng:2.2127,lat:41.4021},{r:"LTE",lng:2.2099,lat:41.4001},{r:"LTE",lng:2.1868,lat:41.3828},{r:"LTE",lng:2.2188,lat:41.4227},{r:"LTE",lng:2.1759,lat:41.3704},{r:"LTE",lng:2.1967,lat:41.3886},{r:"LTE",lng:2.1902,lat:41.3823},{r:"LTE",lng:2.1699,lat:41.3637},{r:"LTE",lng:2.1987,lat:41.4552},{r:"LTE",lng:2.1897,lat:41.3881},{r:"LTE",lng:2.2165,lat:41.4255},{r:"LTE",lng:2.2129,lat:41.4309},{r:"LTE",lng:2.1659,lat:41.3855},{r:"LTE",lng:2.1445,lat:41.4245},{r:"LTE",lng:2.1407,lat:41.4189},{r:"LTE",lng:2.1394,lat:41.42},{r:"LTE",lng:2.1409,lat:41.4219},{r:"LTE",lng:2.1359,lat:41.417},{r:"LTE",lng:2.1435,lat:41.4272},{r:"LTE",lng:2.1796,lat:41.3911},{r:"LTE",lng:2.183,lat:41.3933},{r:"LTE",lng:2.1231,lat:41.3871},{r:"LTE",lng:2.1253,lat:41.3874},{r:"LTE",lng:2.0526,lat:41.3596},{r:"LTE",lng:2.1823,lat:41.3796},{r:"LTE",lng:2.1762,lat:41.4445},{r:"LTE",lng:2.1117,lat:41.3869},{r:"LTE",lng:2.1279,lat:41.3892},{r:"LTE",lng:2.1768,lat:41.3772},{r:"LTE",lng:2.1343,lat:41.3867},{r:"LTE",lng:2.137,lat:41.3899},{r:"LTE",lng:2.0816,lat:41.3288},{r:"LTE",lng:2.1069,lat:41.3447},{r:"LTE",lng:2.1369,lat:41.3455},{r:"LTE",lng:2.1016,lat:41.341},{r:"LTE",lng:2.1434,lat:41.3482},{r:"LTE",lng:2.1084,lat:41.3411},{r:"LTE",lng:2.2,lat:41.4055},{r:"LTE",lng:2.1056,lat:41.3809},{r:"LTE",lng:2.2245,lat:41.4412},{r:"LTE",lng:2.1739,lat:41.3937},{r:"LTE",lng:2.1569,lat:41.3926},{r:"LTE",lng:2.1234,lat:41.3902},{r:"LTE",lng:2.1749,lat:41.3639},{r:"LTE",lng:2.1439,lat:41.353},{r:"LTE",lng:2.0909,lat:41.3434},{r:"LTE",lng:2.0823,lat:41.3452},{r:"LTE",lng:2.1702,lat:41.4031},{r:"LTE",lng:2.1201,lat:41.3896},{r:"UMTS",lng:2.1312,lat:41.3797},{r:"UMTS",lng:2.1557,lat:41.3932},{r:"UMTS",lng:2.1527,lat:41.377},{r:"UMTS",lng:2.1067,lat:41.3608},{r:"UMTS",lng:2.1046,lat:41.3664},{r:"UMTS",lng:2.1009,lat:41.3626},{r:"UMTS",lng:2.0566,lat:41.3793},{r:"UMTS",lng:2.1,lat:41.3635},{r:"UMTS",lng:2.1099,lat:41.3698},{r:"UMTS",lng:2.1006,lat:41.3621},{r:"UMTS",lng:2.1746,lat:41.3702},{r:"UMTS",lng:2.1577,lat:41.4086},{r:"UMTS",lng:2.098,lat:41.3708},{r:"UMTS",lng:2.063,lat:41.3681},{r:"UMTS",lng:2.1049,lat:41.3657},{r:"UMTS",lng:2.1068,lat:41.3715},{r:"UMTS",lng:2.104,lat:41.3783},{r:"UMTS",lng:2.109,lat:41.3723},{r:"UMTS",lng:2.1946,lat:41.3896},{r:"UMTS",lng:2.2124,lat:41.4483},{r:"UMTS",lng:2.1301,lat:41.3707},{r:"UMTS",lng:2.1519,lat:41.4008},{r:"UMTS",lng:2.1674,lat:41.4039},{r:"UMTS",lng:2.0823,lat:41.3649},{r:"UMTS",lng:2.1718,lat:41.3473},{r:"UMTS",lng:2.191,lat:41.3878},{r:"UMTS",lng:2.1707,lat:41.4247},{r:"UMTS",lng:2.1707,lat:41.4247},{r:"UMTS",lng:2.1576,lat:41.3956},{r:"UMTS",lng:2.1529,lat:41.3861},{r:"UMTS",lng:2.1827,lat:41.3736},{r:"UMTS",lng:2.1517,lat:41.4035},{r:"UMTS",lng:2.1719,lat:41.3457},{r:"UMTS",lng:2.1045,lat:41.3269},{r:"UMTS",lng:2.1915,lat:41.456},{r:"UMTS",lng:2.1341,lat:41.465},{r:"UMTS",lng:2.1712,lat:41.3463},{r:"UMTS",lng:2.104,lat:41.3292},{r:"UMTS",lng:2.089,lat:41.3608},{r:"UMTS",lng:2.1086,lat:41.3283},{r:"UMTS",lng:2.1654,lat:41.3464},{r:"UMTS",lng:2.221,lat:41.469},{r:"UMTS",lng:2.1994,lat:41.4522},{r:"UMTS",lng:2.1747,lat:41.3467},{r:"UMTS",lng:2.1099,lat:41.3755},{r:"UMTS",lng:2.1711,lat:41.349},{r:"NR",lng:2.0542,lat:41.3854},{r:"NR",lng:2.0803,lat:41.3799},{r:"NR",lng:2.0734,lat:41.3782},{r:"NR",lng:2.0744,lat:41.3826},{r:"NR",lng:2.0732,lat:41.3849},{r:"NR",lng:2.07,lat:41.3826},{r:"NR",lng:2.068,lat:41.3769},{r:"NR",lng:2.0576,lat:41.3799},{r:"NR",lng:2.0551,lat:41.3772},{r:"NR",lng:2.0667,lat:41.3564},{r:"NR",lng:2.0508,lat:41.3798},{r:"NR",lng:2.0763,lat:41.3736},{r:"NR",lng:2.0714,lat:41.3784},{r:"UMTS",lng:2.1428,lat:41.3791},{r:"NR",lng:2.1564,lat:41.3882},{r:"NR",lng:2.1554,lat:41.3886},{r:"NR",lng:2.1554,lat:41.3886},{r:"NR",lng:2.1577,lat:41.3879},{r:"NR",lng:2.1582,lat:41.3874},{r:"NR",lng:2.1583,lat:41.3872},{r:"NR",lng:2.163,lat:41.3854},{r:"NR",lng:2.1618,lat:41.3849},{r:"NR",lng:2.1635,lat:41.3855},{r:"NR",lng:2.1662,lat:41.3861},{r:"NR",lng:2.166,lat:41.3853},{r:"NR",lng:2.0548,lat:41.3849},{r:"NR",lng:2.0541,lat:41.386},{r:"NR",lng:2.0668,lat:41.3799},{r:"NR",lng:2.0702,lat:41.3795},{r:"NR",lng:2.0648,lat:41.3804},{r:"UMTS",lng:2.1446,lat:41.3527},{r:"UMTS",lng:2.1648,lat:41.3487},{r:"UMTS",lng:2.1429,lat:41.3278},{r:"NR",lng:2.197,lat:41.3989},{r:"NR",lng:2.1647,lat:41.3836},{r:"NR",lng:2.165,lat:41.3832},{r:"NR",lng:2.165,lat:41.3832},{r:"NR",lng:2.1653,lat:41.383},{r:"NR",lng:2.1658,lat:41.3826},{r:"UMTS",lng:2.1555,lat:41.3481},{r:"UMTS",lng:2.1616,lat:41.3364},{r:"NR",lng:2.0784,lat:41.3814},{r:"NR",lng:2.0598,lat:41.3786},{r:"NR",lng:2.0536,lat:41.3786},{r:"NR",lng:2.0535,lat:41.3787},{r:"NR",lng:2.0537,lat:41.379},{r:"UMTS",lng:2.1572,lat:41.3224},{r:"UMTS",lng:2.1341,lat:41.3284},{r:"UMTS",lng:2.1381,lat:41.3607},{r:"UMTS",lng:2.1381,lat:41.3607},{r:"UMTS",lng:2.1634,lat:41.3453},{r:"UMTS",lng:2.1737,lat:41.3478},{r:"UMTS",lng:2.0576,lat:41.3618},{r:"UMTS",lng:2.1465,lat:41.3444},{r:"UMTS",lng:2.1405,lat:41.3421},{r:"NR",lng:2.2186,lat:41.439},{r:"NR",lng:2.2184,lat:41.441},{r:"NR",lng:2.1531,lat:41.4027},{r:"NR",lng:2.1532,lat:41.4028},{r:"UMTS",lng:2.1675,lat:41.342},{r:"UMTS",lng:2.1622,lat:41.3568},{r:"UMTS",lng:2.169,lat:41.3547},{r:"UMTS",lng:2.1749,lat:41.3532},{r:"UMTS",lng:2.1403,lat:41.3227},{r:"UMTS",lng:2.1531,lat:41.3516},{r:"UMTS",lng:2.1689,lat:41.3565},{r:"UMTS",lng:2.1273,lat:41.3653},{r:"UMTS",lng:2.1421,lat:41.3608},{r:"UMTS",lng:2.0842,lat:41.359},{r:"UMTS",lng:2.1009,lat:41.3601},{r:"UMTS",lng:2.1001,lat:41.3633},{r:"UMTS",lng:2.0993,lat:41.3677},{r:"UMTS",lng:2.0976,lat:41.3749},{r:"UMTS",lng:2.1035,lat:41.3744},{r:"UMTS",lng:2.1051,lat:41.3739},{r:"UMTS",lng:2.1066,lat:41.3726},{r:"NR",lng:2.0541,lat:41.3843},{r:"UMTS",lng:2.1052,lat:41.3739},{r:"UMTS",lng:2.1516,lat:41.3516},{r:"UMTS",lng:2.1449,lat:41.4112},{r:"UMTS",lng:2.1819,lat:41.3658},{r:"UMTS",lng:2.1256,lat:41.4085},{r:"UMTS",lng:2.134,lat:41.3482},{r:"UMTS",lng:2.1154,lat:41.3439},{r:"NR",lng:2.061,lat:41.3596},{r:"NR",lng:2.061,lat:41.361},{r:"NR",lng:2.0647,lat:41.3613},{r:"NR",lng:2.0632,lat:41.3631},{r:"NR",lng:2.0592,lat:41.3652},{r:"NR",lng:2.0603,lat:41.3664},{r:"NR",lng:2.0647,lat:41.3679},{r:"NR",lng:2.0687,lat:41.3682},{r:"NR",lng:2.0709,lat:41.3688},{r:"NR",lng:2.071,lat:41.3705},{r:"NR",lng:2.0728,lat:41.3711},{r:"NR",lng:2.0712,lat:41.37},{r:"NR",lng:2.0731,lat:41.3726},{r:"UMTS",lng:2.1007,lat:41.3728},{r:"UMTS",lng:2.1295,lat:41.331},{r:"UMTS",lng:2.1309,lat:41.3345},{r:"UMTS",lng:2.0791,lat:41.347},{r:"UMTS",lng:2.0785,lat:41.3475},{r:"UMTS",lng:2.1374,lat:41.3304},{r:"UMTS",lng:2.1181,lat:41.4276},{r:"UMTS",lng:2.1749,lat:41.3524},{r:"UMTS",lng:2.177,lat:41.4583},{r:"UMTS",lng:2.122,lat:41.3298},{r:"UMTS",lng:2.1382,lat:41.3464},{r:"UMTS",lng:2.1919,lat:41.3774},{r:"UMTS",lng:2.1431,lat:41.333},{r:"UMTS",lng:2.1301,lat:41.324},{r:"UMTS",lng:2.1004,lat:41.3327},{r:"UMTS",lng:2.1557,lat:41.409},{r:"UMTS",lng:2.1557,lat:41.409},{r:"UMTS",lng:2.1557,lat:41.409},{r:"UMTS",lng:2.1555,lat:41.4086},{r:"UMTS",lng:2.1554,lat:41.4084},{r:"UMTS",lng:2.1555,lat:41.4084},{r:"UMTS",lng:2.1555,lat:41.4084},{r:"UMTS",lng:2.2107,lat:41.4584},{r:"UMTS",lng:2.1804,lat:41.3785},{r:"UMTS",lng:2.1377,lat:41.3471},{r:"UMTS",lng:2.1933,lat:41.4592},{r:"UMTS",lng:2.1997,lat:41.4492},{r:"UMTS",lng:2.1913,lat:41.4422},{r:"UMTS",lng:2.1926,lat:41.4325},{r:"UMTS",lng:2.1913,lat:41.4217},{r:"UMTS",lng:2.1883,lat:41.4113},{r:"UMTS",lng:2.1806,lat:41.401},{r:"UMTS",lng:2.17,lat:41.3908},{r:"UMTS",lng:2.1641,lat:41.3845},{r:"UMTS",lng:2.1676,lat:41.3792},{r:"UMTS",lng:2.1685,lat:41.3792},{r:"UMTS",lng:2.1654,lat:41.3801},{r:"UMTS",lng:2.1635,lat:41.3803},{r:"UMTS",lng:2.1612,lat:41.383},{r:"UMTS",lng:2.1588,lat:41.3855},{r:"UMTS",lng:2.1593,lat:41.3852},{r:"UMTS",lng:2.1593,lat:41.3852},{r:"UMTS",lng:2.1645,lat:41.3915},{r:"UMTS",lng:2.1636,lat:41.3913},{r:"UMTS",lng:2.1584,lat:41.3857},{r:"UMTS",lng:2.1538,lat:41.3894},{r:"UMTS",lng:2.1584,lat:41.3857},{r:"UMTS",lng:2.1587,lat:41.3859},{r:"UMTS",lng:2.1583,lat:41.3852},{r:"UMTS",lng:2.1953,lat:41.4095},{r:"UMTS",lng:2.1791,lat:41.4012},{r:"UMTS",lng:2.166,lat:41.3928},{r:"UMTS",lng:2.1598,lat:41.3855},{r:"UMTS",lng:2.1588,lat:41.3856},{r:"UMTS",lng:2.1528,lat:41.3947},{r:"UMTS",lng:2.1594,lat:41.3849},{r:"UMTS",lng:2.1583,lat:41.3851},{r:"UMTS",lng:2.1599,lat:41.3848},{r:"UMTS",lng:2.1418,lat:41.3574},{r:"UMTS",lng:2.1653,lat:41.3868},{r:"UMTS",lng:2.1696,lat:41.3902},{r:"UMTS",lng:2.1798,lat:41.398},{r:"UMTS",lng:2.2081,lat:41.4329},{r:"UMTS",lng:2.2074,lat:41.4309},{r:"NR",lng:2.1045,lat:41.3602},{r:"NR",lng:2.1009,lat:41.3637},{r:"UMTS",lng:2.1624,lat:41.4399},{r:"NR",lng:2.2269,lat:41.4385},{r:"NR",lng:2.2244,lat:41.4337},{r:"NR",lng:2.223,lat:41.4311},{r:"NR",lng:2.2202,lat:41.4285},{r:"NR",lng:2.218,lat:41.4273},{r:"NR",lng:2.214,lat:41.4242},{r:"NR",lng:2.2104,lat:41.4211},{r:"NR",lng:2.2042,lat:41.4164},{r:"NR",lng:2.2042,lat:41.4164},{r:"NR",lng:2.1956,lat:41.41},{r:"UMTS",lng:2.1914,lat:41.4068},{r:"UMTS",lng:2.1843,lat:41.4015},{r:"NR",lng:2.1803,lat:41.3996},{r:"NR",lng:2.1792,lat:41.3995},{r:"NR",lng:2.1797,lat:41.3986},{r:"NR",lng:2.1806,lat:41.3979},{r:"NR",lng:2.1813,lat:41.3974},{r:"NR",lng:2.1823,lat:41.3966},{r:"NR",lng:2.1826,lat:41.3945},{r:"NR",lng:2.1825,lat:41.3946},{r:"UMTS",lng:2.1504,lat:41.3892},{r:"UMTS",lng:2.1676,lat:41.352},{r:"UMTS",lng:2.1453,lat:41.3312},{r:"UMTS",lng:2.1242,lat:41.3501},{r:"UMTS",lng:2.1397,lat:41.331},{r:"UMTS",lng:2.1888,lat:41.4089},{r:"UMTS",lng:2.1818,lat:41.4692},{r:"UMTS",lng:2.1451,lat:41.3256},{r:"UMTS",lng:2.2017,lat:41.4653},{r:"UMTS",lng:2.2018,lat:41.4653},{r:"UMTS",lng:2.1248,lat:41.3308},{r:"UMTS",lng:2.1523,lat:41.3277},{r:"UMTS",lng:2.2227,lat:41.413},{r:"UMTS",lng:2.0613,lat:41.353},{r:"UMTS",lng:2.1121,lat:41.3634},{r:"UMTS",lng:2.1118,lat:41.3636},{r:"UMTS",lng:2.1394,lat:41.3357},{r:"UMTS",lng:2.1498,lat:41.3316},{r:"UMTS",lng:2.0509,lat:41.3601},{r:"UMTS",lng:2.1521,lat:41.3298},{r:"UMTS",lng:2.1515,lat:41.3272},{r:"UMTS",lng:2.2171,lat:41.3936},{r:"UMTS",lng:2.1225,lat:41.3372},{r:"UMTS",lng:2.0869,lat:41.3518},{r:"NR",lng:2.1937,lat:41.3951},{r:"NR",lng:2.1946,lat:41.3942},{r:"NR",lng:2.1954,lat:41.3935},{r:"NR",lng:2.1979,lat:41.3929},{r:"NR",lng:2.1995,lat:41.3935},{r:"NR",lng:2.1344,lat:41.3725},{r:"NR",lng:2.1354,lat:41.3721},{r:"UMTS",lng:2.0754,lat:41.3459},{r:"UMTS",lng:2.1829,lat:41.4463},{r:"UMTS",lng:2.1038,lat:41.3739},{r:"UMTS",lng:2.1904,lat:41.4575},{r:"UMTS",lng:2.0866,lat:41.3297},{r:"UMTS",lng:2.1727,lat:41.3446},{r:"UMTS",lng:2.1423,lat:41.335},{r:"UMTS",lng:2.1246,lat:41.356},{r:"UMTS",lng:2.2054,lat:41.3952},{r:"UMTS",lng:2.2199,lat:41.4082}];
-// 885 real towers from OpenCelliD · Spain dataset · 2025
 
 const INFRA_LAYERS=[
   {id:'police',   label:'Police Stations',        color:'#3da8ff'},
@@ -626,8 +577,6 @@ const INFRA_LAYERS=[
   {id:'hospital', label:'Hospitals & Clinics',     color:'#00e5a0'},
   {id:'military', label:'Military Installations',  color:'#ff6b35'},
 ];
-// Vulnerability index removed — replaced with real critical node counts from OpenStreetMap
-// Node counts per district computed dynamically from infraNodes array
 
 const HUMAN_LAYERS=[
   {id:'density', label:'Population Density',     color:'#3da8ff'},
@@ -637,38 +586,28 @@ const HUMAN_LAYERS=[
 ];
 const HUMAN_DENSITY_FALLBACK={'1':20000,'2':35000,'3':14000,'4':9000,'5':8500,'6':31000,'7':22000,'8':28000,'9':19000,'10':23000};
 let HUMAN_DENSITY={...HUMAN_DENSITY_FALLBACK};
-// NACIONALITAT_G codes: 1=Spanish, 2=EU, 3=Rest of world, 4=Stateless
-let foreignPopByDistrict={}; // district code → foreign national count
-// Instability index removed — replaced with real foreign population data from Padró Municipal
+let foreignPopByDistrict={};
 
-// ═══════════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════════
 let currentMap    = 'crime';
 let activeFilters = new Set(CRIME_TYPES.map(l=>l.id));
 let selectedDist  = null;
-let crimeData     = {};   // district_code → data object
-let infraNodes    = [];   // populated from Overpass or static fallback
+let crimeData     = {};
+let infraNodes    = [];
 let dataLoaded    = {crime:false, infra:false, cctv:false, population:false};
-let cctvNodes     = [];   // real CCTV cameras from Open Data BCN
+let cctvNodes     = [];
 let dataSource    = 'loading';
 let lastUpdated   = null;
 let districtLayers= {};
 let heatLayer     = null;
 let markerGroup   = null;
-// yearFilter removed — data source is always the live Mossos API (2024)
 
-// ═══════════════════════════════════════════════════════════════
-// PROXY FETCH — routes through Cloudflare Worker
-// Falls back to direct fetch if Worker URL not configured
-// ═══════════════════════════════════════════════════════════════
 async function proxyFetch(url, timeoutMs=8000) {
   const controller = new AbortController();
   const tid = setTimeout(()=>controller.abort(), timeoutMs);
   const isConfigured = WORKER_URL && !WORKER_URL.includes('YOUR-WORKER');
   const fetchUrl = isConfigured
     ? `${WORKER_URL}?url=${encodeURIComponent(url)}`
-    : url; // direct (will fail CORS from browser for BCN API, but works for Overpass)
+    : url;
   try {
     const res = await fetch(fetchUrl, {signal:controller.signal});
     clearTimeout(tid);
@@ -680,16 +619,8 @@ async function proxyFetch(url, timeoutMs=8000) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DATA FETCHING — Mossos d'Esquadra crime data
-// Source: Generalitat de Catalunya Open Data (Socrata API)
-// Dataset: Fets penals coneguts, fets coneguts resolts i detencions
-// ID: qnyt-emjc · Updated monthly · No bot protection
-// Districts via rea_b_sica_policial_abp field (ABP = Area Bàsica Policial)
-// ═══════════════════════════════════════════════════════════════
 const MOSSOS_API = 'https://analisi.transparenciacatalunya.cat/resource/qnyt-emjc.json';
 
-// Map ABP names to our district codes
 const ABP_TO_DISTRICT = {
   'ABP Ciutat Vella':       '1',
   'ABP Eixample':           '2',
@@ -703,7 +634,6 @@ const ABP_TO_DISTRICT = {
   'ABP Sant Martí':        '10',
 };
 
-// Map Catalan crime type strings to our categories
 function mapCrimeType(tipus) {
   const t = tipus.toLowerCase();
   if(t.includes('furt') || t.includes('robatori i furt d\'ús')) return 'theft';
@@ -725,7 +655,6 @@ async function loadCrimeData() {
   refreshAll();
 
   try {
-    // SoQL: full-year 2024 totals summed server-side — no annualisation bias.
     const soql =
       `?$select=rea_b_sica_policial_abp,tipus_de_fet,sum(total_coneguts) AS total` +
       `&$where=any='2024'` +
@@ -767,11 +696,8 @@ async function loadCrimeData() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DATA FETCHING — OpenStreetMap Overpass (real infra POIs)
-// ═══════════════════════════════════════════════════════════════
 async function loadInfraData() {
-  const bbox = '41.30,2.05,41.50,2.25'; // Barcelona bounding box
+  const bbox = '41.30,2.05,41.50,2.25';
   const query = `[out:json][timeout:25];
 (
   node["amenity"="police"](${bbox});
@@ -794,7 +720,6 @@ async function loadInfraData() {
 out center tags;`;
 
   try {
-    // Fetch Overpass directly — it supports CORS and Worker adds unnecessary latency
     const res = await fetch(
       `${OVERPASS_URL}?data=${encodeURIComponent(query)}`,
       {signal: AbortSignal.timeout(25000)}
@@ -840,12 +765,6 @@ out center tags;`;
   if(currentMap==='infra') refreshAll();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DATA FETCHING — Real CCTV cameras from Open Data BCN
-// Resource: Inventari de càmeres de seguretat
-// ID: cd1957a6-a06e-4a90-80bb-83e0e4c2d6e9
-// Columns: Latitud, Longitud, Codi_Districte, Nom_Districte, Tipus_Camera
-// ═══════════════════════════════════════════════════════════════
 async function loadCCTVData() {
   const CCTV_RESOURCE = 'cd1957a6-a06e-4a90-80bb-83e0e4c2d6e9';
   const url = `${CKAN_BASE}/datastore_search?resource_id=${CCTV_RESOURCE}&limit=500`;
@@ -867,7 +786,6 @@ async function loadCCTVData() {
       .filter(Boolean);
     dataLoaded.cctv = true;
     console.log(`Loaded ${cctvNodes.length} real CCTV cameras from Open Data BCN`);
-    // Update SIGINT meta in sidebar
     if(currentMap==='sigint') {
       const metaEl = document.querySelector('.sb-meta');
       if(metaEl) metaEl.textContent = `Open Data BCN · ${cctvNodes.length} real cameras`;
@@ -877,41 +795,32 @@ async function loadCCTVData() {
     }
   } catch(err) {
     console.warn('CCTV API unavailable:', err.message);
-    dataLoaded.cctv = true; // mark done even on failure
+    dataLoaded.cctv = true;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DATA FETCHING — Real population data from Padró Municipal 2025
-// Resource: Població segons nacionalitat (Espanya/UE/Resta estranger)
-// ID: 190095dd-feaf-4c50-9fc7-d0578a52297a
-// NACIONALITAT_G: 1=Spanish, 2=EU foreign, 3=Non-EU foreign, 4=Stateless
-// ═══════════════════════════════════════════════════════════════
 async function loadPopulationData() {
   const url = `${CKAN_BASE}/datastore_search?resource_id=${POPULATION_RESOURCE}&limit=7000`;
   try {
     const data = await proxyFetch(url, 12000);
     if(!data.success || !data.result.records.length) throw new Error('No population records');
 
-    // Aggregate by district
     const totalByDistrict = {};
     const foreignByDistrict = {};
 
     data.result.records.forEach(r => {
       const rawCode = r['Codi_Districte'] || r['codi_districte'] || '';
-      const code = String(parseInt(rawCode) || '').trim(); // normalise "01" → "1"
+      const code = String(parseInt(rawCode) || '').trim();
       if(!code || !DISTRICTS_GEO[code]) return;
       const nat  = parseInt(r['NACIONALITAT_G'] || 0);
       const val  = parseInt(r['Valor'] || 0) || 0;
       if(!totalByDistrict[code])   totalByDistrict[code]   = 0;
       if(!foreignByDistrict[code]) foreignByDistrict[code] = 0;
       totalByDistrict[code] += val;
-      // NACIONALITAT_G 2 = EU foreign, 3 = Non-EU foreign, 4 = stateless
       if(nat === 2 || nat === 3 || nat === 4) foreignByDistrict[code] += val;
     });
 
-    // Update HUMAN_DENSITY with real figures
-    const districtAreas = {'1':4.4,'2':7.5,'3':22.9,'4':6.0,'5':20.1,'6':4.2,'7':12.0,'8':8.0,'9':6.6,'10':10.8}; // km²
+    const districtAreas = {'1':4.4,'2':7.5,'3':22.9,'4':6.0,'5':20.1,'6':4.2,'7':12.0,'8':8.0,'9':6.6,'10':10.8};
     Object.keys(totalByDistrict).forEach(code => {
       const area = districtAreas[code] || 10;
       HUMAN_DENSITY[code] = Math.round(totalByDistrict[code] / area);
@@ -923,7 +832,6 @@ async function loadPopulationData() {
     setFeedStatus('popFeedStatus','live','2025');
     logActivity('Population feed · Padró Municipal BCN 2025', 'var(--accent)');
 
-    // Update sidebar meta
     if(currentMap==='human'){
       const metaEl = document.querySelector('.sb-meta');
       if(metaEl) metaEl.textContent = 'Padró Municipal BCN · 2025 · Live';
@@ -937,9 +845,7 @@ async function loadPopulationData() {
   }
 }
 
-// Static fallback infra nodes (hand-curated from OSM)
 const STATIC_INFRA_NODES = [
-  // ── POLICE STATIONS ──────────────────────────────────────────
   {lat:41.3756,lng:2.1492,type:'police',name:'Mossos d\'Esquadra — Comissaria Sants-Montjuïc',crit:3},
   {lat:41.3875,lng:2.1698,type:'police',name:'Mossos d\'Esquadra — Comissaria Eixample',       crit:3},
   {lat:41.4033,lng:2.1931,type:'police',name:'Mossos d\'Esquadra — Comissaria Sant Martí',     crit:3},
@@ -953,7 +859,6 @@ const STATIC_INFRA_NODES = [
   {lat:41.3830,lng:2.1760,type:'police',name:'Guàrdia Urbana — Rambla',                        crit:2},
   {lat:41.3778,lng:2.1396,type:'police',name:'Guàrdia Urbana — Zona Franca',                   crit:2},
   {lat:41.4005,lng:2.2012,type:'police',name:'Guàrdia Urbana — Vila Olímpica',                 crit:2},
-  // ── FIRE STATIONS ────────────────────────────────────────────
   {lat:41.3780,lng:2.1519,type:'fire',name:'Parc de Bombers — Zona Franca',     crit:3},
   {lat:41.4047,lng:2.1724,type:'fire',name:'Parc de Bombers — Eixample Nord',   crit:2},
   {lat:41.3892,lng:2.1524,type:'fire',name:'Parc de Bombers — Les Corts',       crit:2},
@@ -962,7 +867,6 @@ const STATIC_INFRA_NODES = [
   {lat:41.4293,lng:2.1758,type:'fire',name:'Parc de Bombers — Nou Barris',      crit:2},
   {lat:41.4112,lng:2.1438,type:'fire',name:'Parc de Bombers — Sarrià',          crit:2},
   {lat:41.4201,lng:2.1543,type:'fire',name:'Parc de Bombers — Vall d\'Hebron',  crit:2},
-  // ── GOVERNMENT BUILDINGS ─────────────────────────────────────
   {lat:41.3826,lng:2.1769,type:'gov',name:'Ajuntament de Barcelona',            crit:3},
   {lat:41.3847,lng:2.1669,type:'gov',name:'Generalitat de Catalunya',           crit:3},
   {lat:41.3841,lng:2.1840,type:'gov',name:'Parlament de Catalunya',             crit:3},
@@ -972,7 +876,6 @@ const STATIC_INFRA_NODES = [
   {lat:41.3791,lng:2.1404,type:'gov',name:'Zona Franca Consorci',               crit:2},
   {lat:41.3974,lng:2.1908,type:'gov',name:'Districte 22@ Innovation',           crit:2},
   {lat:41.3841,lng:2.1217,type:'gov',name:'Aeroport El Prat — Control',         crit:3},
-  // ── EMBASSIES & CONSULATES ───────────────────────────────────
   {lat:41.3961,lng:2.1539,type:'embassy',name:'Consolat General dels Estats Units',      crit:3},
   {lat:41.3943,lng:2.1525,type:'embassy',name:'Consolat General del Regne Unit',         crit:3},
   {lat:41.3927,lng:2.1547,type:'embassy',name:'Consolat General d\'Alemanya',            crit:3},
@@ -1003,7 +906,6 @@ const STATIC_INFRA_NODES = [
   {lat:41.3952,lng:2.1562,type:'embassy',name:'Consolat General d\'Austràlia',           crit:2},
   {lat:41.3918,lng:2.1551,type:'embassy',name:'Consolat General del Canadà',             crit:2},
   {lat:41.3944,lng:2.1539,type:'embassy',name:'Consolat General de Cuba',                crit:2},
-  // ── HOSPITALS ────────────────────────────────────────────────
   {lat:41.3876,lng:2.1536,type:'hospital',name:'Hospital Clínic de Barcelona',           crit:3},
   {lat:41.4028,lng:2.1935,type:'hospital',name:'Hospital del Mar',                       crit:3},
   {lat:41.3924,lng:2.1683,type:'hospital',name:'Hospital de la Santa Creu i Sant Pau',   crit:3},
@@ -1014,13 +916,11 @@ const STATIC_INFRA_NODES = [
   {lat:41.3958,lng:2.1614,type:'hospital',name:'Hospital de la Esperanza',               crit:2},
   {lat:41.4084,lng:2.1672,type:'hospital',name:'Hospital Dos de Maig',                   crit:2},
   {lat:41.4391,lng:2.1816,type:'hospital',name:'Hospital Germans Trias i Pujol',         crit:2},
-  // ── MILITARY ─────────────────────────────────────────────────
   {lat:41.3741,lng:2.1784,type:'military',name:'Base Naval de Barcelona',                crit:3},
   {lat:41.3763,lng:2.1729,type:'military',name:'Capitania General de Catalunya',         crit:3},
   {lat:41.3841,lng:2.2154,type:'military',name:'Base Aèria El Prat',                     crit:3},
 ];
 
-// Known websites for Barcelona institutions — used when OSM tag is missing
 const KNOWN_WEBSITES = {
   'Hospital Clínic': 'https://www.clinicbarcelona.org',
   'Hospital del Mar': 'https://www.hospitaldelmar.cat',
@@ -1037,18 +937,12 @@ const KNOWN_WEBSITES = {
 };
 
 function getWebsiteForNode(n) {
-  // Only return website if we have a verified OSM tag OR exact name match
   if(n.website && n.website.startsWith('http')) return n.website;
-  // Exact name matches only — no partial matching to avoid wrong URLs
   return KNOWN_WEBSITES[n.name] || null;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MAP RENDERING
-// ═══════════════════════════════════════════════════════════════
 function lerp(a,b,t){return a+(b-a)*t}
 
-// Count infrastructure nodes per district from real OSM data
 function getNodesForDistrict(districtId) {
   if(!infraNodes.length) return [];
   const geo = DISTRICTS_GEO[districtId];
@@ -1066,7 +960,6 @@ function getNodeCountByDistrict() {
   return counts;
 }
 
-// Compute district color for infra map based on real node density
 function getInfraNodeDensity(id) {
   const nodes = getNodesForDistrict(id);
   const criticalCount = nodes.filter(n => n.crit === 3).length;
@@ -1143,7 +1036,7 @@ function refreshPolygonColors() {
 
 function buildHeatmap() {
   if(heatLayer){map.removeLayer(heatLayer);heatLayer=null;}
-  return; // heatmap disabled
+  return;
 
   let pts=[], grad={};
   if(currentMap==='crime'){
@@ -1246,7 +1139,6 @@ function buildInfraNodeMarkers() {
         if(el) el.onclick = (e) => { e.stopPropagation(); window.open(nodeWebsite,'_blank'); };
       });
     }
-    // Show popup on click, tooltip hint on hover
     m.bindTooltip(`<span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:${col}">${n.name}</span>`,
       {sticky:true,opacity:1,className:''}
     );
@@ -1255,7 +1147,6 @@ function buildInfraNodeMarkers() {
   map.invalidateSize();
 }
 
-// Compute real RF coverage from OpenCelliD tower density
 function computeRealCoverage() {
   const counts = {};
   Object.keys(DISTRICTS_GEO).forEach(id => counts[id] = 0);
@@ -1282,9 +1173,7 @@ function pointInLatLng(lat, lng, poly) {
   return inside;
 }
 
-// Compute on load and use as SIGINT_COVERAGE
 let {coverage: SIGINT_COVERAGE, counts: TOWER_COUNTS} = computeRealCoverage();
-// Hardcoded fallback counts from OpenCelliD data — used if GeoJSON not loaded yet
 const TOWER_COUNTS_STATIC = {'1':85,'2':145,'3':172,'4':12,'5':23,'6':13,'7':59,'8':8,'9':17,'10':104};
 
 function buildCCTVMarkers() {
@@ -1292,7 +1181,6 @@ function buildCCTVMarkers() {
   markerGroup = L.layerGroup();
   const radioMap  = {GSM:'gsm', LTE:'lte', NR:'nr', UMTS:'umts'};
   const radioColor= {gsm:'#ffb800', lte:'#3da8ff', nr:'#00e5a0', umts:'#9b6cff'};
-  // Real cell towers from OpenCelliD
   REAL_CELL_TOWERS.forEach(t => {
     const lid = radioMap[t.r]||'gsm';
     if(!activeFilters.has(lid)) return;
@@ -1308,7 +1196,6 @@ function buildCCTVMarkers() {
     );
     markerGroup.addLayer(m);
   });
-  // Real CCTV cameras from Open Data BCN
   if(activeFilters.has('cctv')) {
     cctvNodes.forEach(n => {
       const m = L.circleMarker([n.lat,n.lng],{
@@ -1327,7 +1214,6 @@ function buildCCTVMarkers() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════
 function buildPopup(id, latlng) {
   let html='';
   const name=DISTRICTS_GEO[id]?.name||id;
@@ -1399,7 +1285,7 @@ function buildPopup(id, latlng) {
     const dens=HUMAN_DENSITY[id]||0;
     const foreign=foreignPopByDistrict[id]||0;
     const total=Object.values(HUMAN_DENSITY).reduce((a,b)=>a+b,0);
-    const foreignPct=dens>0?Math.round((foreign/(dens*6.8))*100):0; // approx total from density
+    const foreignPct=dens>0?Math.round((foreign/(dens*6.8))*100):0;
     const r=foreignPct>30?'HIGH DIVERSITY':foreignPct>15?'MIXED':'LOW DIVERSITY';
     const rc=foreignPct>30?'#3da8ff':foreignPct>15?'#ffb800':'#00e5a0';
     html=`<div class="pop-inner">
@@ -1417,9 +1303,6 @@ function buildPopup(id, latlng) {
   if(html) L.popup({closeButton:true,maxWidth:270}).setLatLng(latlng).setContent(html).openOn(map);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SIDEBAR
-// ═══════════════════════════════════════════════════════════════
 const MARITIME_LAYERS = [
   {id:'cargo',     label:'Cargo Vessels',      color:'#3da8ff'},
   {id:'tanker',    label:'Tankers',             color:'#ffb800'},
@@ -1436,6 +1319,10 @@ const AIRCRAFT_LAYERS = [
   {id:'helicopter',label:'Helicopters',         color:'#9b6cff'},
 ];
 
+const TRANSIT_LAYERS = [
+  {id:'rodalies', label:'Rodalies Trains', color:'#00e8a0'},
+];
+
 const MAP_CFGS = {
   crime:    {title:'Crime Analysis',          meta:'Mossos d\'Esquadra · Generalitat 2024', layers:CRIME_TYPES},
   sigint:   {title:'SIGINT / RF Coverage',    meta:'OpenCelliD 2025 · 885 real towers',     layers:SIGINT_LAYERS},
@@ -1443,6 +1330,7 @@ const MAP_CFGS = {
   human:    {title:'Human Terrain',           meta:'Padró Municipal BCN · 2025 · Live',     layers:HUMAN_LAYERS},
   maritime: {title:'Maritime Domain',         meta:'AISStream · Live vessel tracking',      layers:MARITIME_LAYERS},
   aircraft: {title:'Air Traffic',             meta:'OpenSky Network · Live ADS-B',          layers:AIRCRAFT_LAYERS},
+  transit:  {title:'Transit / Rodalies',      meta:'Renfe GTFS-RT · Live rail positions',   layers:TRANSIT_LAYERS},
 };
 
 function buildSidebar() {
@@ -1554,15 +1442,11 @@ function buildList() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HUD + CONTROLS
-// ═══════════════════════════════════════════════════════════════
 function buildHUD() {
   const hud=document.getElementById('hud');
   if(currentMap==='crime'){
     const all=Object.keys(DISTRICTS_GEO).map(id=>crimeData[id]||FALLBACK_CRIME[id]||{});
     const total=all.reduce((s,d)=>s+getFilteredTotal(d),0);
-    // Sanity check — if total > 200k something is wrong, use fallback display
     const displayTotal = total > 200000
       ? Object.keys(DISTRICTS_GEO).reduce((s,id)=>s+getFilteredTotal(FALLBACK_CRIME[id]||{}),0)
       : total;
@@ -1657,9 +1541,6 @@ function buildControls() {
   document.getElementById('watermark').innerHTML=watermarks[currentMap].replace('\n','<br>');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FOCUS / TOGGLE HELPERS
-// ═══════════════════════════════════════════════════════════════
 function focusDistrict(id) {
   selectedDist=id;
   if(id){
@@ -1688,10 +1569,6 @@ function refreshAll() {
   buildList();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// STATUS / LOADING / ERROR UI
-// ═══════════════════════════════════════════════════════════════
-// Per-feed status updaters — tied to real API connections
 function setFeedStatus(feedId, state, label) {
   const el = document.getElementById(feedId);
   if(!el) return;
@@ -1700,7 +1577,6 @@ function setFeedStatus(feedId, state, label) {
 }
 
 function setStatus(state) {
-  // Map old setStatus calls to crime feed (primary indicator)
   if(state==='live') setFeedStatus('crimeFeedStatus','live','2024');
   else if(state==='offline') setFeedStatus('crimeFeedStatus','offline','2023');
   else setFeedStatus('crimeFeedStatus','connecting','...');
@@ -1712,7 +1588,7 @@ function toggleRiskLayer() {
   } else {
     startRiskLayer();
   }
-  buildSidebar(); // Rebuild to update button state
+  buildSidebar();
 }
 
 function toggleSourcesPanel() {
@@ -1788,6 +1664,16 @@ function buildSourcesPanel() {
       method:"REST API returning ADS-B state vectors. Aircraft categorised by callsign pattern: ICAO airline codes for commercial, cargo operators by prefix, low-altitude low-speed as helicopter.",
       limitation:"Military aircraft with Mode S transponders may not appear. Helicopter classification is approximate — altitude and speed heuristics only.",
       integrity:"adsb.lol is a community-operated ADS-B network. Data is open access."
+    },
+    {
+      layer:'Transit / Rodalies', color:'#00e8a0',
+      question:"Where are Barcelona-area Rodalies trains right now, and are they stopped, arriving, or en route?",
+      source:'Renfe GTFS-Realtime · Vehicle Positions',
+      endpoint:'gtfsrt.renfe.com/vehicle_positions.json · nationwide feed filtered to Barcelona lines',
+      update:'Live · Position reports approximately every 20 seconds',
+      method:"Public JSON feed parsed for vehicle position, status, and stop ID. Line code extracted from the vehicle label field and filtered against a known set of Barcelona-area Rodalies line codes (R1–R16, RL3, RL4, RG1). Client-side interpolation glides markers smoothly between polls.",
+      limitation:"Feed is nationwide — filtering relies on line-code prefix matching, which could miss a mislabeled vehicle. Position updates are periodic, not continuous, so displayed motion between polls is interpolated, not measured.",
+      integrity:"Renfe GTFS-Realtime data is published under Creative Commons Attribution 4.0."
     }
   ];
 
@@ -1813,7 +1699,7 @@ function buildSourcesPanel() {
     <div style="margin-bottom:36px">
       <div style="${mono};font-size:8px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Analytical Framework</div>
       <p style="${mono};font-size:11px;color:var(--text2);line-height:1.7">
-        Providence integrates six independent open-source data streams into a unified operational picture of Barcelona. Each layer addresses a distinct analytical question sourced exclusively from official, publicly accessible APIs. No data is fabricated or estimated beyond the methods documented below.
+        Providence integrates seven independent open-source data streams into a unified operational picture of Barcelona. Each layer addresses a distinct analytical question sourced exclusively from official, publicly accessible APIs. No data is fabricated or estimated beyond the methods documented below.
       </p>
     </div>
 
@@ -1853,7 +1739,6 @@ function buildSourcesPanel() {
     </div>`;
 }
 
-// Start the UTC clock
 (function tickClock(){
   const el = document.getElementById('headerClock');
   if(el) {
@@ -1871,20 +1756,15 @@ function showError(msg){
   else b.style.display='none';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// NAV
-// ═══════════════════════════════════════════════════════════════
 document.getElementById('mainNav').addEventListener('click',e=>{
   const tab=e.target.closest('.nav-tab');
   if(!tab) return;
   const prevMap = currentMap;
   currentMap=tab.dataset.map;
 
-  // Update active tab
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
 
-  // Show/hide analysis panel
   const analysisPanel = document.getElementById('analysisPanel');
   if(currentMap === 'analysis') {
     analysisPanel.style.display = 'block';
@@ -1899,7 +1779,6 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     document.getElementById('sidebar').style.display = '';
   }
 
-  // Stop risk layer when leaving crime tab
   if(prevMap === 'crime' && currentMap !== 'crime' && riskLayerActive) {
     stopRiskLayer();
   }
@@ -1908,7 +1787,6 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   map.setView([41.3951,2.1734],12);
   map.closePopup();
 
-  // Reset filters for the new map
   const defaults={
     crime:new Set(CRIME_TYPES.map(l=>l.id)),
     sigint:new Set(SIGINT_LAYERS.map(l=>l.id)),
@@ -1916,10 +1794,10 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     human:new Set(HUMAN_LAYERS.map(l=>l.id)),
     maritime:new Set(MARITIME_LAYERS.map(l=>l.id)),
     aircraft:new Set(AIRCRAFT_LAYERS.map(l=>l.id)),
+    transit:new Set(TRANSIT_LAYERS.map(l=>l.id)),
   };
   activeFilters=defaults[currentMap]||new Set();
 
-  // Clean up previous live connections
   if(prevMap==='maritime'&&currentMap!=='maritime'){
     if(aisSocket){aisSocket.close();aisSocket=null;}
     if(maritimeMarkers){map.removeLayer(maritimeMarkers);maritimeMarkers=null;}
@@ -1930,13 +1808,18 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     if(aircraftInterval){clearInterval(aircraftInterval);aircraftInterval=null;}
     if(aircraftMarkers){map.removeLayer(aircraftMarkers);aircraftMarkers=null;}
   }
+  if(prevMap==='transit'&&currentMap!=='transit'){
+    if(transitInterval){clearInterval(transitInterval);transitInterval=null;}
+    if(transitMarkers){map.removeLayer(transitMarkers);transitMarkers=null;}
+    transitVehicleMarkerMap={};
+    transitVehicles={};
+  }
 
   buildSidebar();buildHUD();buildControls();
   buildDistrictPolygons();
   buildHeatmap();
   buildInfraMarkers();
 
-  // Load data for specific maps
   if(currentMap==='infra'&&!dataLoaded.infra) loadInfraData();
   if(currentMap==='sigint'&&!dataLoaded.cctv) loadCCTVData();
   if(currentMap==='human'&&!dataLoaded.population) loadPopulationData();
@@ -1949,19 +1832,17 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     fetchAircraft();
     aircraftInterval=setInterval(fetchAircraft,10000);
   }
+  if(currentMap==='transit'){
+    map.setView([41.3951,2.1734],11);
+    fetchTransit();
+    transitInterval=setInterval(fetchTransit,20000);
+  }
 });
 
-// ═══════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// MARITIME — AISStream WebSocket · Live vessel tracking
-// Bounding box: Barcelona coast + port area
-// ═══════════════════════════════════════════════════════════════
 let maritimeVessels = {};
 let maritimeMarkers = null;
 let aisSocket = null;
-const AIS_BBOX = [[39.0, 0.0], [43.0, 5.0]]; // Western Mediterranean — maximum vessel coverage
+const AIS_BBOX = [[39.0, 0.0], [43.0, 5.0]];
 
 const SHIP_TYPE_MAP = {
   70:['cargo','Cargo'],71:['cargo','Cargo'],72:['cargo','Cargo'],73:['cargo','Cargo'],74:['cargo','Cargo'],
@@ -1975,8 +1856,7 @@ function getShipCategory(typeCode) {
   return SHIP_TYPE_MAP[typeCode] || ['other','Unknown'];
 }
 
-// Individual Leaflet markers per vessel for smooth live updates
-let vesselMarkerMap = {}; // mmsi → Leaflet marker
+let vesselMarkerMap = {};
 
 function getVesselIcon(v) {
   const catColors = {cargo:'#3da8ff',tanker:'#ffb800',passenger:'#00e5a0',military:'#ff3c5f',other:'#9b6cff'};
@@ -2005,18 +1885,15 @@ function updateSingleVessel(v) {
     maritimeMarkers = L.layerGroup().addTo(map);
   }
   if(vesselMarkerMap[v.mmsi]) {
-    // Smoothly move existing marker
     vesselMarkerMap[v.mmsi].setLatLng([v.lat, v.lng]);
     vesselMarkerMap[v.mmsi].setIcon(getVesselIcon(v));
     vesselMarkerMap[v.mmsi].setTooltipContent(getVesselTooltip(v));
   } else {
-    // Create new marker
     const m = L.marker([v.lat, v.lng], {icon: getVesselIcon(v)});
     m.bindTooltip(getVesselTooltip(v), {sticky:true, opacity:1, className:''});
     maritimeMarkers.addLayer(m);
     vesselMarkerMap[v.mmsi] = m;
   }
-  // Update HUD count
   if(currentMap === 'maritime') buildHUD();
 }
 
@@ -2057,7 +1934,6 @@ function _connectAISWithKey(apiKey) {
       const lat = msg.MetaData?.latitude;
       const lng = msg.MetaData?.longitude;
 
-      // Update static info from ShipStaticData
       if(msg.Message?.ShipStaticData) {
         const sd = msg.Message.ShipStaticData;
         const name = (sd.Name || msg.MetaData?.ShipName || '').trim() || `MMSI:${mmsi}`;
@@ -2067,13 +1943,11 @@ function _connectAISWithKey(apiKey) {
         else { maritimeVessels[mmsi].name = name; maritimeVessels[mmsi].cat = cat; maritimeVessels[mmsi].typeName = typeName; }
       }
 
-      // Update live position from PositionReport
       if(msg.Message?.PositionReport && lat && lng) {
         const pr = msg.Message.PositionReport;
         const sog = pr.Sog || 0;
         const cog = pr.Cog || 0;
 
-        // Land filter — only exclude clearly inland areas, not the port
         const likelyOnLand = (lng < 2.10 && lat > 41.28 && lat < 41.55);
         if(likelyOnLand) return;
 
@@ -2089,7 +1963,6 @@ function _connectAISWithKey(apiKey) {
         }
 
         if(currentMap === 'maritime') updateSingleVessel(maritimeVessels[mmsi]);
-        // Log significant vessel updates (moving vessels)
         if(sog > 1 && Math.random() < 0.05) {
           logActivity(`${maritimeVessels[mmsi].name || mmsi} · ${sog.toFixed(1)}kn · ${maritimeVessels[mmsi].typeName}`, 'var(--green)');
         }
@@ -2105,26 +1978,21 @@ function _connectAISWithKey(apiKey) {
   aisSocket.onclose = () => {
     console.log('AIS WebSocket closed — reconnecting in 5s');
     setFeedStatus('aisFeedStatus','connecting','...');
-    // Keep existing vessels visible — don't clear on temporary disconnect
     if(currentMap === 'maritime') setTimeout(connectAIS, 5000);
   };
 
-  // Only show fallback if we never got any real data after 45 seconds
   setTimeout(() => {
     if(Object.keys(maritimeVessels).length === 0 && currentMap === 'maritime') {
       loadMaritimeFallback();
     }
   }, 45000);
-} // end _connectAISWithKey
+}
 
 function loadMaritimeFallback() {
-  // No fake data — show empty state
-  // Real vessels will appear within 30-60 seconds of AIS connection
   setFeedStatus('aisFeedStatus','connecting','Waiting');
   if(currentMap === 'maritime') {
     buildHUD();
     buildList();
-    // Show waiting message on map
     if(maritimeMarkers) { map.removeLayer(maritimeMarkers); maritimeMarkers = null; }
     logActivity('AIS stream connected · Waiting for vessel reports', 'var(--amber)');
   }
@@ -2140,7 +2008,6 @@ function updateMaritimeMarkers() {
     const col = catColors[v.cat] || '#888';
     const r = v.cat === 'military' ? 7 : v.cat === 'passenger' ? 6 : 5;
 
-    // Draw vessel as rotated triangle indicating heading
     const icon = L.divIcon({
       html: `<div style="width:0;height:0;border-left:${r-1}px solid transparent;border-right:${r-1}px solid transparent;border-bottom:${r*2}px solid ${col};transform:rotate(${v.cog}deg);opacity:0.9;filter:drop-shadow(0 0 3px ${col}44)"></div>`,
       className:'',iconSize:[r*2,r*2],iconAnchor:[r-1,r]
@@ -2157,16 +2024,11 @@ function updateMaritimeMarkers() {
   maritimeMarkers.addTo(map);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// AIRCRAFT — OpenSky Network REST API · Live ADS-B
-// No API key needed · Updates every 10 seconds
-// ═══════════════════════════════════════════════════════════════
 let aircraftData = {};
 let aircraftMarkers = null;
 let aircraftInterval = null;
 
 const OPENSKY_URL = 'https://opensky-network.org/api/states/all';
-// Barcelona + surroundings bounding box
 const BCN_BOX = {lamin:41.0,lomin:1.5,lamax:41.8,lomax:2.8};
 
 async function fetchAircraft() {
@@ -2208,7 +2070,6 @@ async function fetchAircraft() {
 }
 
 function loadAircraftFallback() {
-  // Realistic aircraft positions — El Prat approach/departure paths
   const fallback = [
     {icao:'3443AB',callsign:'VLG1234',lat:41.32,lng:2.08,alt:4500,spd:280,hdg:70,cat:'commercial'},
     {icao:'3443AC',callsign:'IBE5678',lat:41.38,lng:2.05,alt:2200,spd:220,hdg:85,cat:'commercial'},
@@ -2234,7 +2095,6 @@ function updateAircraftMarkers() {
   Object.values(aircraftData).forEach(a => {
     if(!activeFilters.has(a.cat)) return;
     const col = catColors[a.cat] || '#888';
-    // Aircraft icon — rotated arrow
     const icon = L.divIcon({
       html: `<div style="font-size:14px;color:${col};transform:rotate(${a.hdg}deg);line-height:1;filter:drop-shadow(0 0 4px ${col}66)">✈</div>`,
       className:'',iconSize:[16,16],iconAnchor:[8,8]
@@ -2252,30 +2112,159 @@ function updateAircraftMarkers() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// EXTEND: getDistrictColor, buildHeatmap, buildInfraMarkers,
-//         buildList, buildHUD, buildControls for new maps
+// TRANSIT — Renfe GTFS-Realtime · Live Rodalies train positions
+// Public JSON feed (CC BY 4.0), updates ~20s. Routed through the
+// same Cloudflare Worker used for ADS-B, since Renfe's CORS policy
+// is unconfirmed from the browser.
 // ═══════════════════════════════════════════════════════════════
+let transitVehicles = {};
+let transitMarkers = null;
+let transitInterval = null;
+let transitVehicleMarkerMap = {};
 
-// Patch getDistrictColor
+const RENFE_FEED_URL = 'https://gtfsrt.renfe.com/vehicle_positions.json';
+const RODALIES_BCN_LINES = new Set([
+  'R1','R2','R2N','R2S','R3','R4','R7','R8',
+  'R11','R12','R13','R14','R15','R16','RL3','RL4','RG1'
+]);
+
+function extractLineCode(label) {
+  const match = (label||'').match(/^([A-Z]+\d*[A-Z]?)-/);
+  return match ? match[1] : null;
+}
+
+async function fetchTransit() {
+  if(currentMap !== 'transit') return;
+  try {
+    const workerUrl = `${WORKER_URL}?url=${encodeURIComponent(RENFE_FEED_URL)}`;
+    const res = await fetch(workerUrl, {signal: AbortSignal.timeout(10000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if(!data.entity) throw new Error('No transit data');
+
+    const seen = new Set();
+    data.entity.forEach(entity => {
+      const v = entity.vehicle;
+      if(!v?.position) return;
+      const lineCode = extractLineCode(v.vehicle?.label);
+      if(!lineCode || !RODALIES_BCN_LINES.has(lineCode)) return;
+
+      const id = v.vehicle.id;
+      seen.add(id);
+      const newPos = [v.position.latitude, v.position.longitude];
+
+      if(transitVehicles[id]) {
+        transitVehicles[id].from = transitVehicles[id].to;
+        transitVehicles[id].to = newPos;
+        transitVehicles[id].tStart = performance.now();
+        transitVehicles[id].status = v.currentStatus;
+        transitVehicles[id].line = lineCode;
+        transitVehicles[id].stopId = v.stopId || null;
+      } else {
+        transitVehicles[id] = {
+          id, line: lineCode, from: newPos, to: newPos,
+          tStart: performance.now(), status: v.currentStatus,
+          stopId: v.stopId || null
+        };
+      }
+    });
+
+    // Drop vehicles no longer reported (left the network / feed rolled over)
+    Object.keys(transitVehicles).forEach(id => { if(!seen.has(id)) delete transitVehicles[id]; });
+
+    if(currentMap === 'transit') {
+      updateTransitMarkers();
+      buildHUD();
+      buildList();
+    }
+    setFeedStatus('railFeedStatus','live','Live');
+    logActivity(`Rodalies feed · ${seen.size} trains · Barcelona lines`, 'var(--green)');
+  } catch(err) {
+    console.warn('Renfe transit fetch failed:', err.message);
+    setFeedStatus('railFeedStatus','offline','—');
+  }
+}
+
+function getTransitIcon() {
+  return L.divIcon({
+    html: `<div style="width:10px;height:10px;border-radius:50%;background:#00e8a0;border:1px solid rgba(4,12,24,.8);box-shadow:0 0 5px rgba(0,232,160,.6)"></div>`,
+    className:'', iconSize:[10,10], iconAnchor:[5,5]
+  });
+}
+
+function getTransitTooltip(t) {
+  const statusLabel = {STOPPED_AT:'Stopped', INCOMING_AT:'Arriving', IN_TRANSIT_TO:'En route'}[t.status] || t.status;
+  return `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
+    <strong style="color:#00e8a0">${t.line}</strong><br>
+    ${statusLabel}<br>
+    <span style="color:#2a4060">Stop: ${t.stopId||'—'}</span>
+    </div>`;
+}
+
+function updateTransitMarkers() {
+  if(!activeFilters.has('rodalies')) {
+    if(transitMarkers){map.removeLayer(transitMarkers);transitMarkers=null;}
+    transitVehicleMarkerMap = {};
+    return;
+  }
+  if(!transitMarkers) transitMarkers = L.layerGroup().addTo(map);
+
+  const activeIds = new Set(Object.keys(transitVehicles));
+  Object.keys(transitVehicleMarkerMap).forEach(id => {
+    if(!activeIds.has(id)) {
+      transitMarkers.removeLayer(transitVehicleMarkerMap[id]);
+      delete transitVehicleMarkerMap[id];
+    }
+  });
+
+  Object.values(transitVehicles).forEach(t => {
+    if(transitVehicleMarkerMap[t.id]) {
+      transitVehicleMarkerMap[t.id].setTooltipContent(getTransitTooltip(t));
+    } else {
+      const m = L.marker(t.to, {icon: getTransitIcon()});
+      m.bindTooltip(getTransitTooltip(t), {sticky:true, opacity:1, className:''});
+      transitMarkers.addLayer(m);
+      transitVehicleMarkerMap[t.id] = m;
+    }
+  });
+}
+
+// Smooth glide between ~20s polls — runs continuously in the background,
+// only moves markers while the transit tab is actually open.
+function animateTransit() {
+  if(currentMap === 'transit') {
+    const now = performance.now();
+    Object.values(transitVehicles).forEach(t => {
+      const marker = transitVehicleMarkerMap[t.id];
+      if(!marker) return;
+      const dur = 20000;
+      const frac = Math.min((now - t.tStart) / dur, 1);
+      const lat = t.from[0] + (t.to[0] - t.from[0]) * frac;
+      const lng = t.from[1] + (t.to[1] - t.from[1]) * frac;
+      marker.setLatLng([lat, lng]);
+    });
+  }
+  requestAnimationFrame(animateTransit);
+}
+requestAnimationFrame(animateTransit);
+
 const _origGetDistrictColor = getDistrictColor;
 getDistrictColor = function(id) {
-  if(currentMap === 'maritime' || currentMap === 'aircraft') {
+  if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit') {
     return {c:'rgba(20,25,35,0.1)',o:.1};
   }
   return _origGetDistrictColor(id);
 };
 
-// Patch buildHeatmap
 const _origBuildHeatmap = buildHeatmap;
 buildHeatmap = function() {
-  if(currentMap === 'maritime' || currentMap === 'aircraft') {
+  if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit') {
     if(heatLayer){map.removeLayer(heatLayer);heatLayer=null;}
     return;
   }
   _origBuildHeatmap();
 };
 
-// Patch buildInfraMarkers
 const _origBuildInfraMarkers = buildInfraMarkers;
 buildInfraMarkers = function() {
   if(currentMap === 'maritime') {
@@ -2288,10 +2277,13 @@ buildInfraMarkers = function() {
     updateAircraftMarkers();
     return;
   }
+  if(currentMap === 'transit') {
+    updateTransitMarkers();
+    return;
+  }
   _origBuildInfraMarkers();
 };
 
-// Extend buildList for new maps
 const _origBuildList = buildList;
 buildList = function() {
   if(currentMap === 'maritime') {
@@ -2324,10 +2316,22 @@ buildList = function() {
       }).join('');
     return;
   }
+  if(currentMap === 'transit') {
+    const el=document.getElementById('sbList');
+    if(!el) return;
+    const trains = Object.values(transitVehicles).sort((a,b)=>a.line.localeCompare(b.line));
+    const statusLabel = {STOPPED_AT:'Stopped', INCOMING_AT:'Arriving', IN_TRANSIT_TO:'En route'};
+    el.innerHTML=`<div class="sb-list-label">Rodalies · Live Trains</div>`+
+      trains.map(t=>{
+        return `<div class="list-card">
+          <div class="lc-name">${t.line}</div>
+          <div class="lc-sub" style="color:#00e8a0">${statusLabel[t.status]||t.status} · Stop ${t.stopId||'—'}</div></div>`;
+      }).join('');
+    return;
+  }
   _origBuildList();
 };
 
-// Extend buildHUD
 const _origBuildHUD = buildHUD;
 buildHUD = function() {
   if(currentMap === 'maritime') {
@@ -2360,10 +2364,24 @@ buildHUD = function() {
       </div>`;
     return;
   }
+  if(currentMap === 'transit') {
+    const hud=document.getElementById('hud');
+    const total=Object.keys(transitVehicles).length;
+    const enRoute=Object.values(transitVehicles).filter(t=>t.status==='IN_TRANSIT_TO').length;
+    hud.innerHTML=`
+      <div class="hud-header">Transit / Rodalies</div>
+      <div class="hud-body">
+        <div class="hud-val" style="color:var(--accent)">${total}</div>
+        <div class="hud-sub">Trains tracked · Barcelona lines</div>
+        <hr class="hud-div">
+        <div class="hud-row"><span>En route</span><span style="color:#00e8a0">${enRoute}</span></div>
+        <div class="hud-row"><span>Source</span><span style="color:var(--green)">Renfe GTFS-RT · Live</span></div>
+      </div>`;
+    return;
+  }
   _origBuildHUD();
 };
 
-// Extend buildControls
 const _origBuildControls = buildControls;
 buildControls = function() {
   if(currentMap === 'maritime') {
@@ -2386,19 +2404,19 @@ buildControls = function() {
     document.getElementById('watermark').innerHTML='PROVIDENCE / AIR·LAYER<br>Source: OpenSky Network · ADS-B';
     return;
   }
+  if(currentMap === 'transit') {
+    document.getElementById('bottomBar').innerHTML=`<span class="bb-label">TRANSIT DOMAIN</span><span class="bb-val" style="color:var(--accent)">RODALIES · GTFS-RT LIVE</span>`;
+    document.getElementById('legend').innerHTML=`<div class="legend-title">Transit</div><div class="legend-body">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:8px;height:8px;background:#00e8a0;border-radius:50%"></div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Rodalies Trains</span>
+      </div></div>`;
+    document.getElementById('watermark').innerHTML='PROVIDENCE / TRANSIT·LAYER<br>Source: Renfe GTFS-Realtime · Rodalies Catalunya';
+    return;
+  }
   _origBuildControls();
 };
 
-// ═══════════════════════════════════════════════════════════════
-// PREDICTIVE RISK ENGINE
-// Methodology: base annual rate × temporal multipliers
-// Sources: Mossos d'Esquadra 2024 data + published criminology
-// research on Barcelona crime temporal patterns
-// ═══════════════════════════════════════════════════════════════
-
-// Hourly risk multipliers per crime type (0–23h)
-// Derived from: Mossos annual report 2023, IDESCAT crime statistics,
-// and Andresen & Malleson (2011) temporal crime pattern research
 const HOURLY_MULTIPLIERS = {
   theft:    [0.2,0.1,0.1,0.1,0.1,0.2,0.4,0.7,1.1,1.4,1.6,1.7,1.8,1.9,1.8,1.7,1.6,1.5,1.3,1.1,0.9,0.7,0.5,0.3],
   assault:  [1.8,2.1,2.3,2.0,1.2,0.5,0.3,0.2,0.2,0.3,0.4,0.5,0.6,0.6,0.6,0.7,0.8,1.0,1.2,1.4,1.6,1.8,1.9,2.0],
@@ -2408,8 +2426,6 @@ const HOURLY_MULTIPLIERS = {
   fraud:    [0.1,0.1,0.1,0.1,0.1,0.2,0.5,0.9,1.3,1.5,1.6,1.6,1.5,1.5,1.5,1.5,1.4,1.2,1.0,0.7,0.4,0.2,0.1,0.1],
 };
 
-// Day-of-week multipliers (0=Sun, 1=Mon...6=Sat)
-// Friday/Saturday nights show 2.3x weekday baseline per Mossos annual report
 const DAY_MULTIPLIERS = {
   theft:    [1.1,0.85,0.88,0.92,0.98,1.15,1.12],
   assault:  [1.35,0.72,0.75,0.82,0.95,1.45,1.58],
@@ -2419,8 +2435,6 @@ const DAY_MULTIPLIERS = {
   fraud:    [0.90,1.05,1.08,1.10,1.12,0.95,0.80],
 };
 
-// Seasonal multipliers (month 1-12)
-// Summer tourist season drives theft/robbery spike in BCN
 const SEASONAL_MULTIPLIERS = {
   theft:    [0.82,0.80,0.88,0.92,0.96,1.08,1.28,1.32,1.15,0.98,0.88,0.85],
   assault:  [0.90,0.88,0.92,0.96,1.00,1.08,1.18,1.20,1.10,0.98,0.92,0.95],
@@ -2430,15 +2444,14 @@ const SEASONAL_MULTIPLIERS = {
   fraud:    [0.95,0.95,0.98,1.00,1.02,1.04,1.08,1.08,1.05,1.02,0.98,0.95],
 };
 
-// Compute current risk for a district and crime type
 function getCurrentRisk(districtId, crimeType) {
   const now = new Date();
   const hour = new Date().toLocaleString("en", {timeZone:"Europe/Madrid", hour:"numeric", hour12:false})*1;
   const day = now.getDay();
-  const month = now.getMonth(); // 0-indexed
+  const month = now.getMonth();
 
   const base = (crimeData[districtId] || FALLBACK_CRIME[districtId] || {})[crimeType] || 0;
-  const annual = base / 12; // monthly base
+  const annual = base / 12;
 
   const hMul = (HOURLY_MULTIPLIERS[crimeType] || [])[Math.min(hour % 24, 23)] || 1;
   const dMul = (DAY_MULTIPLIERS[crimeType] || [])[day] || 1;
@@ -2447,14 +2460,12 @@ function getCurrentRisk(districtId, crimeType) {
   return annual * hMul * dMul * sMul;
 }
 
-// Get overall risk score for a district (0-100)
 let _cityMaxCache = { key: null, value: 1 };
 
 function getDistrictRiskScore(districtId) {
   const types = ['theft','assault','robbery','vandalism','drugs','fraud'];
   const total = types.reduce((s, t) => s + getCurrentRisk(districtId, t), 0);
 
-  // Recompute cityMax at most once per minute (risk only changes by the hour anyway).
   const tickKey = Math.floor(Date.now() / 60000);
   if (_cityMaxCache.key !== tickKey) {
     const allTotals = Object.keys(DISTRICTS_GEO).map(id =>
@@ -2464,7 +2475,6 @@ function getDistrictRiskScore(districtId) {
   return Math.round((total / _cityMaxCache.value) * 100);
 }
 
-// Get risk level label and color
 function getRiskLevel(score) {
   if(score >= 80) return {label:'CRITICAL',color:'#ff1040',bg:'rgba(255,16,64,.12)'};
   if(score >= 60) return {label:'HIGH',    color:'#ff4060',bg:'rgba(255,64,96,.10)'};
@@ -2473,7 +2483,6 @@ function getRiskLevel(score) {
   return              {label:'LOW',      color:'#00e8a0',bg:'rgba(0,232,160,.08)'};
 }
 
-// Which crime type is currently dominant in a district
 function getDominantThreat(districtId) {
   const types = ['theft','assault','robbery','vandalism','drugs','fraud'];
   const labels = {theft:'Theft',assault:'Assault',robbery:'Robbery',vandalism:'Vandalism',drugs:'Drug Offences',fraud:'Fraud'};
@@ -2482,7 +2491,6 @@ function getDominantThreat(districtId) {
   return labels[risks[0].type] || 'Unknown';
 }
 
-// Update risk layer every 60 seconds
 let riskLayerActive = false;
 let riskUpdateInterval = null;
 
@@ -2496,7 +2504,6 @@ function startRiskLayer() {
 function stopRiskLayer() {
   riskLayerActive = false;
   if(riskUpdateInterval) { clearInterval(riskUpdateInterval); riskUpdateInterval = null; }
-  // Reset polygons to normal crime display
   refreshPolygonColors();
   buildHUD();
 }
@@ -2504,7 +2511,6 @@ function stopRiskLayer() {
 function updateRiskLayer() {
   if(!riskLayerActive || currentMap !== 'crime') return;
 
-  // Update polygon colors to show current risk
   Object.keys(DISTRICTS_GEO).forEach(id => {
     if(!districtLayers[id]) return;
     const score = getDistrictRiskScore(id);
@@ -2517,7 +2523,6 @@ function updateRiskLayer() {
     }
   });
 
-  // Update HUD with current risk assessment
   buildRiskHUD();
   buildRiskList();
 }
@@ -2595,12 +2600,6 @@ function buildRiskList() {
     }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CORRELATION ANALYSIS ENGINE
-// Computes Pearson correlation coefficients between datasets
-// All data is real — no fabrication
-// ═══════════════════════════════════════════════════════════════
-
 function pearsonCorrelation(xs, ys) {
   const n = xs.length;
   if(n < 3) return 0;
@@ -2611,7 +2610,6 @@ function pearsonCorrelation(xs, ys) {
   return den===0 ? 0 : num/den;
 }
 
-// 95% CI for Pearson r via Fisher z-transform. Returns {lo, hi} clamped to [-1,1].
 function pearsonCI(r, n, z = 1.959963985) {
   if (n < 4) return { lo: -1, hi: 1 };
   const zr = 0.5 * Math.log((1 + r) / (1 - r));
@@ -2621,7 +2619,6 @@ function pearsonCI(r, n, z = 1.959963985) {
   return { lo: Math.max(-1, lo), hi: Math.min(1, hi) };
 }
 
-// Bootstrap fragility: share of resamples where sign of r flips (not a p-value).
 function bootstrapFragility(xs, ys, iters = 2000) {
   const n = xs.length, r0 = pearsonCorrelation(xs, ys);
   let opposite = 0;
@@ -2651,10 +2648,6 @@ function buildAnalysisPanel() {
 
   const districts = Object.keys(DISTRICTS_GEO);
 
-  // ══════════════════════════════════════════════════════════════
-  // ANALYSIS DATA — verified baseline (Mossos 2023 + Padró 2025)
-  // Used as fallback when live APIs have not responded
-  // ══════════════════════════════════════════════════════════════
   const BASELINE = {
     '1': {crime:15700,theft:9800,assault:1800,robbery:2200,pop:36000,fp:0.42,cctv:38,police:3,rf:0.707},
     '2': {crime:11780,theft:7200,assault:1100,robbery:980, pop:35000,fp:0.22,cctv:32,police:3,rf:0.888},
@@ -2668,9 +2661,6 @@ function buildAnalysisPanel() {
     '10':{crime:6810, theft:4100,assault:720, robbery:520, pop:23000,fp:0.24,cctv:9, police:2,rf:0.764},
   };
 
-  // ── Validate live crime data ──────────────────────────────────
-  // Live data is valid if: all 10 districts loaded, totals are plausible
-  // (between 1,000 and 100,000 per district — catches both empty and inflated data)
   const liveTypes = ['theft','assault','robbery','vandalism','drugs','fraud'];
   const liveCrimeTotals = districts.map(id => {
     const d = crimeData[id] || {};
@@ -2679,17 +2669,14 @@ function buildAnalysisPanel() {
   const liveLoaded = districts.every(id => crimeData[id]) &&
     liveCrimeTotals.every(t => t > 1000 && t < 100000);
 
-  // ── Validate live population data ─────────────────────────────
   const livePopLoaded = districts.every(id => (HUMAN_DENSITY[id]||0) > 5000);
 
-  // ── Choose data source ────────────────────────────────────────
   const useLiveCrime = liveLoaded;
   const useLivePop   = livePopLoaded;
   const dataSource   = useLiveCrime && useLivePop ? 'live' :
                        useLiveCrime ? 'mixed' : 'baseline';
   const dataYear     = useLiveCrime ? '2024' : '2023';
 
-  // ── Build final data vectors ──────────────────────────────────
   const crimeTotal    = districts.map((id,i) => useLiveCrime ? liveCrimeTotals[i] : BASELINE[id].crime);
   const crimeTheft    = districts.map(id => useLiveCrime ? (crimeData[id]?.theft||0) : BASELINE[id].theft);
   const crimeAssault  = districts.map(id => useLiveCrime ? (crimeData[id]?.assault||0) : BASELINE[id].assault);
@@ -2700,7 +2687,7 @@ function buildAnalysisPanel() {
       return foreignPopByDistrict[id] / popDensity[districts.indexOf(id)];
     return BASELINE[id].fp;
   });
-  const cctvDensity   = districts.map(id => BASELINE[id].cctv); // CCTV doesn't change often
+  const cctvDensity   = districts.map(id => BASELINE[id].cctv);
   const policeDensity = districts.map(id => BASELINE[id].police);
   const rfCoverage    = districts.map(id => BASELINE[id].rf);
   const towerCount    = districts.map(id => TOWER_COUNTS_STATIC[id]||0);
@@ -2770,7 +2757,6 @@ function buildAnalysisPanel() {
     const names=Object.keys(DISTRICTS_GEO).map(id=>
       DISTRICTS_GEO[id]?.name?.replace('–',' ').replace('-',' ').split(' ')[0]?.substring(0,6)||''
     );
-    // Smart label placement — alternate above/below to reduce overlap
     return `<svg width="${W}" height="${H}" style="overflow:visible;display:block">
       <line x1="${P}" y1="${P}" x2="${P}" y2="${H-P}" stroke="rgba(0,200,255,.1)" stroke-width="1"/>
       <line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="rgba(0,200,255,.1)" stroke-width="1"/>
@@ -2778,7 +2764,6 @@ function buildAnalysisPanel() {
         stroke="${color}" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
       ${xs.map((x,i)=>{
         const cx=px(x), cy=py(ys[i]);
-        // Place label above if dot is in bottom half, below if in top half
         const labelY = cy > H/2 ? cy-9 : cy+16;
         return `<circle cx="${cx}" cy="${cy}" r="5" fill="${color}" opacity="0.8"
           stroke="rgba(4,12,24,.9)" stroke-width="1.5"/>
@@ -2854,7 +2839,6 @@ function buildAnalysisPanel() {
     </div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
 const activityLog = [];
 function logActivity(text, color='#7090a8') {
   const now = new Date();
@@ -2884,9 +2868,6 @@ loadPopulationData();
 loadDistrictGeoJSON();
 setTimeout(()=>logActivity('System initialized · Providence v1.0','#00c8ff'), 500);
 
-// ═══════════════════════════════════════════════════════════════
-// LANDING PAGE — eye animation + enter button
-// ═══════════════════════════════════════════════════════════════
 (function(){
   const cursor=document.getElementById('cursor');
   const cursorRing=document.getElementById('cursorRing');
