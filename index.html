@@ -1791,11 +1791,47 @@ function showError(msg){
   else b.style.display='none';
 }
 
+// Single source of truth for tab isolation: removes every layer/marker/interval
+// belonging to every special tab, unconditionally, before any tab-specific logic
+// runs. This replaces scattered per-tab cleanup blocks (the cause of previous
+// cross-tab leaks) with one wall that can't be bypassed by adding a new tab.
+function wipeAllTabLayers() {
+  // Maritime
+  if(aisSocket){ aisSocket.close(); aisSocket=null; }
+  if(maritimeMarkers){ map.removeLayer(maritimeMarkers); maritimeMarkers=null; }
+  vesselMarkerMap = {};
+  maritimeVessels = {};
+  aisKeyFailCount = 0;
+
+  // Air Traffic
+  if(aircraftInterval){ clearInterval(aircraftInterval); aircraftInterval=null; }
+  if(aircraftMarkers){ map.removeLayer(aircraftMarkers); aircraftMarkers=null; }
+
+  // Infrastructure / SIGINT (shared layer)
+  if(markerGroup){ map.removeLayer(markerGroup); markerGroup=null; }
+
+  // Transit (Rodalies + Metro + Bus)
+  if(transitInterval){ clearInterval(transitInterval); transitInterval=null; }
+  if(transitMarkers){ map.removeLayer(transitMarkers); transitMarkers=null; }
+  if(metroLayerGroup){ map.removeLayer(metroLayerGroup); metroLayerGroup=null; }
+  if(busLayerGroup){ map.removeLayer(busLayerGroup); busLayerGroup=null; }
+  if(metroVehicleLayer){ map.removeLayer(metroVehicleLayer); metroVehicleLayer=null; }
+  if(busVehicleLayer){ map.removeLayer(busVehicleLayer); busVehicleLayer=null; }
+  metroVehicleMarkers = {};
+  busVehicleMarkers = {};
+  transitVehicleMarkerMap = {};
+  transitVehicles = {};
+
+  // District heatmap (shared, currently unused but wiped defensively)
+  if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
+}
+
 document.getElementById('mainNav').addEventListener('click',e=>{
   const tab=e.target.closest('.nav-tab');
   if(!tab) return;
   const prevMap = currentMap;
   currentMap=tab.dataset.map;
+  wipeAllTabLayers();
 
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
@@ -1832,30 +1868,6 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     transit:new Set(TRANSIT_LAYERS.map(l=>l.id).filter(id=>id!=='bus')),
   };
   activeFilters=defaults[currentMap]||new Set();
-
-  if(prevMap==='maritime'&&currentMap!=='maritime'){
-    if(aisSocket){aisSocket.close();aisSocket=null;}
-    if(maritimeMarkers){map.removeLayer(maritimeMarkers);maritimeMarkers=null;}
-    vesselMarkerMap={};
-    maritimeVessels={};
-    aisKeyFailCount=0;
-  }
-  if(prevMap==='aircraft'&&currentMap!=='aircraft'){
-    if(aircraftInterval){clearInterval(aircraftInterval);aircraftInterval=null;}
-    if(aircraftMarkers){map.removeLayer(aircraftMarkers);aircraftMarkers=null;}
-  }
-  if(prevMap==='transit'&&currentMap!=='transit'){
-    if(transitInterval){clearInterval(transitInterval);transitInterval=null;}
-    if(transitMarkers){map.removeLayer(transitMarkers);transitMarkers=null;}
-    if(metroLayerGroup){map.removeLayer(metroLayerGroup);metroLayerGroup=null;}
-    if(busLayerGroup){map.removeLayer(busLayerGroup);busLayerGroup=null;}
-    if(metroVehicleLayer){map.removeLayer(metroVehicleLayer);metroVehicleLayer=null;}
-    if(busVehicleLayer){map.removeLayer(busVehicleLayer);busVehicleLayer=null;}
-    metroVehicleMarkers={};
-    busVehicleMarkers={};
-    transitVehicleMarkerMap={};
-    transitVehicles={};
-  }
 
   buildSidebar();buildHUD();buildControls();
   buildDistrictPolygons();
