@@ -472,6 +472,35 @@ const POPULATION_RESOURCE = '190095dd-feaf-4c50-9fc7-d0578a52297a';
 const CRIME_PKG   = 'seguretat-fets-penals-tipus-penal-districte';
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+];
+
+// Tries each public Overpass mirror in turn (the main instance is frequently
+// overloaded/rate-limited) and returns the first successful, well-formed response.
+async function overpassFetch(query, timeoutMs=30000) {
+  let lastErr = new Error('No Overpass mirrors configured');
+  for(const base of OVERPASS_MIRRORS) {
+    const controller = new AbortController();
+    const tid = setTimeout(()=>controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${base}?data=${encodeURIComponent(query)}`, {signal: controller.signal});
+      clearTimeout(tid);
+      if(!res.ok) throw new Error(`HTTP ${res.status} from ${base}`);
+      const data = await res.json();
+      if(!data || !Array.isArray(data.elements)) throw new Error(`Malformed response from ${base}`);
+      return data;
+    } catch(e) {
+      clearTimeout(tid);
+      console.warn(`Overpass mirror failed (${base}):`, e.message);
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
 
 const map = L.map('map', {
   center:[41.3951,2.1734], zoom:12,
@@ -593,7 +622,7 @@ let activeFilters = new Set(CRIME_TYPES.map(l=>l.id));
 let selectedDist  = null;
 let crimeData     = {};
 let infraNodes    = [];
-let dataLoaded    = {crime:false, infra:false, cctv:false, population:false};
+let dataLoaded    = {crime:false, infra:false, cctv:false, population:false, metro:false, bus:false};
 let cctvNodes     = [];
 let dataSource    = 'loading';
 let lastUpdated   = null;
@@ -698,7 +727,7 @@ async function loadCrimeData() {
 
 async function loadInfraData() {
   const bbox = '41.30,2.05,41.50,2.25';
-  const query = `[out:json][timeout:25];
+  const query = `[out:json][timeout:40];
 (
   node["amenity"="police"](${bbox});
   way["amenity"="police"](${bbox});
@@ -720,12 +749,7 @@ async function loadInfraData() {
 out center tags;`;
 
   try {
-    const res = await fetch(
-      `${OVERPASS_URL}?data=${encodeURIComponent(query)}`,
-      {signal: AbortSignal.timeout(25000)}
-    );
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await overpassFetch(query, 45000);
     const nodes = data.elements.map(el => {
       const lat = el.lat || el.center?.lat;
       const lng = el.lon || el.center?.lon;
@@ -752,15 +776,17 @@ out center tags;`;
     if(nodes.length > 5) {
       infraNodes = nodes;
       console.log(`Loaded ${nodes.length} real infrastructure nodes from OSM`);
+      showError(null);
     } else {
       infraNodes = STATIC_INFRA_NODES;
+      showError(`Live OSM query returned too few results (${nodes.length}) — showing ${STATIC_INFRA_NODES.length} verified baseline nodes instead.`);
     }
     dataLoaded.infra = true;
-    showError(null);
   } catch(err) {
-    console.warn('Overpass unavailable:', err.message);
+    console.warn('Overpass unavailable on all mirrors:', err.message);
     infraNodes = STATIC_INFRA_NODES;
     dataLoaded.infra = true;
+    showError(`Live OSM infrastructure data unavailable (Overpass unreachable: ${err.message}) — showing ${STATIC_INFRA_NODES.length} verified baseline nodes.`);
   }
   if(currentMap==='infra') refreshAll();
 }
@@ -1320,7 +1346,9 @@ const AIRCRAFT_LAYERS = [
 ];
 
 const TRANSIT_LAYERS = [
-  {id:'rodalies', label:'Rodalies Trains', color:'#00e8a0'},
+  {id:'rodalies', label:'Rodalies Trains',   color:'#00e8a0'},
+  {id:'metro',    label:'Metro (TMB)',        color:'#ff6600'},
+  {id:'bus',      label:'Bus Stops & Lines',  color:'#3da8ff'},
 ];
 
 const MAP_CFGS = {
@@ -1629,10 +1657,10 @@ function buildSourcesPanel() {
       layer:'Critical Infrastructure', color:'#ffb040',
       question:'Where are the critical assets whose disruption would have the highest operational impact?',
       source:'OpenStreetMap · Overpass API',
-      endpoint:'overpass-api.de · OSM tags: amenity=police/fire_station/hospital, office=government/diplomatic',
+      endpoint:'Rotates across public Overpass mirrors (overpass-api.de, overpass.kumi.systems, overpass.private.coffee, maps.mail.ru) · OSM tags: amenity=police/fire_station/hospital, office=government/diplomatic',
       update:'OSM: live · Static fallback: manually verified 2024',
-      method:"Overpass query pulls police, fire, government, embassies, hospitals, and military installations. Static fallback of 73 nodes manually verified against official Barcelona municipal records.",
-      limitation:"OSM coverage of diplomatic facilities is incomplete. Some consulates operate from residential addresses not tagged in OSM.",
+      method:"Overpass query pulls police, fire, government, embassies, hospitals, and military installations. Tries each mirror in turn to route around rate-limiting on the primary public instance. Static fallback of 73 nodes manually verified against official Barcelona municipal records is used only if every mirror fails or returns too few results.",
+      limitation:"OSM coverage of diplomatic facilities is incomplete. Some consulates operate from residential addresses not tagged in OSM. The public Overpass instances are shared infrastructure and can be slow or rate-limited at busy times.",
       integrity:"OSM data is ODbL licensed."
     },
     {
@@ -1651,8 +1679,8 @@ function buildSourcesPanel() {
       source:'AISStream · Automatic Identification System',
       endpoint:'stream.aisstream.io · WebSocket · Western Mediterranean bounding box',
       update:'Real-time · Position reports every 2–180 seconds depending on vessel speed',
-      method:"WebSocket connection to AISStream. API key stored as Cloudflare Worker environment variable — never exposed in client code. Vessel type decoded from AIS type code to six operational categories.",
-      limitation:"AIS is self-reported and can be spoofed. Free tier may throttle connections. Fishing vessels under 15m not legally required to carry AIS.",
+      method:"WebSocket connection to AISStream. API key fetched from a Cloudflare Worker route — never exposed in client code. Vessel type decoded from AIS type code to six operational categories.",
+      limitation:"AIS is self-reported and can be spoofed. Free tier may throttle connections. Fishing vessels under 15m not legally required to carry AIS. If the Worker's key endpoint is unreachable, the map falls back to 5 clearly-labelled demo vessels rather than showing nothing, and automatically switches to live data the moment a real connection succeeds.",
       integrity:"AIS is the international standard mandated by IMO SOLAS convention for vessels over 300 GT."
     },
     {
@@ -1661,19 +1689,19 @@ function buildSourcesPanel() {
       source:'ADS-B Exchange · adsb.lol Community Network',
       endpoint:'api.adsb.lol/v2/lat/41.39/lon/2.17/dist/150 · 150nm radius',
       update:'Real-time · Polled every 10 seconds',
-      method:"REST API returning ADS-B state vectors. Aircraft categorised by callsign pattern: ICAO airline codes for commercial, cargo operators by prefix, low-altitude low-speed as helicopter.",
-      limitation:"Military aircraft with Mode S transponders may not appear. Helicopter classification is approximate — altitude and speed heuristics only.",
+      method:"REST API returning ADS-B state vectors, proxied through the Cloudflare Worker. Aircraft categorised by callsign pattern: ICAO airline codes for commercial, cargo operators by prefix, low-altitude low-speed as helicopter.",
+      limitation:"Military aircraft with Mode S transponders may not appear. Helicopter classification is approximate — altitude and speed heuristics only. If the proxy request fails (e.g. the Worker's domain allowlist doesn't include api.adsb.lol), the map falls back to 10 clearly-labelled demo aircraft rather than showing nothing.",
       integrity:"adsb.lol is a community-operated ADS-B network. Data is open access."
     },
     {
-      layer:'Transit / Rodalies', color:'#00e8a0',
-      question:"Where are Barcelona-area Rodalies trains right now, and are they stopped, arriving, or en route?",
-      source:'Renfe GTFS-Realtime · Vehicle Positions',
-      endpoint:'gtfsrt.renfe.com/vehicle_positions.json · nationwide feed filtered to Barcelona lines',
-      update:'Live · Position reports approximately every 20 seconds',
-      method:"Public JSON feed parsed for vehicle position, status, and stop ID. Line code extracted from the vehicle label field and filtered against a known set of Barcelona-area Rodalies line codes (R1–R16, RL3, RL4, RG1). Client-side interpolation glides markers smoothly between polls.",
-      limitation:"Feed is nationwide — filtering relies on line-code prefix matching, which could miss a mislabeled vehicle. Position updates are periodic, not continuous, so displayed motion between polls is interpolated, not measured.",
-      integrity:"Renfe GTFS-Realtime data is published under Creative Commons Attribution 4.0."
+      layer:'Transit / Rodalies · Metro · Bus', color:'#00e8a0',
+      question:"Where are Barcelona-area Rodalies trains right now, and what does the full public transit network — metro and bus lines and stops — look like?",
+      source:'Renfe GTFS-Realtime (trains) · OpenStreetMap Overpass (TMB metro & bus network)',
+      endpoint:'gtfsrt.renfe.com/vehicle_positions.json · overpass-api.de (route=subway, route=bus, highway=bus_stop)',
+      update:'Trains: live, ~20s · Metro/bus network: static geometry, loaded once per session',
+      method:"Rodalies trains are parsed from Renfe's public JSON feed as before, with client-side interpolation and bearing-based icon rotation. Metro and bus stations/stops and full line itineraries are queried from OpenStreetMap via Overpass: route relations (route=subway / route=bus) supply the line geometry, drawn as coloured polylines, and station/stop nodes supply the markers. Metro line colours use TMB's official palette where OSM doesn't tag a colour directly.",
+      limitation:"OSM's bus route relations are extensive and occasionally incomplete or slightly out of date at network edges; a handful of infrequent or seasonal lines may be missing, and the initial load can take up to a minute given the size of the bus network. Bus and metro positions shown are the mapped route and stops only — unlike Rodalies, TMB metro/bus vehicle positions are not tracked live.",
+      integrity:"Renfe GTFS-Realtime is published under Creative Commons Attribution 4.0. OpenStreetMap data is ODbL licensed."
     }
   ];
 
@@ -1803,6 +1831,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     if(maritimeMarkers){map.removeLayer(maritimeMarkers);maritimeMarkers=null;}
     vesselMarkerMap={};
     maritimeVessels={};
+    aisKeyFailCount=0;
   }
   if(prevMap==='aircraft'&&currentMap!=='aircraft'){
     if(aircraftInterval){clearInterval(aircraftInterval);aircraftInterval=null;}
@@ -1811,6 +1840,8 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   if(prevMap==='transit'&&currentMap!=='transit'){
     if(transitInterval){clearInterval(transitInterval);transitInterval=null;}
     if(transitMarkers){map.removeLayer(transitMarkers);transitMarkers=null;}
+    if(metroLayerGroup){map.removeLayer(metroLayerGroup);metroLayerGroup=null;}
+    if(busLayerGroup){map.removeLayer(busLayerGroup);busLayerGroup=null;}
     transitVehicleMarkerMap={};
     transitVehicles={};
   }
@@ -1836,13 +1867,24 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     map.setView([41.3951,2.1734],11);
     fetchTransit();
     transitInterval=setInterval(fetchTransit,20000);
+    loadMetroData();
+    loadBusData();
   }
 });
 
 let maritimeVessels = {};
 let maritimeMarkers = null;
 let aisSocket = null;
+let aisKeyFailCount = 0;
 const AIS_BBOX = [[39.0, 0.0], [43.0, 5.0]];
+
+const MARITIME_FALLBACK_VESSELS = [
+  {mmsi:'demo1', lat:41.36, lng:2.19, name:'MSC BARCELONA', cat:'cargo',     typeName:'Cargo',     sog:12.4, cog:210, demo:true},
+  {mmsi:'demo2', lat:41.34, lng:2.21, name:'CEPSA TARRAGONA', cat:'tanker',   typeName:'Tanker',    sog:8.2,  cog:95,  demo:true},
+  {mmsi:'demo3', lat:41.38, lng:2.23, name:'BALEARIA NIXE', cat:'passenger', typeName:'Passenger', sog:18.6, cog:140, demo:true},
+  {mmsi:'demo4', lat:41.33, lng:2.17, name:'ARMADA PATROL', cat:'military',  typeName:'Military',  sog:6.0,  cog:300, demo:true},
+  {mmsi:'demo5', lat:41.37, lng:2.25, name:'PESCA LLEVANT',  cat:'other',     typeName:'Fishing',   sog:4.1,  cog:45,  demo:true},
+];
 
 const SHIP_TYPE_MAP = {
   70:['cargo','Cargo'],71:['cargo','Cargo'],72:['cargo','Cargo'],73:['cargo','Cargo'],74:['cargo','Cargo'],
@@ -1901,12 +1943,24 @@ function connectAIS() {
   if(currentMap !== 'maritime') return;
   if(aisSocket) aisSocket.close();
 
-  fetch(`${WORKER_URL}/ais-key`, {signal: AbortSignal.timeout(5000)})
-    .then(r => r.json())
-    .then(data => _connectAISWithKey(data.key || ''))
-    .catch(() => {
-      console.warn('AIS key fetch failed — retrying in 3s');
-      setTimeout(connectAIS, 3000);
+  fetch(`${WORKER_URL}/ais-key`, {signal: AbortSignal.timeout(6000)})
+    .then(r => {
+      if(!r.ok) throw new Error(`HTTP ${r.status} from /ais-key`);
+      return r.json();
+    })
+    .then(data => {
+      if(!data.key) throw new Error('Worker returned no AIS key');
+      aisKeyFailCount = 0;
+      _connectAISWithKey(data.key);
+    })
+    .catch((err) => {
+      aisKeyFailCount++;
+      console.warn(`AIS key fetch failed (attempt ${aisKeyFailCount}):`, err.message);
+      if(aisKeyFailCount === 2 && Object.keys(maritimeVessels).length === 0) {
+        showError(`AIS feed unavailable (${err.message}) — showing demo vessels. Check that the Worker exposes a working /ais-key route.`);
+        loadMaritimeFallback();
+      }
+      if(currentMap === 'maritime') setTimeout(connectAIS, 8000);
     });
 }
 
@@ -1919,8 +1973,16 @@ function _connectAISWithKey(apiKey) {
       BoundingBoxes: [AIS_BBOX],
       FilterMessageTypes: ['PositionReport','ShipStaticData']
     }));
+    // Clear any demo/fallback vessels now that a live connection is up
+    const hadDemo = Object.values(maritimeVessels).some(v=>v.demo);
+    if(hadDemo) {
+      maritimeVessels = {};
+      vesselMarkerMap = {};
+      if(maritimeMarkers) { map.removeLayer(maritimeMarkers); maritimeMarkers = null; }
+    }
     setStatus('live');
     setFeedStatus('aisFeedStatus','live','Live');
+    showError(null);
     logActivity('AIS stream connected · Barcelona coast', 'var(--green)');
     console.log('AIS WebSocket connected — live vessel tracking active');
   };
@@ -1989,12 +2051,13 @@ function _connectAISWithKey(apiKey) {
 }
 
 function loadMaritimeFallback() {
-  setFeedStatus('aisFeedStatus','connecting','Waiting');
+  setFeedStatus('aisFeedStatus','offline','Demo');
+  MARITIME_FALLBACK_VESSELS.forEach(v => { maritimeVessels[v.mmsi] = {...v, updated: Date.now()}; });
   if(currentMap === 'maritime') {
+    updateMaritimeMarkers();
     buildHUD();
     buildList();
-    if(maritimeMarkers) { map.removeLayer(maritimeMarkers); maritimeMarkers = null; }
-    logActivity('AIS stream connected · Waiting for vessel reports', 'var(--amber)');
+    logActivity('AIS feed unavailable · showing demo vessels', 'var(--amber)');
   }
 }
 
@@ -2036,10 +2099,10 @@ async function fetchAircraft() {
   try {
     const apiUrl = 'https://api.adsb.lol/v2/lat/41.39/lon/2.17/dist/150';
     const workerUrl = `${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`;
-    const res = await fetch(workerUrl, {signal: AbortSignal.timeout(10000)});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(workerUrl, {signal: AbortSignal.timeout(15000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status} from proxy — check that api.adsb.lol is allowlisted on the Cloudflare Worker`);
     const data = await res.json();
-    if(!data.ac) throw new Error('No aircraft data');
+    if(!data.ac) throw new Error('No aircraft data in response');
 
     aircraftData = {};
     data.ac.forEach(a => {
@@ -2063,9 +2126,14 @@ async function fetchAircraft() {
     setFeedStatus('adsbFeedStatus','live','Live');
     logActivity(`ADS-B · ${Object.keys(aircraftData).length} aircraft · El Prat FIR`, 'var(--amber)');
     console.log(`ADS-B: ${Object.keys(aircraftData).length} aircraft`);
+    showError(null);
   } catch(err) {
     console.warn('ADS-B fetch failed:', err.message);
     setFeedStatus('adsbFeedStatus','offline','—');
+    if(Object.keys(aircraftData).length === 0) {
+      loadAircraftFallback();
+      showError(`Live ADS-B feed unavailable (${err.message}) — showing demo aircraft. Check the Worker's domain allowlist for api.adsb.lol.`);
+    }
   }
 }
 
@@ -2152,6 +2220,7 @@ async function fetchTransit() {
       const id = v.vehicle.id;
       seen.add(id);
       const newPos = [v.position.latitude, v.position.longitude];
+      const bearing = (typeof v.position.bearing === 'number') ? v.position.bearing : null;
 
       if(transitVehicles[id]) {
         transitVehicles[id].from = transitVehicles[id].to;
@@ -2160,11 +2229,12 @@ async function fetchTransit() {
         transitVehicles[id].status = v.currentStatus;
         transitVehicles[id].line = lineCode;
         transitVehicles[id].stopId = v.stopId || null;
+        transitVehicles[id].bearing = bearing;
       } else {
         transitVehicles[id] = {
           id, line: lineCode, from: newPos, to: newPos,
           tStart: performance.now(), status: v.currentStatus,
-          stopId: v.stopId || null
+          stopId: v.stopId || null, bearing
         };
       }
     });
@@ -2185,10 +2255,19 @@ async function fetchTransit() {
   }
 }
 
-function getTransitIcon() {
+function getTransitIcon(bearing) {
+  const rot = (typeof bearing === 'number') ? bearing : 0;
   return L.divIcon({
-    html: `<div style="width:10px;height:10px;border-radius:50%;background:#00e8a0;border:1px solid rgba(4,12,24,.8);box-shadow:0 0 5px rgba(0,232,160,.6)"></div>`,
-    className:'', iconSize:[10,10], iconAnchor:[5,5]
+    html: `<div style="width:18px;height:18px;transform:rotate(${rot}deg);display:flex;align-items:center;justify-content:center">
+      <svg width="16" height="16" viewBox="0 0 24 24" style="filter:drop-shadow(0 0 3px rgba(0,232,160,.65))">
+        <rect x="6" y="2" width="12" height="15" rx="3" fill="#00e8a0" stroke="rgba(4,12,24,.9)" stroke-width="1"/>
+        <rect x="8" y="4.5" width="8" height="5" rx="1" fill="rgba(4,12,24,.85)"/>
+        <circle cx="9" cy="14.5" r="1.4" fill="rgba(4,12,24,.9)"/>
+        <circle cx="15" cy="14.5" r="1.4" fill="rgba(4,12,24,.9)"/>
+        <path d="M6.5 17 L4.5 20.5 L19.5 20.5 L17.5 17 Z" fill="#00e8a0" stroke="rgba(4,12,24,.9)" stroke-width="1"/>
+      </svg>
+    </div>`,
+    className:'', iconSize:[18,18], iconAnchor:[9,9]
   });
 }
 
@@ -2199,6 +2278,23 @@ function getTransitTooltip(t) {
     ${statusLabel}<br>
     <span style="color:#2a4060">Stop: ${t.stopId||'—'}</span>
     </div>`;
+}
+
+// Fly the map to a train and briefly pop its tooltip. Called from the
+// sidebar train list (click-to-fly) via onclick="flyToTrain('id')".
+function flyToTrain(id) {
+  const marker = transitVehicleMarkerMap[id];
+  const train = transitVehicles[id];
+  if(!marker || !train) return;
+  if(currentMap !== 'transit') return;
+
+  const latlng = marker.getLatLng();
+  map.flyTo(latlng, 15, {duration: 1.1});
+
+  setTimeout(() => {
+    marker.openTooltip();
+    setTimeout(() => { marker.closeTooltip(); }, 2200);
+  }, 1150);
 }
 
 function updateTransitMarkers() {
@@ -2219,10 +2315,12 @@ function updateTransitMarkers() {
 
   Object.values(transitVehicles).forEach(t => {
     if(transitVehicleMarkerMap[t.id]) {
+      transitVehicleMarkerMap[t.id].setIcon(getTransitIcon(t.bearing));
       transitVehicleMarkerMap[t.id].setTooltipContent(getTransitTooltip(t));
     } else {
-      const m = L.marker(t.to, {icon: getTransitIcon()});
+      const m = L.marker(t.to, {icon: getTransitIcon(t.bearing)});
       m.bindTooltip(getTransitTooltip(t), {sticky:true, opacity:1, className:''});
+      m.on('click', () => flyToTrain(t.id));
       transitMarkers.addLayer(m);
       transitVehicleMarkerMap[t.id] = m;
     }
@@ -2247,6 +2345,213 @@ function animateTransit() {
   requestAnimationFrame(animateTransit);
 }
 requestAnimationFrame(animateTransit);
+
+// ─── Metro & Bus (TMB network) — stations/stops + line itineraries via OSM Overpass ───
+const METRO_LINE_COLORS = {
+  'L1':'#FFCD00','L2':'#94398D','L3':'#00A650','L4':'#FFB531','L5':'#0087CB',
+  'L9N':'#FF6600','L9S':'#FF6600','L10N':'#0099D8','L10S':'#0099D8','L11':'#B2D235',
+};
+let metroStations = [];
+let metroLines    = [];
+let busStops      = [];
+let busLines      = [];
+let metroLayerGroup = null;
+let busLayerGroup   = null;
+let metroError = false;
+let busError   = false;
+const transitCanvas = L.canvas({padding:0.5});
+
+async function loadMetroData() {
+  if(dataLoaded.metro) return;
+  const bbox = '41.30,2.05,41.50,2.25';
+  const query = `[out:json][timeout:45];
+(
+  relation["route"="subway"](${bbox});
+);
+(._;>>;);
+out geom;`;
+  try {
+    const data = await overpassFetch(query, 50000);
+
+    const relations = data.elements.filter(e=>e.type==='relation');
+    const wayById = {};
+    data.elements.filter(e=>e.type==='way').forEach(w=>{ wayById[w.id]=w; });
+    const nodeById = {};
+    data.elements.filter(e=>e.type==='node').forEach(n=>{ nodeById[n.id]=n; });
+
+    const lines = [];
+    const stationsMap = {};
+
+    relations.forEach(rel=>{
+      const tags = rel.tags||{};
+      const ref = (tags.ref||tags.name||'').trim();
+      const colour = tags.colour || METRO_LINE_COLORS[ref] || '#ff6600';
+      const segments = [];
+      (rel.members||[]).forEach(m=>{
+        if(m.type==='way'){
+          const w = wayById[m.ref];
+          if(w && w.geometry) segments.push(w.geometry.map(pt=>[pt.lat,pt.lon]));
+        } else if(m.type==='node'){
+          const n = nodeById[m.ref];
+          if(n && n.tags && (n.tags.railway==='station' || n.tags.station==='subway')){
+            if(!stationsMap[n.id]) stationsMap[n.id]={lat:n.lat,lng:n.lon,name:n.tags.name||'Station',lines:new Set()};
+            stationsMap[n.id].lines.add(ref);
+          }
+        }
+      });
+      if(segments.length) lines.push({ref, name:tags.name||ref, colour, segments});
+    });
+
+    metroLines = lines;
+    metroStations = Object.values(stationsMap).map(s=>({...s, lines:[...s.lines]}));
+    dataLoaded.metro = true;
+
+    if(!metroLines.length){
+      metroError = true;
+      showError('Metro network query returned no lines — Overpass may have partially timed out. Try reopening the Transit tab.');
+    }
+
+    console.log(`Loaded ${metroLines.length} metro lines, ${metroStations.length} stations from OSM`);
+    logActivity(`Metro feed · ${metroLines.length} lines · ${metroStations.length} stations · OSM`, '#ff6600');
+    if(currentMap==='transit'){ updateAllTransitLayers(); buildHUD(); buildList(); }
+  } catch(err){
+    console.warn('Metro Overpass fetch failed on all mirrors:', err.message);
+    metroError = true;
+    dataLoaded.metro = true;
+    showError(`Metro network unavailable — Overpass unreachable on all mirrors (${err.message}).`);
+    if(currentMap==='transit'){ buildHUD(); buildList(); }
+  }
+}
+
+async function loadBusData() {
+  if(dataLoaded.bus) return;
+  const bbox = '41.30,2.05,41.50,2.25';
+  const stopsQuery = `[out:json][timeout:25];node["highway"="bus_stop"](${bbox});out body;`;
+  const linesQuery = `[out:json][timeout:55];
+(
+  relation["route"="bus"](${bbox});
+);
+(._;>>;);
+out geom;`;
+
+  const [stopsResult, linesResult] = await Promise.allSettled([
+    overpassFetch(stopsQuery, 30000),
+    overpassFetch(linesQuery, 60000),
+  ]);
+
+  if(stopsResult.status === 'fulfilled') {
+    busStops = stopsResult.value.elements
+      .filter(e=>e.type==='node')
+      .map(n=>({lat:n.lat,lng:n.lon,name:(n.tags&&n.tags.name)||'Bus Stop'}));
+  } else {
+    console.warn('Bus stops query failed on all mirrors:', stopsResult.reason?.message);
+  }
+
+  if(linesResult.status === 'fulfilled') {
+    const data = linesResult.value;
+    const wayById = {};
+    data.elements.filter(e=>e.type==='way').forEach(w=>{ wayById[w.id]=w; });
+    const relations = data.elements.filter(e=>e.type==='relation' && e.tags && e.tags.route==='bus');
+    busLines = relations.map(rel=>{
+      const tags = rel.tags||{};
+      const ref = (tags.ref||tags.name||'').trim();
+      const colour = tags.colour || '#3da8ff';
+      const segments = [];
+      (rel.members||[]).forEach(m=>{
+        if(m.type==='way'){
+          const w = wayById[m.ref];
+          if(w && w.geometry) segments.push(w.geometry.map(pt=>[pt.lat,pt.lon]));
+        }
+      });
+      return segments.length ? {ref, name:tags.name||ref, colour, segments} : null;
+    }).filter(Boolean);
+  } else {
+    console.warn('Bus lines query failed on all mirrors:', linesResult.reason?.message);
+  }
+
+  dataLoaded.bus = true;
+  console.log(`Loaded ${busLines.length} bus lines, ${busStops.length} stops from OSM`);
+
+  if(!busStops.length && !busLines.length) {
+    busError = true;
+    showError('Bus network unavailable — Overpass API unreachable on all mirrors for both stops and line queries.');
+  } else if(!busLines.length) {
+    showError(`Bus stops loaded (${busStops.length}), but bus line itineraries timed out on all mirrors — showing stops only.`);
+  } else if(!busStops.length) {
+    showError(`Bus lines loaded (${busLines.length}), but the bus stops query timed out on all mirrors — showing lines only.`);
+  }
+
+  logActivity(`Bus feed · ${busLines.length} lines · ${busStops.length} stops · OSM`, '#3da8ff');
+  if(currentMap==='transit'){ updateAllTransitLayers(); buildHUD(); buildList(); }
+}
+
+function renderMetroLayer() {
+  if(metroLayerGroup){ map.removeLayer(metroLayerGroup); metroLayerGroup=null; }
+  if(!activeFilters.has('metro')) return;
+  metroLayerGroup = L.layerGroup().addTo(map);
+
+  metroLines.forEach(line=>{
+    line.segments.forEach(seg=>{
+      const pl = L.polyline(seg, {color:line.colour, weight:3, opacity:0.85, renderer:transitCanvas});
+      pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+        <strong style="color:${line.colour}">${line.ref}</strong>${line.name && line.name!==line.ref ? ' · '+line.name : ''}</div>`,
+        {sticky:true,opacity:1,className:''});
+      metroLayerGroup.addLayer(pl);
+    });
+  });
+
+  metroStations.forEach(s=>{
+    const primaryColor = METRO_LINE_COLORS[s.lines[0]] || '#ff6600';
+    const m = L.circleMarker([s.lat,s.lng],{
+      radius:4, fillColor:'#040c18', color:primaryColor, weight:2, fillOpacity:1, renderer:transitCanvas
+    });
+    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+      <strong>${s.name}</strong><br><span style="color:${primaryColor}">${s.lines.join(' · ')}</span></div>`,
+      {sticky:true,opacity:1,className:''});
+    metroLayerGroup.addLayer(m);
+  });
+}
+
+function renderBusLayer() {
+  if(busLayerGroup){ map.removeLayer(busLayerGroup); busLayerGroup=null; }
+  if(!activeFilters.has('bus')) return;
+  busLayerGroup = L.layerGroup().addTo(map);
+
+  busLines.forEach(line=>{
+    line.segments.forEach(seg=>{
+      const pl = L.polyline(seg, {color:line.colour, weight:1.5, opacity:0.4, renderer:transitCanvas});
+      pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+        <strong style="color:${line.colour}">Bus ${line.ref}</strong></div>`,
+        {sticky:true,opacity:1,className:''});
+      busLayerGroup.addLayer(pl);
+    });
+  });
+
+  busStops.forEach(s=>{
+    const m = L.circleMarker([s.lat,s.lng],{
+      radius:2, fillColor:'#3da8ff', color:'#3da8ff', weight:1, fillOpacity:0.8, renderer:transitCanvas
+    });
+    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+      <strong>${s.name}</strong></div>`,
+      {sticky:true,opacity:1,className:''});
+    busLayerGroup.addLayer(m);
+  });
+}
+
+function updateAllTransitLayers() {
+  updateTransitMarkers();
+  renderMetroLayer();
+  renderBusLayer();
+}
+
+// Fly the map to fit a whole metro line's geometry — called from the sidebar metro list.
+function flyToMetroLine(ref) {
+  const line = metroLines.find(l=>l.ref===ref);
+  if(!line) return;
+  const allPts = line.segments.flat();
+  if(!allPts.length) return;
+  map.flyToBounds(L.latLngBounds(allPts), {padding:[40,40], duration:1.1});
+}
 
 const _origGetDistrictColor = getDistrictColor;
 getDistrictColor = function(id) {
@@ -2278,7 +2583,7 @@ buildInfraMarkers = function() {
     return;
   }
   if(currentMap === 'transit') {
-    updateTransitMarkers();
+    updateAllTransitLayers();
     return;
   }
   _origBuildInfraMarkers();
@@ -2321,12 +2626,37 @@ buildList = function() {
     if(!el) return;
     const trains = Object.values(transitVehicles).sort((a,b)=>a.line.localeCompare(b.line));
     const statusLabel = {STOPPED_AT:'Stopped', INCOMING_AT:'Arriving', IN_TRANSIT_TO:'En route'};
-    el.innerHTML=`<div class="sb-list-label">Rodalies · Live Trains</div>`+
-      trains.map(t=>{
-        return `<div class="list-card">
+    const trainsHtml = `<div class="sb-list-label">Rodalies · Live Trains · Click to fly</div>`+
+      (trains.length ? trains.map(t=>{
+        return `<div class="list-card" onclick="flyToTrain('${t.id}')">
           <div class="lc-name">${t.line}</div>
           <div class="lc-sub" style="color:#00e8a0">${statusLabel[t.status]||t.status} · Stop ${t.stopId||'—'}</div></div>`;
-      }).join('');
+      }).join('') : `<div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--muted)">Waiting for feed…</div></div>`);
+
+    let metroHtml;
+    if(dataLoaded.metro && metroLines.length){
+      metroHtml = `<div class="sb-list-label" style="margin-top:10px">Metro (TMB) · Click to fly</div>`+
+        metroLines.map(l=>`<div class="list-card" onclick="flyToMetroLine('${l.ref}')">
+          <div class="lc-name" style="color:${l.colour}">${l.ref}</div>
+          <div class="lc-sub" style="color:${l.colour}">${l.name && l.name!==l.ref ? l.name : 'Metro line'}</div></div>`).join('');
+    } else if(metroError){
+      metroHtml = `<div class="sb-list-label" style="margin-top:10px">Metro (TMB)</div><div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--amber)">Network unavailable · OSM query failed</div></div>`;
+    } else {
+      metroHtml = `<div class="sb-list-label" style="margin-top:10px">Metro (TMB)</div><div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--muted)">Loading network from OSM…</div></div>`;
+    }
+
+    let busHtml;
+    if(dataLoaded.bus && !busError){
+      busHtml = `<div class="sb-list-label" style="margin-top:10px">Bus Network</div>
+        <div class="list-card" style="cursor:default">
+          <div class="lc-sub" style="color:#3da8ff">${busLines.length} lines · ${busStops.length} stops rendered on map</div></div>`;
+    } else if(busError){
+      busHtml = `<div class="sb-list-label" style="margin-top:10px">Bus Network</div><div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--amber)">Network unavailable · OSM query failed</div></div>`;
+    } else {
+      busHtml = `<div class="sb-list-label" style="margin-top:10px">Bus Network</div><div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--muted)">Loading network from OSM… (large query, can take up to a minute)</div></div>`;
+    }
+
+    el.innerHTML = trainsHtml + metroHtml + busHtml;
     return;
   }
   _origBuildList();
@@ -2368,6 +2698,8 @@ buildHUD = function() {
     const hud=document.getElementById('hud');
     const total=Object.keys(transitVehicles).length;
     const enRoute=Object.values(transitVehicles).filter(t=>t.status==='IN_TRANSIT_TO').length;
+    const metroStr = metroError ? 'Unavailable' : dataLoaded.metro ? `${metroStations.length} stations · ${metroLines.length} lines` : 'Loading…';
+    const busStr = busError ? 'Unavailable' : dataLoaded.bus ? `${busStops.length} stops · ${busLines.length} lines` : 'Loading…';
     hud.innerHTML=`
       <div class="hud-header">Transit / Rodalies</div>
       <div class="hud-body">
@@ -2375,7 +2707,9 @@ buildHUD = function() {
         <div class="hud-sub">Trains tracked · Barcelona lines</div>
         <hr class="hud-div">
         <div class="hud-row"><span>En route</span><span style="color:#00e8a0">${enRoute}</span></div>
-        <div class="hud-row"><span>Source</span><span style="color:var(--green)">Renfe GTFS-RT · Live</span></div>
+        <div class="hud-row"><span>Metro</span><span style="color:#ff6600">${metroStr}</span></div>
+        <div class="hud-row"><span>Bus</span><span style="color:#3da8ff">${busStr}</span></div>
+        <div class="hud-row"><span>Source</span><span style="color:var(--green)">Renfe · TMB/OSM</span></div>
       </div>`;
     return;
   }
@@ -2405,13 +2739,14 @@ buildControls = function() {
     return;
   }
   if(currentMap === 'transit') {
-    document.getElementById('bottomBar').innerHTML=`<span class="bb-label">TRANSIT DOMAIN</span><span class="bb-val" style="color:var(--accent)">RODALIES · GTFS-RT LIVE</span>`;
+    document.getElementById('bottomBar').innerHTML=`<span class="bb-label">TRANSIT DOMAIN</span><span class="bb-val" style="color:var(--accent)">RODALIES LIVE · TMB METRO & BUS · OSM</span>`;
     document.getElementById('legend').innerHTML=`<div class="legend-title">Transit</div><div class="legend-body">
-      <div style="display:flex;align-items:center;gap:6px">
-        <div style="width:8px;height:8px;background:#00e8a0;border-radius:50%"></div>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Rodalies Trains</span>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#00e8a0;border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Rodalies Trains</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#ff6600;border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Metro Stations & Lines</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#3da8ff;border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Bus Stops & Lines</span></div>
       </div></div>`;
-    document.getElementById('watermark').innerHTML='PROVIDENCE / TRANSIT·LAYER<br>Source: Renfe GTFS-Realtime · Rodalies Catalunya';
+    document.getElementById('watermark').innerHTML='PROVIDENCE / TRANSIT·LAYER<br>Source: Renfe GTFS-RT · TMB Metro/Bus via OpenStreetMap';
     return;
   }
   _origBuildControls();
