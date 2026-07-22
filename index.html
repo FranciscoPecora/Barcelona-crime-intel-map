@@ -1671,8 +1671,8 @@ function buildSourcesPanel() {
       source:'Renfe GTFS-Realtime · Vehicle Positions',
       endpoint:'gtfsrt.renfe.com/vehicle_positions.json · nationwide feed filtered to Barcelona lines',
       update:'Live · Position reports approximately every 20 seconds',
-      method:"Public JSON feed parsed for vehicle position, status, and stop ID. Line code extracted from the vehicle label field and filtered against a known set of Barcelona-area Rodalies line codes (R1–R16, RL3, RL4, RG1). Client-side interpolation glides markers smoothly between polls.",
-      limitation:"Feed is nationwide — filtering relies on line-code prefix matching, which could miss a mislabeled vehicle. Position updates are periodic, not continuous, so displayed motion between polls is interpolated, not measured.",
+      method:"Public JSON feed parsed for vehicle position, status, and stop ID. Line code extracted from the vehicle label field and filtered against a known set of Barcelona-area Rodalies line codes (R1–R16, RL3, RL4, RG1). Client-side interpolation glides markers smoothly between polls, and train icons are rotated using bearing data when the feed reports it.",
+      limitation:"Feed is nationwide — filtering relies on line-code prefix matching, which could miss a mislabeled vehicle. Position updates are periodic, not continuous, so displayed motion between polls is interpolated, not measured. Bearing is not always reported by the feed, in which case the icon is shown unrotated.",
       integrity:"Renfe GTFS-Realtime data is published under Creative Commons Attribution 4.0."
     }
   ];
@@ -2152,6 +2152,7 @@ async function fetchTransit() {
       const id = v.vehicle.id;
       seen.add(id);
       const newPos = [v.position.latitude, v.position.longitude];
+      const bearing = (typeof v.position.bearing === 'number') ? v.position.bearing : null;
 
       if(transitVehicles[id]) {
         transitVehicles[id].from = transitVehicles[id].to;
@@ -2160,11 +2161,12 @@ async function fetchTransit() {
         transitVehicles[id].status = v.currentStatus;
         transitVehicles[id].line = lineCode;
         transitVehicles[id].stopId = v.stopId || null;
+        transitVehicles[id].bearing = bearing;
       } else {
         transitVehicles[id] = {
           id, line: lineCode, from: newPos, to: newPos,
           tStart: performance.now(), status: v.currentStatus,
-          stopId: v.stopId || null
+          stopId: v.stopId || null, bearing
         };
       }
     });
@@ -2185,10 +2187,19 @@ async function fetchTransit() {
   }
 }
 
-function getTransitIcon() {
+function getTransitIcon(bearing) {
+  const rot = (typeof bearing === 'number') ? bearing : 0;
   return L.divIcon({
-    html: `<div style="width:10px;height:10px;border-radius:50%;background:#00e8a0;border:1px solid rgba(4,12,24,.8);box-shadow:0 0 5px rgba(0,232,160,.6)"></div>`,
-    className:'', iconSize:[10,10], iconAnchor:[5,5]
+    html: `<div style="width:18px;height:18px;transform:rotate(${rot}deg);display:flex;align-items:center;justify-content:center">
+      <svg width="16" height="16" viewBox="0 0 24 24" style="filter:drop-shadow(0 0 3px rgba(0,232,160,.65))">
+        <rect x="6" y="2" width="12" height="15" rx="3" fill="#00e8a0" stroke="rgba(4,12,24,.9)" stroke-width="1"/>
+        <rect x="8" y="4.5" width="8" height="5" rx="1" fill="rgba(4,12,24,.85)"/>
+        <circle cx="9" cy="14.5" r="1.4" fill="rgba(4,12,24,.9)"/>
+        <circle cx="15" cy="14.5" r="1.4" fill="rgba(4,12,24,.9)"/>
+        <path d="M6.5 17 L4.5 20.5 L19.5 20.5 L17.5 17 Z" fill="#00e8a0" stroke="rgba(4,12,24,.9)" stroke-width="1"/>
+      </svg>
+    </div>`,
+    className:'', iconSize:[18,18], iconAnchor:[9,9]
   });
 }
 
@@ -2199,6 +2210,23 @@ function getTransitTooltip(t) {
     ${statusLabel}<br>
     <span style="color:#2a4060">Stop: ${t.stopId||'—'}</span>
     </div>`;
+}
+
+// Fly the map to a train and briefly pop its tooltip. Called from the
+// sidebar train list (click-to-fly) via onclick="flyToTrain('id')".
+function flyToTrain(id) {
+  const marker = transitVehicleMarkerMap[id];
+  const train = transitVehicles[id];
+  if(!marker || !train) return;
+  if(currentMap !== 'transit') return;
+
+  const latlng = marker.getLatLng();
+  map.flyTo(latlng, 15, {duration: 1.1});
+
+  setTimeout(() => {
+    marker.openTooltip();
+    setTimeout(() => { marker.closeTooltip(); }, 2200);
+  }, 1150);
 }
 
 function updateTransitMarkers() {
@@ -2219,10 +2247,12 @@ function updateTransitMarkers() {
 
   Object.values(transitVehicles).forEach(t => {
     if(transitVehicleMarkerMap[t.id]) {
+      transitVehicleMarkerMap[t.id].setIcon(getTransitIcon(t.bearing));
       transitVehicleMarkerMap[t.id].setTooltipContent(getTransitTooltip(t));
     } else {
-      const m = L.marker(t.to, {icon: getTransitIcon()});
+      const m = L.marker(t.to, {icon: getTransitIcon(t.bearing)});
       m.bindTooltip(getTransitTooltip(t), {sticky:true, opacity:1, className:''});
+      m.on('click', () => flyToTrain(t.id));
       transitMarkers.addLayer(m);
       transitVehicleMarkerMap[t.id] = m;
     }
@@ -2321,9 +2351,9 @@ buildList = function() {
     if(!el) return;
     const trains = Object.values(transitVehicles).sort((a,b)=>a.line.localeCompare(b.line));
     const statusLabel = {STOPPED_AT:'Stopped', INCOMING_AT:'Arriving', IN_TRANSIT_TO:'En route'};
-    el.innerHTML=`<div class="sb-list-label">Rodalies · Live Trains</div>`+
+    el.innerHTML=`<div class="sb-list-label">Rodalies · Live Trains · Click to fly</div>`+
       trains.map(t=>{
-        return `<div class="list-card">
+        return `<div class="list-card" onclick="flyToTrain('${t.id}')">
           <div class="lc-name">${t.line}</div>
           <div class="lc-sub" style="color:#00e8a0">${statusLabel[t.status]||t.status} · Stop ${t.stopId||'—'}</div></div>`;
       }).join('');
