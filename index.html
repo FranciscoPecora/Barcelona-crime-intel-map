@@ -2412,16 +2412,50 @@ const BUS_LABEL_MIN_ZOOM = 15; // bus stop names only render once zoomed in this
 // OSM stores each direction of a route (and sometimes seasonal/night variants) as
 // a separate relation. Without merging these, every line gets counted 2-4x over,
 // which inflates both visual clutter and the number of simulated vehicles spawned.
+// Reconstructs a single continuous, correctly-ordered path from a set of
+// unordered/mixed-direction OSM way segments by greedily chaining whichever
+// remaining segment's start or end point is closest to the current path's
+// current end (reversing that segment if it connects backwards).
+function stitchSegments(segments) {
+  if(!segments.length) return [];
+  const segs = segments.filter(s=>s && s.length>1).map(s=>s.slice());
+  if(!segs.length) return [];
+  const used = new Array(segs.length).fill(false);
+  let path = segs[0].slice();
+  used[0] = true;
+  let remaining = segs.length - 1;
+
+  while(remaining > 0) {
+    const tail = path[path.length-1];
+    let bestIdx = -1, bestReverse = false, bestDist = Infinity;
+    for(let i=0;i<segs.length;i++){
+      if(used[i]) continue;
+      const s = segs[i];
+      const dStart = haversineM(tail[0],tail[1], s[0][0],s[0][1]);
+      const dEnd   = haversineM(tail[0],tail[1], s[s.length-1][0],s[s.length-1][1]);
+      if(dStart < bestDist){ bestDist=dStart; bestIdx=i; bestReverse=false; }
+      if(dEnd < bestDist){ bestDist=dEnd; bestIdx=i; bestReverse=true; }
+    }
+    if(bestIdx === -1) break;
+    const seg = bestReverse ? segs[bestIdx].slice().reverse() : segs[bestIdx];
+    path.push(...seg);
+    used[bestIdx] = true;
+    remaining--;
+  }
+  return path;
+}
+
 function dedupeLinesByRef(lines) {
   const byRef = {};
   lines.forEach(line=>{
     const key = line.ref || line.name;
     if(!key) return;
     if(!byRef[key]) {
-      byRef[key] = {ref:key, name:line.name, colour:line.colour, segments:[], stopSequence:[]};
+      byRef[key] = {ref:key, name:line.name, colour:line.colour, segments:[], stopSequence:[], variants:[]};
     }
     byRef[key].segments.push(...line.segments);
     byRef[key].stopSequence.push(...(line.stopSequence||[]));
+    byRef[key].variants.push(line.segments); // each direction/variant kept separate for path reconstruction
   });
   return Object.values(byRef).map(line=>{
     // De-duplicate stops that are effectively the same physical location
@@ -2433,6 +2467,19 @@ function dedupeLinesByRef(lines) {
       seen.add(key);
       return true;
     });
+
+    // Use only ONE direction's geometry for the simulated path — the ping-pong
+    // simulation already provides the return trip, so combining both directions
+    // here would double back on itself and zigzag. Pick whichever variant has
+    // the most total points as the fuller/more representative direction.
+    let best = line.variants[0] || [];
+    let bestLen = best.reduce((s,seg)=>s+seg.length,0);
+    line.variants.forEach(v=>{
+      const len = v.reduce((s,seg)=>s+seg.length,0);
+      if(len > bestLen){ bestLen = len; best = v; }
+    });
+    line.primaryPath = stitchSegments(best);
+    delete line.variants;
     return line;
   });
 }
@@ -2448,7 +2495,7 @@ function haversineM(lat1,lng1,lat2,lng2) {
 // projects the line's ordered stops onto the nearest point along that path so a
 // simulated vehicle can pause there. Run once per line when data loads.
 function buildLineRuntime(line) {
-  const path = line.segments.flat();
+  const path = (line.primaryPath && line.primaryPath.length >= 2) ? line.primaryPath : line.segments.flat();
   if(path.length < 2) return null;
   const cum = [0];
   for(let i=1;i<path.length;i++){
@@ -2565,13 +2612,14 @@ function loadNetworkCache(key) {
 }
 
 function stripLineForCache(line) {
-  return {ref:line.ref, name:line.name, colour:line.colour, segments:line.segments, stopSequence:line.stopSequence};
+  return {ref:line.ref, name:line.name, colour:line.colour, segments:line.segments,
+          stopSequence:line.stopSequence, primaryPath:line.primaryPath};
 }
 
 async function loadMetroData() {
   if(dataLoaded.metro) return;
 
-  const cached = loadNetworkCache('providence_metro_v1');
+  const cached = loadNetworkCache('providence_metro_v2');
   if(cached) {
     metroLines = cached.metroLines;
     metroStations = cached.metroStations;
@@ -2649,7 +2697,7 @@ out geom;`;
 
     console.log(`Loaded ${metroLines.length} metro lines, ${metroStations.length} stations from OSM`);
     if(metroLines.length) {
-      saveNetworkCache('providence_metro_v1', {
+      saveNetworkCache('providence_metro_v2', {
         metroLines: metroLines.map(stripLineForCache),
         metroStations,
       });
@@ -2668,7 +2716,7 @@ out geom;`;
 async function loadBusData() {
   if(dataLoaded.bus) return;
 
-  const cached = loadNetworkCache('providence_bus_v1');
+  const cached = loadNetworkCache('providence_bus_v2');
   if(cached) {
     busLines = cached.busLines;
     busStops = cached.busStops;
@@ -2747,7 +2795,7 @@ out geom;`;
   dataLoaded.bus = true;
   console.log(`Loaded ${busLines.length} bus lines, ${busStops.length} stops from OSM`);
   if(busLines.length && busStops.length) {
-    saveNetworkCache('providence_bus_v1', {
+    saveNetworkCache('providence_bus_v2', {
       busLines: busLines.map(stripLineForCache),
       busStops,
     });
