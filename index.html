@@ -2418,7 +2418,7 @@ let metroError = false;
 let busError   = false;
 let tmbLiveOk  = false; // flips true the first time a live TMB fetch succeeds anywhere
 const transitCanvas = L.canvas({padding:0.5});
-const BUS_LABEL_MIN_ZOOM = 15; // bus stop names only render once zoomed in this far
+const BUS_LABEL_MIN_ZOOM = 16; // bus stop names only render once zoomed in this far
 
 // ── Geometry / simulation engine ──
 // OSM stores each direction of a route (and sometimes seasonal/night variants) as
@@ -2861,7 +2861,7 @@ function renderMetroLayer() {
   ensureMetroVehicleMarkers();
 }
 
-const METRO_LABEL_MIN_ZOOM = 13; // metro station names only render permanently once zoomed in this far
+const METRO_LABEL_MIN_ZOOM = 15; // metro station names only render permanently once zoomed in this far
 const BUS_STOP_MIN_ZOOM = 13; // bus stop dots only render once zoomed in this far
 
 function renderBusLayer() {
