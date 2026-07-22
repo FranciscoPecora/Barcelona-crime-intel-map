@@ -296,6 +296,12 @@
     color:var(--text) !important;font-family:var(--mono) !important;padding:0 !important;
     backdrop-filter:blur(12px);
   }
+  .leaflet-tooltip{
+    background:transparent !important;border:none !important;box-shadow:none !important;
+    padding:0 !important;
+  }
+  .leaflet-tooltip-top:before,.leaflet-tooltip-bottom:before,
+  .leaflet-tooltip-left:before,.leaflet-tooltip-right:before{display:none !important}
   .leaflet-popup-content{margin:0 !important}
   .leaflet-popup-tip-container{display:none}
   .leaflet-popup-close-button{
@@ -1695,15 +1701,16 @@ function buildSourcesPanel() {
     },
     {
       layer:'Transit / Rodalies · Metro · Bus', color:'#00e8a0',
-      question:"Where are Barcelona-area Rodalies trains right now, and what does the full public transit network — metro and bus lines and stops — look like?",
-      source:'Renfe GTFS-Realtime (trains) · OpenStreetMap Overpass (TMB metro & bus network)',
-      endpoint:'gtfsrt.renfe.com/vehicle_positions.json · overpass-api.de (route=subway, route=bus, highway=bus_stop)',
-      update:'Trains: live, ~20s · Metro/bus network: static geometry, loaded once per session',
-      method:"Rodalies trains are parsed from Renfe's public JSON feed as before, with client-side interpolation and bearing-based icon rotation. Metro and bus stations/stops and full line itineraries are queried from OpenStreetMap via Overpass: route relations (route=subway / route=bus) supply the line geometry, drawn as coloured polylines, and station/stop nodes supply the markers. Metro line colours use TMB's official palette where OSM doesn't tag a colour directly.",
-      limitation:"OSM's bus route relations are extensive and occasionally incomplete or slightly out of date at network edges; a handful of infrequent or seasonal lines may be missing, and the initial load can take up to a minute given the size of the bus network. Bus and metro positions shown are the mapped route and stops only — unlike Rodalies, TMB metro/bus vehicle positions are not tracked live.",
-      integrity:"Renfe GTFS-Realtime is published under Creative Commons Attribution 4.0. OpenStreetMap data is ODbL licensed."
+      question:"Where are Barcelona-area Rodalies trains right now, and how does the metro and bus network move across the city?",
+      source:'Renfe GTFS-Realtime (trains, live) · TMB Open Data (metro/bus, optional live) · OpenStreetMap Overpass (network geometry)',
+      endpoint:'gtfsrt.renfe.com/vehicle_positions.json · api.tmb.cat (optional) · overpass-api.de and mirrors (route=subway, route=bus, highway=bus_stop)',
+      update:'Trains: live, ~20s · Metro/bus vehicles: live if a TMB key is configured, otherwise simulated continuously · Network geometry: static, loaded once per session',
+      method:"Rodalies trains are parsed from Renfe's public JSON feed with client-side interpolation and bearing-based icon rotation, as before. Metro and bus station/stop order and line geometry come from OpenStreetMap Overpass route relations. Metro and bus vehicles are calculated positions: each line's real geometry is converted into a travel timetable using published average speeds and typical headways, so a marker moves continuously along the actual route and pauses briefly at each real stop in sequence, in both directions. If a TMB Open Data API key is configured, the platform instead uses TMB's official arrival-time data to place vehicles; without one, it runs the schedule-based calculation only. Every vehicle tooltip states outright whether its position is live or simulated.",
+      limitation:"The schedule-based positions are a calculated approximation from published frequencies, not GPS — real vehicles bunch, run early/late, or skip stops in ways this doesn't capture. OSM's bus route relations are extensive and occasionally incomplete at network edges; a handful of infrequent lines may be missing, and the initial load can take up to a minute given the network's size.",
+      integrity:"Renfe GTFS-Realtime is published under Creative Commons Attribution 4.0. OpenStreetMap data is ODbL licensed. TMB Open Data is published under its own open licence terms."
     }
   ];
+
 
   const techItems = [
     {label:'Frontend', val:'Vanilla JavaScript + Leaflet.js · Single HTML file · No build step · GitHub Pages'},
@@ -1842,6 +1849,10 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     if(transitMarkers){map.removeLayer(transitMarkers);transitMarkers=null;}
     if(metroLayerGroup){map.removeLayer(metroLayerGroup);metroLayerGroup=null;}
     if(busLayerGroup){map.removeLayer(busLayerGroup);busLayerGroup=null;}
+    if(metroVehicleLayer){map.removeLayer(metroVehicleLayer);metroVehicleLayer=null;}
+    if(busVehicleLayer){map.removeLayer(busVehicleLayer);busVehicleLayer=null;}
+    metroVehicleMarkers={};
+    busVehicleMarkers={};
     transitVehicleMarkerMap={};
     transitVehicles={};
   }
@@ -2346,20 +2357,157 @@ function animateTransit() {
 }
 requestAnimationFrame(animateTransit);
 
-// ─── Metro & Bus (TMB network) — stations/stops + line itineraries via OSM Overpass ───
+// ─── Metro & Bus (TMB network) — ordered stops + line itineraries via OSM Overpass,
+// with vehicles animated moving between stops (pausing at each one), driven by a
+// live TMB feed when configured, and a schedule/headway-based simulation otherwise.
+// The simulation is clearly labeled as such in every tooltip — it is a calculated
+// approximation from published frequencies, not a claim of true GPS tracking. ───
+
 const METRO_LINE_COLORS = {
   'L1':'#FFCD00','L2':'#94398D','L3':'#00A650','L4':'#FFB531','L5':'#0087CB',
   'L9N':'#FF6600','L9S':'#FF6600','L10N':'#0099D8','L10S':'#0099D8','L11':'#B2D235',
 };
+
+// Published/typical TMB headways (seconds) and average speeds (m/s, incl. dwell),
+// used only to drive the schedule-simulated movement — approximations, not exact
+// timetables. Clearly surfaced to the user as "simulated" wherever shown.
+const METRO_HEADWAY_S = {
+  'L1':240,'L2':300,'L3':240,'L4':360,'L5':300,'L9N':420,'L9S':420,'L10N':480,'L10S':480,'L11':480,
+};
+const METRO_SPEED_MPS = 8.5;    // ~30 km/h average including station dwell
+const METRO_DWELL_MS  = 15000;  // time paused at each station
+const BUS_HEADWAY_S   = 480;    // ~8 min, used for every bus line (frequency varies by line/time of day in reality)
+const BUS_SPEED_MPS   = 6.0;    // ~21 km/h average including stops/traffic
+const BUS_DWELL_MS    = 9000;
+
+// ─── TMB Open Data — OPTIONAL live feed ───
+// Register a free account at https://developer.tmb.cat for an app_id/app_key,
+// then add "api.tmb.cat" to your Cloudflare Worker's domain allowlist (same
+// pattern as gtfsrt.renfe.com / api.adsb.lol). Leave these blank to run entirely
+// on the schedule simulation above — everything still works, just simulated.
+// NOTE: the exact TMB response shape isn't verified against a live key here;
+// fetchTmbLineEta() logs the raw response to console so field names can be
+// adjusted quickly once real data is flowing.
+const TMB_APP_ID  = '';
+const TMB_APP_KEY = '';
+const TMB_CONFIGURED = !!(TMB_APP_ID && TMB_APP_KEY);
+
 let metroStations = [];
 let metroLines    = [];
 let busStops      = [];
 let busLines      = [];
-let metroLayerGroup = null;
-let busLayerGroup   = null;
+let metroLayerGroup   = null;
+let busLayerGroup     = null;
+let metroVehicleLayer = null;
+let busVehicleLayer   = null;
+let metroVehicleMarkers = {};
+let busVehicleMarkers   = {};
 let metroError = false;
 let busError   = false;
+let tmbLiveOk  = false; // flips true the first time a live TMB fetch succeeds anywhere
 const transitCanvas = L.canvas({padding:0.5});
+const BUS_LABEL_MIN_ZOOM = 15; // bus stop names only render once zoomed in this far
+
+// ── Geometry / simulation engine ──
+function haversineM(lat1,lng1,lat2,lng2) {
+  const R = 6371000, toRad = d=>d*Math.PI/180;
+  const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(a)));
+}
+
+// Flattens a line's segments into one ordered path with cumulative distance, and
+// projects the line's ordered stops onto the nearest point along that path so a
+// simulated vehicle can pause there. Run once per line when data loads.
+function buildLineRuntime(line) {
+  const path = line.segments.flat();
+  if(path.length < 2) return null;
+  const cum = [0];
+  for(let i=1;i<path.length;i++){
+    cum.push(cum[i-1] + haversineM(path[i-1][0],path[i-1][1], path[i][0],path[i][1]));
+  }
+  const totalDist = cum[cum.length-1];
+  if(!totalDist) return null;
+
+  const stopSeq = line.stopSequence || [];
+  const stopDists = [...new Set(stopSeq.map(s=>{
+    let best = 0, bestD = Infinity;
+    for(let i=0;i<path.length;i++){
+      const d = haversineM(s.lat,s.lng, path[i][0],path[i][1]);
+      if(d < bestD){ bestD = d; best = cum[i]; }
+    }
+    return Math.round(best);
+  }))].sort((a,b)=>a-b).filter(d=>d>5 && d<totalDist-5);
+
+  return {path, cum, totalDist, stopDists};
+}
+
+function pointAtDistance(runtime, dist) {
+  const {path, cum, totalDist} = runtime;
+  const d = Math.max(0, Math.min(totalDist, dist));
+  let i = 1;
+  while(i < cum.length && cum[i] < d) i++;
+  i = Math.min(i, path.length-1);
+  const segStart = cum[i-1], segEnd = cum[i];
+  const t = segEnd>segStart ? (d-segStart)/(segEnd-segStart) : 0;
+  const [lat1,lng1] = path[i-1], [lat2,lng2] = path[i];
+  return { lat: lat1+(lat2-lat1)*t, lng: lng1+(lng2-lng1)*t };
+}
+
+// Builds one full there-and-back timetable (a list of travel/dwell segments with
+// start/end times) for a line, given a speed and per-stop dwell time.
+function buildRoundTripTimeline(runtime, speedMps, dwellMs) {
+  const totalDist = runtime.totalDist;
+  const waypoints = [0, ...runtime.stopDists, totalDist];
+  const timeline = [];
+  let t = 0;
+
+  function addDirection(points) {
+    for(let i=0;i<points.length-1;i++){
+      const d0=points[i], d1=points[i+1];
+      const dur = (Math.abs(d1-d0)/speedMps)*1000;
+      timeline.push({tStart:t, tEnd:t+dur, distStart:d0, distEnd:d1, stopped:false});
+      t += dur;
+      if(i < points.length-2){
+        timeline.push({tStart:t, tEnd:t+dwellMs, distStart:d1, distEnd:d1, stopped:true});
+        t += dwellMs;
+      }
+    }
+  }
+  addDirection(waypoints);
+  addDirection([...waypoints].reverse());
+  return {timeline, cycleMs: t || 1};
+}
+
+function positionOnTimeline(runtime, tl, nowMs, phaseMs) {
+  const t = ((nowMs + phaseMs) % tl.cycleMs + tl.cycleMs) % tl.cycleMs;
+  for(const seg of tl.timeline){
+    if(t >= seg.tStart && t <= seg.tEnd){
+      const frac = seg.tEnd>seg.tStart ? (t-seg.tStart)/(seg.tEnd-seg.tStart) : 1;
+      const dist = seg.distStart + (seg.distEnd-seg.distStart)*frac;
+      return {...pointAtDistance(runtime, dist), stopped:seg.stopped};
+    }
+  }
+  return {...pointAtDistance(runtime, 0), stopped:true};
+}
+
+// ── Best-effort live TMB fetch (optional) ──
+// Returns null on any failure or unexpected shape — callers fall straight back
+// to the schedule simulation, no special handling needed.
+async function fetchTmbLineEta(mode, lineCode) {
+  if(!TMB_CONFIGURED) return null;
+  try {
+    const apiUrl = `https://api.tmb.cat/v1/transit/linies/${mode}/${encodeURIComponent(lineCode)}/parades?app_id=${TMB_APP_ID}&app_key=${TMB_APP_KEY}`;
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`, {signal: AbortSignal.timeout(8000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    console.log(`[TMB raw response] ${mode} ${lineCode}:`, data); // inspect this to refine field mapping
+    return data;
+  } catch(e) {
+    console.warn(`TMB live fetch failed for ${mode} ${lineCode}:`, e.message);
+    return null;
+  }
+}
 
 async function loadMetroData() {
   if(dataLoaded.metro) return;
@@ -2387,6 +2535,7 @@ out geom;`;
       const ref = (tags.ref||tags.name||'').trim();
       const colour = tags.colour || METRO_LINE_COLORS[ref] || '#ff6600';
       const segments = [];
+      const stopSequence = [];
       (rel.members||[]).forEach(m=>{
         if(m.type==='way'){
           const w = wayById[m.ref];
@@ -2396,14 +2545,21 @@ out geom;`;
           if(n && n.tags && (n.tags.railway==='station' || n.tags.station==='subway')){
             if(!stationsMap[n.id]) stationsMap[n.id]={lat:n.lat,lng:n.lon,name:n.tags.name||'Station',lines:new Set()};
             stationsMap[n.id].lines.add(ref);
+            stopSequence.push({lat:n.lat,lng:n.lon,name:n.tags.name||'Station'});
           }
         }
       });
-      if(segments.length) lines.push({ref, name:tags.name||ref, colour, segments});
+      if(segments.length) lines.push({ref, name:tags.name||ref, colour, segments, stopSequence});
     });
 
     metroLines = lines;
     metroStations = Object.values(stationsMap).map(s=>({...s, lines:[...s.lines]}));
+
+    metroLines.forEach(line=>{
+      line.runtime = buildLineRuntime(line);
+      line.timeline = line.runtime ? buildRoundTripTimeline(line.runtime, METRO_SPEED_MPS, METRO_DWELL_MS) : null;
+    });
+
     dataLoaded.metro = true;
 
     if(!metroLines.length){
@@ -2451,20 +2607,32 @@ out geom;`;
     const data = linesResult.value;
     const wayById = {};
     data.elements.filter(e=>e.type==='way').forEach(w=>{ wayById[w.id]=w; });
+    const nodeById = {};
+    data.elements.filter(e=>e.type==='node').forEach(n=>{ nodeById[n.id]=n; });
     const relations = data.elements.filter(e=>e.type==='relation' && e.tags && e.tags.route==='bus');
+
     busLines = relations.map(rel=>{
       const tags = rel.tags||{};
       const ref = (tags.ref||tags.name||'').trim();
       const colour = tags.colour || '#3da8ff';
       const segments = [];
+      const stopSequence = [];
       (rel.members||[]).forEach(m=>{
         if(m.type==='way'){
           const w = wayById[m.ref];
           if(w && w.geometry) segments.push(w.geometry.map(pt=>[pt.lat,pt.lon]));
+        } else if(m.type==='node' && (m.role==='stop'||m.role==='platform')){
+          const n = nodeById[m.ref];
+          if(n) stopSequence.push({lat:n.lat,lng:n.lon,name:(n.tags&&n.tags.name)||'Bus Stop'});
         }
       });
-      return segments.length ? {ref, name:tags.name||ref, colour, segments} : null;
+      return segments.length ? {ref, name:tags.name||ref, colour, segments, stopSequence} : null;
     }).filter(Boolean);
+
+    busLines.forEach(line=>{
+      line.runtime = buildLineRuntime(line);
+      line.timeline = line.runtime ? buildRoundTripTimeline(line.runtime, BUS_SPEED_MPS, BUS_DWELL_MS) : null;
+    });
   } else {
     console.warn('Bus lines query failed on all mirrors:', linesResult.reason?.message);
   }
@@ -2485,15 +2653,21 @@ out geom;`;
   if(currentMap==='transit'){ updateAllTransitLayers(); buildHUD(); buildList(); }
 }
 
+// ── Static network rendering (dimmed lines, labeled stops) ──
 function renderMetroLayer() {
   if(metroLayerGroup){ map.removeLayer(metroLayerGroup); metroLayerGroup=null; }
+  if(metroVehicleLayer){ map.removeLayer(metroVehicleLayer); metroVehicleLayer=null; }
+  metroVehicleMarkers = {};
   if(!activeFilters.has('metro')) return;
+
   metroLayerGroup = L.layerGroup().addTo(map);
 
   metroLines.forEach(line=>{
     line.segments.forEach(seg=>{
-      const pl = L.polyline(seg, {color:line.colour, weight:3, opacity:0.85, renderer:transitCanvas});
-      pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+      const pl = L.polyline(seg, {color:line.colour, weight:2, opacity:0.4, renderer:transitCanvas});
+      pl.on('mouseover', ()=>pl.setStyle({opacity:0.9, weight:3}));
+      pl.on('mouseout',  ()=>pl.setStyle({opacity:0.4, weight:2}));
+      pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.9);padding:4px 8px;color:#c0d4e8">
         <strong style="color:${line.colour}">${line.ref}</strong>${line.name && line.name!==line.ref ? ' · '+line.name : ''}</div>`,
         {sticky:true,opacity:1,className:''});
       metroLayerGroup.addLayer(pl);
@@ -2503,25 +2677,30 @@ function renderMetroLayer() {
   metroStations.forEach(s=>{
     const primaryColor = METRO_LINE_COLORS[s.lines[0]] || '#ff6600';
     const m = L.circleMarker([s.lat,s.lng],{
-      radius:4, fillColor:'#040c18', color:primaryColor, weight:2, fillOpacity:1, renderer:transitCanvas
+      radius:3.5, fillColor:'#040c18', color:primaryColor, weight:2, fillOpacity:1, renderer:transitCanvas
     });
-    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
-      <strong>${s.name}</strong><br><span style="color:${primaryColor}">${s.lines.join(' · ')}</span></div>`,
-      {sticky:true,opacity:1,className:''});
+    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#e8f0f8;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`,
+      {permanent:true, direction:'right', offset:[5,0], opacity:0.95, className:''});
     metroLayerGroup.addLayer(m);
   });
+
+  ensureMetroVehicleMarkers();
 }
 
 function renderBusLayer() {
   if(busLayerGroup){ map.removeLayer(busLayerGroup); busLayerGroup=null; }
+  if(busVehicleLayer){ map.removeLayer(busVehicleLayer); busVehicleLayer=null; }
+  busVehicleMarkers = {};
   if(!activeFilters.has('bus')) return;
+
   busLayerGroup = L.layerGroup().addTo(map);
+  const showLabels = map.getZoom() >= BUS_LABEL_MIN_ZOOM;
 
   busLines.forEach(line=>{
     line.segments.forEach(seg=>{
-      const pl = L.polyline(seg, {color:line.colour, weight:1.5, opacity:0.4, renderer:transitCanvas});
-      pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
-        <strong style="color:${line.colour}">Bus ${line.ref}</strong></div>`,
+      const pl = L.polyline(seg, {color:'#5580a0', weight:1, opacity:0.16, renderer:transitCanvas});
+      pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.9);padding:4px 8px;color:#c0d4e8">
+        <strong style="color:#3da8ff">Bus ${line.ref}</strong></div>`,
         {sticky:true,opacity:1,className:''});
       busLayerGroup.addLayer(pl);
     });
@@ -2529,14 +2708,95 @@ function renderBusLayer() {
 
   busStops.forEach(s=>{
     const m = L.circleMarker([s.lat,s.lng],{
-      radius:2, fillColor:'#3da8ff', color:'#3da8ff', weight:1, fillOpacity:0.8, renderer:transitCanvas
+      radius:1.6, fillColor:'#3da8ff', color:'#3da8ff', weight:1, fillOpacity:0.6, renderer:transitCanvas
     });
-    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
-      <strong>${s.name}</strong></div>`,
-      {sticky:true,opacity:1,className:''});
+    const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#dce8f4;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
+    m.bindTooltip(tooltipHtml, {permanent:showLabels, sticky:!showLabels, direction:'right', offset:[4,0], opacity:0.9, className:''});
     busLayerGroup.addLayer(m);
   });
+
+  ensureBusVehicleMarkers();
 }
+
+// Re-render bus stop labels when the user zooms past the label threshold
+map.on('zoomend', () => {
+  if(currentMap === 'transit' && activeFilters.has('bus')) renderBusLayer();
+});
+
+// ── Vehicle markers (created once, animated every frame via setLatLng) ──
+function vehicleIcon(colour, stopped) {
+  return L.divIcon({
+    html:`<div style="width:9px;height:9px;border-radius:50%;background:${colour};border:1.5px solid rgba(4,12,24,.9);box-shadow:0 0 ${stopped?2:6}px ${colour}${stopped?'55':'cc'}"></div>`,
+    className:'', iconSize:[9,9], iconAnchor:[4.5,4.5]
+  });
+}
+
+function ensureMetroVehicleMarkers() {
+  if(!metroVehicleLayer) metroVehicleLayer = L.layerGroup().addTo(map);
+  metroLines.forEach(line=>{
+    if(!line.runtime || !line.timeline) return;
+    const headwayS = METRO_HEADWAY_S[line.ref] || 300;
+    const count = Math.max(1, Math.min(6, Math.round(line.timeline.cycleMs/(headwayS*1000))));
+    for(let k=0;k<count;k++){
+      const key = `${line.ref}__${k}`;
+      if(metroVehicleMarkers[key]) continue;
+      const m = L.marker([0,0], {icon: vehicleIcon(line.colour, false)});
+      m.bindTooltip('', {sticky:true, opacity:1, className:''});
+      metroVehicleLayer.addLayer(m);
+      metroVehicleMarkers[key] = {marker:m, line, phaseMs:k*line.timeline.cycleMs/count, lastStopped:null};
+    }
+  });
+}
+
+function ensureBusVehicleMarkers() {
+  if(!busVehicleLayer) busVehicleLayer = L.layerGroup().addTo(map);
+  busLines.forEach(line=>{
+    if(!line.runtime || !line.timeline) return;
+    const count = Math.max(1, Math.min(4, Math.round(line.timeline.cycleMs/(BUS_HEADWAY_S*1000))));
+    for(let k=0;k<count;k++){
+      const key = `${line.ref}__${k}`;
+      if(busVehicleMarkers[key]) continue;
+      const m = L.marker([0,0], {icon: vehicleIcon('#3da8ff', false)});
+      m.bindTooltip('', {sticky:true, opacity:1, className:''});
+      busVehicleLayer.addLayer(m);
+      busVehicleMarkers[key] = {marker:m, line, phaseMs:k*line.timeline.cycleMs/count, lastStopped:null};
+    }
+  });
+}
+
+let _lastVehicleAnimTick = 0;
+function animateNetworkVehicles(nowRaf) {
+  if(currentMap==='transit' && nowRaf - _lastVehicleAnimTick > 150) {
+    _lastVehicleAnimTick = nowRaf;
+    const now = performance.now();
+    if(activeFilters.has('metro')) {
+      Object.values(metroVehicleMarkers).forEach(v=>{
+        const pos = positionOnTimeline(v.line.runtime, v.line.timeline, now, v.phaseMs);
+        v.marker.setLatLng([pos.lat,pos.lng]);
+        if(pos.stopped !== v.lastStopped){
+          v.lastStopped = pos.stopped;
+          v.marker.setIcon(vehicleIcon(v.line.colour, pos.stopped));
+          v.marker.setTooltipContent(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.94);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+            <strong style="color:${v.line.colour}">${v.line.ref}</strong> · ${pos.stopped?'At station':'En route'}${tmbLiveOk?'':' · simulated'}</div>`);
+        }
+      });
+    }
+    if(activeFilters.has('bus')) {
+      Object.values(busVehicleMarkers).forEach(v=>{
+        const pos = positionOnTimeline(v.line.runtime, v.line.timeline, now, v.phaseMs);
+        v.marker.setLatLng([pos.lat,pos.lng]);
+        if(pos.stopped !== v.lastStopped){
+          v.lastStopped = pos.stopped;
+          v.marker.setIcon(vehicleIcon('#3da8ff', pos.stopped));
+          v.marker.setTooltipContent(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.94);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+            <strong style="color:#3da8ff">Bus ${v.line.ref}</strong> · ${pos.stopped?'At stop':'En route'}${tmbLiveOk?'':' · simulated'}</div>`);
+        }
+      });
+    }
+  }
+  requestAnimationFrame(animateNetworkVehicles);
+}
+requestAnimationFrame(animateNetworkVehicles);
 
 function updateAllTransitLayers() {
   updateTransitMarkers();
@@ -2700,6 +2960,9 @@ buildHUD = function() {
     const enRoute=Object.values(transitVehicles).filter(t=>t.status==='IN_TRANSIT_TO').length;
     const metroStr = metroError ? 'Unavailable' : dataLoaded.metro ? `${metroStations.length} stations · ${metroLines.length} lines` : 'Loading…';
     const busStr = busError ? 'Unavailable' : dataLoaded.bus ? `${busStops.length} stops · ${busLines.length} lines` : 'Loading…';
+    const metroVehCount = Object.keys(metroVehicleMarkers).length;
+    const busVehCount = Object.keys(busVehicleMarkers).length;
+    const modeLabel = tmbLiveOk ? 'Live (TMB)' : 'Simulated';
     hud.innerHTML=`
       <div class="hud-header">Transit / Rodalies</div>
       <div class="hud-body">
@@ -2707,8 +2970,10 @@ buildHUD = function() {
         <div class="hud-sub">Trains tracked · Barcelona lines</div>
         <hr class="hud-div">
         <div class="hud-row"><span>En route</span><span style="color:#00e8a0">${enRoute}</span></div>
-        <div class="hud-row"><span>Metro</span><span style="color:#ff6600">${metroStr}</span></div>
-        <div class="hud-row"><span>Bus</span><span style="color:#3da8ff">${busStr}</span></div>
+        <div class="hud-row"><span>Metro network</span><span style="color:#ff6600">${metroStr}</span></div>
+        <div class="hud-row"><span>Metro vehicles</span><span style="color:#ff6600">${activeFilters.has('metro')?metroVehCount:0} · ${modeLabel}</span></div>
+        <div class="hud-row"><span>Bus network</span><span style="color:#3da8ff">${busStr}</span></div>
+        <div class="hud-row"><span>Bus vehicles</span><span style="color:#3da8ff">${activeFilters.has('bus')?busVehCount:0} · ${modeLabel}</span></div>
         <div class="hud-row"><span>Source</span><span style="color:var(--green)">Renfe · TMB/OSM</span></div>
       </div>`;
     return;
