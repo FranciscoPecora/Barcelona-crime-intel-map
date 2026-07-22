@@ -2822,6 +2822,7 @@ function renderMetroLayer() {
   if(!activeFilters.has('metro')) return;
 
   metroLayerGroup = L.layerGroup().addTo(map);
+  const showLabels = map.getZoom() >= METRO_LABEL_MIN_ZOOM;
 
   metroLines.forEach(line=>{
     line.segments.forEach(seg=>{
@@ -2840,14 +2841,15 @@ function renderMetroLayer() {
     const m = L.circleMarker([s.lat,s.lng],{
       radius:3.5, fillColor:'#040c18', color:primaryColor, weight:2, fillOpacity:1, renderer:transitCanvas
     });
-    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#e8f0f8;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`,
-      {permanent:true, direction:'right', offset:[5,0], opacity:0.95, className:''});
+    const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#e8f0f8;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
+    m.bindTooltip(tooltipHtml, {permanent:showLabels, sticky:!showLabels, direction:'right', offset:[5,0], opacity:0.95, className:''});
     metroLayerGroup.addLayer(m);
   });
 
   ensureMetroVehicleMarkers();
 }
 
+const METRO_LABEL_MIN_ZOOM = 13; // metro station names only render permanently once zoomed in this far
 const BUS_STOP_MIN_ZOOM = 13; // bus stop dots only render once zoomed in this far
 
 function renderBusLayer() {
@@ -2886,9 +2888,11 @@ function renderBusLayer() {
   ensureBusVehicleMarkers();
 }
 
-// Re-render bus stop labels when the user zooms past the label threshold
+// Re-render bus/metro stop labels when the user zooms past the label threshold
 map.on('zoomend', () => {
-  if(currentMap === 'transit' && activeFilters.has('bus')) renderBusLayer();
+  if(currentMap !== 'transit') return;
+  if(activeFilters.has('bus')) renderBusLayer();
+  if(activeFilters.has('metro')) renderMetroLayer();
 });
 
 // ── Vehicle markers (created once, animated every frame via setLatLng) ──
@@ -3000,13 +3004,16 @@ buildHeatmap = function() {
 
 const _origBuildInfraMarkers = buildInfraMarkers;
 buildInfraMarkers = function() {
+  // markerGroup is shared by Infrastructure + SIGINT layers. Clear it unconditionally
+  // first, regardless of which tab is being entered, so it can never leak onto
+  // Maritime/Aircraft/Transit (or anywhere else) the way it just did.
+  if(markerGroup){ map.removeLayer(markerGroup); markerGroup=null; }
+
   if(currentMap === 'maritime') {
-    if(markerGroup){map.removeLayer(markerGroup);markerGroup=null;}
     updateMaritimeMarkers();
     return;
   }
   if(currentMap === 'aircraft') {
-    if(markerGroup){map.removeLayer(markerGroup);markerGroup=null;}
     updateAircraftMarkers();
     return;
   }
