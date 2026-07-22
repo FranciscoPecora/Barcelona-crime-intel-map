@@ -1829,7 +1829,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     human:new Set(HUMAN_LAYERS.map(l=>l.id)),
     maritime:new Set(MARITIME_LAYERS.map(l=>l.id)),
     aircraft:new Set(AIRCRAFT_LAYERS.map(l=>l.id)),
-    transit:new Set(TRANSIT_LAYERS.map(l=>l.id)),
+    transit:new Set(TRANSIT_LAYERS.map(l=>l.id).filter(id=>id!=='bus')),
   };
   activeFilters=defaults[currentMap]||new Set();
 
@@ -2409,6 +2409,34 @@ const transitCanvas = L.canvas({padding:0.5});
 const BUS_LABEL_MIN_ZOOM = 15; // bus stop names only render once zoomed in this far
 
 // ── Geometry / simulation engine ──
+// OSM stores each direction of a route (and sometimes seasonal/night variants) as
+// a separate relation. Without merging these, every line gets counted 2-4x over,
+// which inflates both visual clutter and the number of simulated vehicles spawned.
+function dedupeLinesByRef(lines) {
+  const byRef = {};
+  lines.forEach(line=>{
+    const key = line.ref || line.name;
+    if(!key) return;
+    if(!byRef[key]) {
+      byRef[key] = {ref:key, name:line.name, colour:line.colour, segments:[], stopSequence:[]};
+    }
+    byRef[key].segments.push(...line.segments);
+    byRef[key].stopSequence.push(...(line.stopSequence||[]));
+  });
+  return Object.values(byRef).map(line=>{
+    // De-duplicate stops that are effectively the same physical location
+    // (different relation variants often repeat the same platform node).
+    const seen = new Set();
+    line.stopSequence = line.stopSequence.filter(s=>{
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return line;
+  });
+}
+
 function haversineM(lat1,lng1,lat2,lng2) {
   const R = 6371000, toRad = d=>d*Math.PI/180;
   const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
@@ -2509,8 +2537,54 @@ async function fetchTmbLineEta(mode, lineCode) {
   }
 }
 
+// ── Local cache for metro/bus network geometry ──
+// This network barely changes year to year, so once Overpass succeeds we save
+// the parsed result and skip hitting any Overpass mirror on future page loads.
+// Makes the tab load instantly and removes the dependency on a volunteer-run
+// public API being available at demo time.
+const NETWORK_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function saveNetworkCache(key, payload) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ t: Date.now(), payload }));
+  } catch(e) {
+    console.warn(`Could not cache "${key}" (localStorage unavailable or full):`, e.message);
+  }
+}
+
+function loadNetworkCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if(!raw) return null;
+    const {t, payload} = JSON.parse(raw);
+    if(!payload || Date.now() - t > NETWORK_CACHE_TTL_MS) return null;
+    return payload;
+  } catch(e) {
+    return null;
+  }
+}
+
+function stripLineForCache(line) {
+  return {ref:line.ref, name:line.name, colour:line.colour, segments:line.segments, stopSequence:line.stopSequence};
+}
+
 async function loadMetroData() {
   if(dataLoaded.metro) return;
+
+  const cached = loadNetworkCache('providence_metro_v1');
+  if(cached) {
+    metroLines = cached.metroLines;
+    metroStations = cached.metroStations;
+    metroLines.forEach(line=>{
+      line.runtime = buildLineRuntime(line);
+      line.timeline = line.runtime ? buildRoundTripTimeline(line.runtime, METRO_SPEED_MPS, METRO_DWELL_MS) : null;
+    });
+    dataLoaded.metro = true;
+    console.log(`Loaded ${metroLines.length} metro lines, ${metroStations.length} stations from local cache`);
+    logActivity(`Metro feed · ${metroLines.length} lines · ${metroStations.length} stations · cached`, '#ff6600');
+    if(currentMap==='transit'){ updateAllTransitLayers(); buildHUD(); buildList(); }
+    return;
+  }
   const bbox = '41.30,2.05,41.50,2.25';
   const query = `[out:json][timeout:45];
 (
@@ -2542,17 +2616,23 @@ out geom;`;
           if(w && w.geometry) segments.push(w.geometry.map(pt=>[pt.lat,pt.lon]));
         } else if(m.type==='node'){
           const n = nodeById[m.ref];
-          if(n && n.tags && (n.tags.railway==='station' || n.tags.station==='subway')){
-            if(!stationsMap[n.id]) stationsMap[n.id]={lat:n.lat,lng:n.lon,name:n.tags.name||'Station',lines:new Set()};
+          if(!n) return;
+          const role = m.role || '';
+          const looksLikeStop = role.includes('stop') || role.includes('platform') ||
+            (n.tags && (n.tags.railway==='station' || n.tags.station==='subway' ||
+              n.tags.public_transport==='station' || n.tags.public_transport==='stop_position'));
+          if(looksLikeStop){
+            const name = (n.tags && n.tags.name) || 'Station';
+            if(!stationsMap[n.id]) stationsMap[n.id]={lat:n.lat,lng:n.lon,name,lines:new Set()};
             stationsMap[n.id].lines.add(ref);
-            stopSequence.push({lat:n.lat,lng:n.lon,name:n.tags.name||'Station'});
+            stopSequence.push({lat:n.lat,lng:n.lon,name});
           }
         }
       });
       if(segments.length) lines.push({ref, name:tags.name||ref, colour, segments, stopSequence});
     });
 
-    metroLines = lines;
+    metroLines = dedupeLinesByRef(lines);
     metroStations = Object.values(stationsMap).map(s=>({...s, lines:[...s.lines]}));
 
     metroLines.forEach(line=>{
@@ -2568,6 +2648,12 @@ out geom;`;
     }
 
     console.log(`Loaded ${metroLines.length} metro lines, ${metroStations.length} stations from OSM`);
+    if(metroLines.length) {
+      saveNetworkCache('providence_metro_v1', {
+        metroLines: metroLines.map(stripLineForCache),
+        metroStations,
+      });
+    }
     logActivity(`Metro feed · ${metroLines.length} lines · ${metroStations.length} stations · OSM`, '#ff6600');
     if(currentMap==='transit'){ updateAllTransitLayers(); buildHUD(); buildList(); }
   } catch(err){
@@ -2581,6 +2667,22 @@ out geom;`;
 
 async function loadBusData() {
   if(dataLoaded.bus) return;
+
+  const cached = loadNetworkCache('providence_bus_v1');
+  if(cached) {
+    busLines = cached.busLines;
+    busStops = cached.busStops;
+    busLines.forEach(line=>{
+      line.runtime = buildLineRuntime(line);
+      line.timeline = line.runtime ? buildRoundTripTimeline(line.runtime, BUS_SPEED_MPS, BUS_DWELL_MS) : null;
+    });
+    dataLoaded.bus = true;
+    console.log(`Loaded ${busLines.length} bus lines, ${busStops.length} stops from local cache`);
+    logActivity(`Bus feed · ${busLines.length} lines · ${busStops.length} stops · cached`, '#3da8ff');
+    if(currentMap==='transit'){ updateAllTransitLayers(); buildHUD(); buildList(); }
+    return;
+  }
+
   const bbox = '41.30,2.05,41.50,2.25';
   const stopsQuery = `[out:json][timeout:25];node["highway"="bus_stop"](${bbox});out body;`;
   const linesQuery = `[out:json][timeout:55];
@@ -2621,13 +2723,18 @@ out geom;`;
         if(m.type==='way'){
           const w = wayById[m.ref];
           if(w && w.geometry) segments.push(w.geometry.map(pt=>[pt.lat,pt.lon]));
-        } else if(m.type==='node' && (m.role==='stop'||m.role==='platform')){
-          const n = nodeById[m.ref];
-          if(n) stopSequence.push({lat:n.lat,lng:n.lon,name:(n.tags&&n.tags.name)||'Bus Stop'});
+        } else if(m.type==='node'){
+          const role = m.role || '';
+          if(role.includes('stop') || role.includes('platform')){
+            const n = nodeById[m.ref];
+            if(n) stopSequence.push({lat:n.lat,lng:n.lon,name:(n.tags&&n.tags.name)||'Bus Stop'});
+          }
         }
       });
       return segments.length ? {ref, name:tags.name||ref, colour, segments, stopSequence} : null;
     }).filter(Boolean);
+
+    busLines = dedupeLinesByRef(busLines);
 
     busLines.forEach(line=>{
       line.runtime = buildLineRuntime(line);
@@ -2639,6 +2746,12 @@ out geom;`;
 
   dataLoaded.bus = true;
   console.log(`Loaded ${busLines.length} bus lines, ${busStops.length} stops from OSM`);
+  if(busLines.length && busStops.length) {
+    saveNetworkCache('providence_bus_v1', {
+      busLines: busLines.map(stripLineForCache),
+      busStops,
+    });
+  }
 
   if(!busStops.length && !busLines.length) {
     busError = true;
@@ -2687,6 +2800,8 @@ function renderMetroLayer() {
   ensureMetroVehicleMarkers();
 }
 
+const BUS_STOP_MIN_ZOOM = 13; // bus stop dots only render once zoomed in this far
+
 function renderBusLayer() {
   if(busLayerGroup){ map.removeLayer(busLayerGroup); busLayerGroup=null; }
   if(busVehicleLayer){ map.removeLayer(busVehicleLayer); busVehicleLayer=null; }
@@ -2694,11 +2809,14 @@ function renderBusLayer() {
   if(!activeFilters.has('bus')) return;
 
   busLayerGroup = L.layerGroup().addTo(map);
-  const showLabels = map.getZoom() >= BUS_LABEL_MIN_ZOOM;
+  const zoom = map.getZoom();
+  const showLabels = zoom >= BUS_LABEL_MIN_ZOOM;
+  const showStops  = zoom >= BUS_STOP_MIN_ZOOM;
+  const lineOpacity = zoom >= BUS_STOP_MIN_ZOOM ? 0.22 : 0.08;
 
   busLines.forEach(line=>{
     line.segments.forEach(seg=>{
-      const pl = L.polyline(seg, {color:'#5580a0', weight:1, opacity:0.16, renderer:transitCanvas});
+      const pl = L.polyline(seg, {color:'#5580a0', weight:1, opacity:lineOpacity, renderer:transitCanvas});
       pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.9);padding:4px 8px;color:#c0d4e8">
         <strong style="color:#3da8ff">Bus ${line.ref}</strong></div>`,
         {sticky:true,opacity:1,className:''});
@@ -2706,14 +2824,16 @@ function renderBusLayer() {
     });
   });
 
-  busStops.forEach(s=>{
-    const m = L.circleMarker([s.lat,s.lng],{
-      radius:1.6, fillColor:'#3da8ff', color:'#3da8ff', weight:1, fillOpacity:0.6, renderer:transitCanvas
+  if(showStops) {
+    busStops.forEach(s=>{
+      const m = L.circleMarker([s.lat,s.lng],{
+        radius:1.6, fillColor:'#3da8ff', color:'#3da8ff', weight:1, fillOpacity:0.6, renderer:transitCanvas
+      });
+      const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#dce8f4;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
+      m.bindTooltip(tooltipHtml, {permanent:showLabels, sticky:!showLabels, direction:'right', offset:[4,0], opacity:0.9, className:''});
+      busLayerGroup.addLayer(m);
     });
-    const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#dce8f4;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
-    m.bindTooltip(tooltipHtml, {permanent:showLabels, sticky:!showLabels, direction:'right', offset:[4,0], opacity:0.9, className:''});
-    busLayerGroup.addLayer(m);
-  });
+  }
 
   ensureBusVehicleMarkers();
 }
