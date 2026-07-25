@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
     --bg:#040c18;
@@ -1812,6 +1813,7 @@ function wipeAllTabLayers() {
 
   // Transit (Rodalies + Metro + Bus)
   if(transitInterval){ clearInterval(transitInterval); transitInterval=null; }
+  if(tmbMetroInterval){ clearInterval(tmbMetroInterval); tmbMetroInterval=null; }
   if(transitMarkers){ map.removeLayer(transitMarkers); transitMarkers=null; }
   if(metroLayerGroup){ map.removeLayer(metroLayerGroup); metroLayerGroup=null; }
   if(busLayerGroup){ map.removeLayer(busLayerGroup); busLayerGroup=null; }
@@ -1890,8 +1892,9 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     map.setView([41.3951,2.1734],11);
     fetchTransit();
     transitInterval=setInterval(fetchTransit,20000);
-    loadMetroData();
+    loadMetroData().then(()=>{ loadTmbGtfsStops().then(fetchTmbMetroLive); });
     loadBusData();
+    if(TMB_CONFIGURED && !tmbMetroInterval) tmbMetroInterval = setInterval(fetchTmbMetroLive, 25000);
   }
 });
 
@@ -2400,8 +2403,8 @@ const BUS_DWELL_MS    = 9000;
 // NOTE: the exact TMB response shape isn't verified against a live key here;
 // fetchTmbLineEta() logs the raw response to console so field names can be
 // adjusted quickly once real data is flowing.
-const TMB_APP_ID  = '';
-const TMB_APP_KEY = '';
+const TMB_APP_ID  = '980c1ba9';
+const TMB_APP_KEY = '7c2f37bf83f0bc33c29b99ed6bac90e4';
 const TMB_CONFIGURED = !!(TMB_APP_ID && TMB_APP_KEY);
 
 let metroStations = [];
@@ -2578,22 +2581,158 @@ function positionOnTimeline(runtime, tl, nowMs, phaseMs) {
   return {...pointAtDistance(runtime, 0), stopped:true};
 }
 
-// ── Best-effort live TMB fetch (optional) ──
-// Returns null on any failure or unexpected shape — callers fall straight back
-// to the schedule simulation, no special handling needed.
-async function fetchTmbLineEta(mode, lineCode) {
-  if(!TMB_CONFIGURED) return null;
-  try {
-    const apiUrl = `https://api.tmb.cat/v1/transit/linies/${mode}/${encodeURIComponent(lineCode)}/parades?app_id=${TMB_APP_ID}&app_key=${TMB_APP_KEY}`;
-    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`, {signal: AbortSignal.timeout(8000)});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    console.log(`[TMB raw response] ${mode} ${lineCode}:`, data); // inspect this to refine field mapping
-    return data;
-  } catch(e) {
-    console.warn(`TMB live fetch failed for ${mode} ${lineCode}:`, e.message);
-    return null;
+// ── Real TMB live data ──
+// Two calls: (1) once, download+parse TMB's GTFS static feed to get the numeric
+// station codes the real-time API requires (matched to our OSM stations by
+// proximity); (2) repeatedly, fetch live next-arrival ETAs for those codes and
+// use them to place each line's vehicle between its two soonest-arrival stations,
+// weighted by ETA — a position derived directly from TMB's official real-time data.
+let tmbStopsList = [];        // [{id, code, name, lat, lng}] from GTFS stops.txt
+let tmbMetroLiveData = {};    // lineRef -> [{dist, eta}]
+let tmbMetroInterval = null;
+
+function splitCsvLine(line) {
+  const out = []; let cur=''; let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(c === '"'){ inQuotes = !inQuotes; continue; }
+    if(c === ',' && !inQuotes){ out.push(cur); cur=''; continue; }
+    cur += c;
   }
+  out.push(cur);
+  return out;
+}
+
+function parseGtfsStops(csvText) {
+  const lines = csvText.split(/\r?\n/).filter(Boolean);
+  if(!lines.length) return [];
+  const header = splitCsvLine(lines[0]).map(h=>h.trim().replace(/^"|"$/g,''));
+  const idx = name => header.indexOf(name);
+  const iId=idx('stop_id'), iCode=idx('stop_code'), iName=idx('stop_name'), iLat=idx('stop_lat'), iLon=idx('stop_lon');
+  const out = [];
+  for(let i=1;i<lines.length;i++){
+    const cols = splitCsvLine(lines[i]);
+    if(cols.length <= Math.max(iId,iName,iLat,iLon)) continue;
+    out.push({
+      id: cols[iId],
+      code: iCode>=0 && cols[iCode] ? cols[iCode] : cols[iId],
+      name: cols[iName],
+      lat: parseFloat(cols[iLat]),
+      lng: parseFloat(cols[iLon]),
+    });
+  }
+  return out;
+}
+
+function matchTmbStopsToMetro() {
+  if(!tmbStopsList.length || !metroStations.length) return;
+  let matched = 0;
+  metroStations.forEach(s=>{
+    let best=null, bestD=Infinity;
+    tmbStopsList.forEach(t=>{
+      if(!isFinite(t.lat) || !isFinite(t.lng)) return;
+      const d = haversineM(s.lat,s.lng,t.lat,t.lng);
+      if(d<bestD){ bestD=d; best=t; }
+    });
+    if(best && bestD < 80){ s.tmbCode = best.code; matched++; }
+  });
+  console.log(`Matched ${matched}/${metroStations.length} metro stations to TMB codes`);
+}
+
+async function loadTmbGtfsStops() {
+  if(!TMB_CONFIGURED || tmbStopsList.length) return;
+
+  const cached = loadNetworkCache('providence_tmb_stops_v1');
+  if(cached){ tmbStopsList = cached; matchTmbStopsToMetro(); return; }
+
+  try {
+    const gtfsUrl = `https://api.tmb.cat/v1/static/datasets/gtfs.zip?app_id=${TMB_APP_ID}&app_key=${TMB_APP_KEY}`;
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(gtfsUrl)}`, {signal: AbortSignal.timeout(30000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const stopsFile = zip.file('stops.txt');
+    if(!stopsFile) throw new Error('stops.txt not found in GTFS feed');
+    const text = await stopsFile.async('string');
+    tmbStopsList = parseGtfsStops(text);
+    if(tmbStopsList.length) saveNetworkCache('providence_tmb_stops_v1', tmbStopsList);
+    console.log(`Loaded ${tmbStopsList.length} TMB GTFS stops`);
+    matchTmbStopsToMetro();
+  } catch(e) {
+    console.warn('TMB GTFS stops load failed:', e.message);
+  }
+}
+
+async function fetchTmbMetroLive() {
+  if(!TMB_CONFIGURED) return;
+  const codes = [...new Set(metroStations.map(s=>s.tmbCode).filter(Boolean))];
+  if(!codes.length) return;
+
+  const chunks = [];
+  for(let i=0;i<codes.length;i+=40) chunks.push(codes.slice(i,i+40));
+
+  const results = await Promise.allSettled(chunks.map(async chunk=>{
+    const apiUrl = `https://api.tmb.cat/v1/itransit/metro/estacions?estacions=${chunk.join(',')}&app_id=${TMB_APP_ID}&app_key=${TMB_APP_KEY}`;
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`, {signal: AbortSignal.timeout(10000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }));
+
+  const byLine = {}; // ref -> [{code, eta}]
+  let anyOk = false;
+  results.forEach(r=>{
+    if(r.status!=='fulfilled') return;
+    anyOk = true;
+    (r.value.linies||[]).forEach(l=>{
+      const ref = l.nom_linia;
+      (l.estacions||[]).forEach(st=>{
+        (st.linies_trajectes||[]).forEach(tr=>{
+          const trains = tr.propers_trens||[];
+          if(!trains.length) return;
+          const eta = Math.min(...trains.map(t=>Number(t.temps_arribada)).filter(n=>isFinite(n)));
+          if(!isFinite(eta)) return;
+          (byLine[ref] = byLine[ref]||[]).push({code:String(st.codi_estacio), eta});
+        });
+      });
+    });
+  });
+
+  const newData = {};
+  metroLines.forEach(line=>{
+    const entries = byLine[line.ref];
+    if(!entries || !line.runtime) return;
+    const {path, cum} = line.runtime;
+    const withDist = entries.map(e=>{
+      const st = metroStations.find(s=>s.tmbCode===e.code);
+      if(!st) return null;
+      let bestD=Infinity, bestDist=0;
+      for(let i=0;i<path.length;i++){
+        const d = haversineM(st.lat,st.lng,path[i][0],path[i][1]);
+        if(d<bestD){ bestD=d; bestDist=cum[i]; }
+      }
+      return {dist:bestDist, eta:e.eta};
+    }).filter(Boolean);
+    if(withDist.length>=2) newData[line.ref] = withDist;
+  });
+
+  tmbMetroLiveData = newData;
+  if(anyOk && Object.keys(newData).length){
+    if(!tmbLiveOk) logActivity(`TMB live · ${Object.keys(newData).length} metro lines · real ETA data`, '#ff6600');
+    tmbLiveOk = true;
+  }
+}
+
+// Positions a vehicle between the two soonest-arrival stations on a line,
+// weighted by ETA (closer ETA = closer to that station) — a real position
+// calculated from TMB's official arrival predictions, not GPS, not a guess.
+function liveEtaPosition(line) {
+  const entries = tmbMetroLiveData[line.ref];
+  if(!entries || entries.length<2 || !line.runtime) return null;
+  const sorted = [...entries].sort((a,b)=>a.eta-b.eta);
+  const [p1,p2] = sorted;
+  const w = p1.eta + p2.eta;
+  const dist = w>0 ? p1.dist + (p2.dist-p1.dist)*(p1.eta/w) : p1.dist;
+  return {...pointAtDistance(line.runtime, dist), stopped:p1.eta<20};
 }
 
 // ── Local cache for metro/bus network geometry ──
@@ -2927,7 +3066,7 @@ function ensureMetroVehicleMarkers() {
       const m = L.marker([0,0], {icon: vehicleIcon(line.colour, false)});
       m.bindTooltip('', {sticky:true, opacity:1, className:''});
       metroVehicleLayer.addLayer(m);
-      metroVehicleMarkers[key] = {marker:m, line, phaseMs:k*line.timeline.cycleMs/count, lastStopped:null};
+      metroVehicleMarkers[key] = {marker:m, line, k, phaseMs:k*line.timeline.cycleMs/count, lastStopped:null};
     }
   });
 }
@@ -2955,13 +3094,29 @@ function animateNetworkVehicles(nowRaf) {
     const now = performance.now();
     if(activeFilters.has('metro')) {
       Object.values(metroVehicleMarkers).forEach(v=>{
+        const live = tmbMetroLiveData[v.line.ref];
+        if(live && live.length>=2){
+          if(v.k!==0){ v.marker.setOpacity(0); return; }
+          v.marker.setOpacity(1);
+          const pos = liveEtaPosition(v.line);
+          if(!pos) return;
+          v.marker.setLatLng([pos.lat,pos.lng]);
+          if(pos.stopped !== v.lastStopped){
+            v.lastStopped = pos.stopped;
+            v.marker.setIcon(vehicleIcon(v.line.colour, pos.stopped));
+            v.marker.setTooltipContent(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.94);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
+              <strong style="color:${v.line.colour}">${v.line.ref}</strong> · ${pos.stopped?'Arriving':'En route'} · Live (TMB)</div>`);
+          }
+          return;
+        }
+        v.marker.setOpacity(1);
         const pos = positionOnTimeline(v.line.runtime, v.line.timeline, now, v.phaseMs);
         v.marker.setLatLng([pos.lat,pos.lng]);
         if(pos.stopped !== v.lastStopped){
           v.lastStopped = pos.stopped;
           v.marker.setIcon(vehicleIcon(v.line.colour, pos.stopped));
           v.marker.setTooltipContent(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.94);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
-            <strong style="color:${v.line.colour}">${v.line.ref}</strong> · ${pos.stopped?'At station':'En route'}${tmbLiveOk?'':' · simulated'}</div>`);
+            <strong style="color:${v.line.colour}">${v.line.ref}</strong> · ${pos.stopped?'At station':'En route'} · simulated</div>`);
         }
       });
     }
@@ -3656,11 +3811,12 @@ loadDistrictGeoJSON();
 setTimeout(()=>logActivity('System initialized · Providence v1.0','#00c8ff'), 500);
 
 (function(){
+  let landingActive = true;
   const cursor=document.getElementById('cursor');
   const cursorRing=document.getElementById('cursorRing');
   let mx=window.innerWidth/2,my=window.innerHeight/2,rx=mx,ry=my;
   document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px';});
-  (function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;cursorRing.style.left=rx+'px';cursorRing.style.top=ry+'px';requestAnimationFrame(animRing);})();
+  (function animRing(){if(!landingActive) return; rx+=(mx-rx)*.12;ry+=(my-ry)*.12;cursorRing.style.left=rx+'px';cursorRing.style.top=ry+'px';requestAnimationFrame(animRing);})();
 
   const canvas=document.getElementById('eyeCanvas');
   const ctx=canvas.getContext('2d');
@@ -3672,6 +3828,7 @@ setTimeout(()=>logActivity('System initialized · Providence v1.0','#00c8ff'), 5
   function eyePath(scaleY=1){ctx.beginPath();ctx.moveTo(CX-EW,CY);ctx.bezierCurveTo(CX-EW/2,CY-EH*scaleY,CX+EW/2,CY-EH*scaleY,CX+EW,CY);ctx.bezierCurveTo(CX+EW/2,CY+EH*scaleY,CX-EW/2,CY+EH*scaleY,CX-EW,CY);ctx.closePath();}
 
   function drawEye(){
+    if(!landingActive) return;
     ctx.clearRect(0,0,CW,CH);
     let lidScale=1;
     const now=Date.now();
@@ -3718,6 +3875,7 @@ setTimeout(()=>logActivity('System initialized · Providence v1.0','#00c8ff'), 5
 
   document.getElementById('enterBtn').addEventListener('click',function(e){
     e.preventDefault();
+    landingActive = false;
     const overlay=document.getElementById('landingOverlay');
     overlay.classList.add('fade-out');
     setTimeout(()=>{overlay.style.display='none';},650);
