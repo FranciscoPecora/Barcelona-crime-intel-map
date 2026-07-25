@@ -1902,7 +1902,7 @@ let maritimeVessels = {};
 let maritimeMarkers = null;
 let aisSocket = null;
 let aisKeyFailCount = 0;
-const AIS_BBOX = [[39.0, 0.0], [43.0, 5.0]];
+const AIS_BBOX = [[41.20, 1.90], [41.55, 2.45]];
 
 const MARITIME_FALLBACK_VESSELS = [
   {mmsi:'demo1', lat:41.36, lng:2.19, name:'MSC BARCELONA', cat:'cargo',     typeName:'Cargo',     sog:12.4, cog:210, demo:true},
@@ -2123,7 +2123,7 @@ const BCN_BOX = {lamin:41.0,lomin:1.5,lamax:41.8,lomax:2.8};
 async function fetchAircraft() {
   if(currentMap !== 'aircraft') return;
   try {
-    const apiUrl = 'https://api.adsb.lol/v2/lat/41.39/lon/2.17/dist/150';
+    const apiUrl = 'https://api.adsb.lol/v2/lat/41.39/lon/2.17/dist/40';
     const workerUrl = `${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`;
     const res = await fetch(workerUrl, {signal: AbortSignal.timeout(15000)});
     if(!res.ok) throw new Error(`HTTP ${res.status} from proxy — check that api.adsb.lol is allowlisted on the Cloudflare Worker`);
@@ -2690,7 +2690,10 @@ async function fetchTmbMetroLive() {
           const trains = tr.propers_trens||[];
           if(!trains.length) return;
           const eta = Math.min(...trains.map(t=>Number(t.temps_arribada)).filter(n=>isFinite(n)));
-          if(!isFinite(eta)) return;
+          // TMB returns the next SCHEDULED train even when service is closed for the
+          // night — that can be 20+ minutes or hours away. Only treat an ETA as a real
+          // "train currently approaching" signal if it's genuinely imminent.
+          if(!isFinite(eta) || eta > 900 || eta < 0) return;
           (byLine[ref] = byLine[ref]||[]).push({code:String(st.codi_estacio), eta});
         });
       });
@@ -3095,32 +3098,26 @@ function animateNetworkVehicles(nowRaf) {
     if(activeFilters.has('metro')) {
       Object.values(metroVehicleMarkers).forEach(v=>{
         const live = tmbMetroLiveData[v.line.ref];
-        if(live && live.length>=2){
-          if(v.k!==0){ v.marker.setOpacity(0); return; }
-          v.marker.setOpacity(1);
-          const pos = liveEtaPosition(v.line);
-          if(!pos) return;
-          v.marker.setLatLng([pos.lat,pos.lng]);
-          if(pos.stopped !== v.lastStopped){
-            v.lastStopped = pos.stopped;
-            v.marker.setIcon(vehicleIcon(v.line.colour, pos.stopped));
-            v.marker.setTooltipContent(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.94);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
-              <strong style="color:${v.line.colour}">${v.line.ref}</strong> · ${pos.stopped?'Arriving':'En route'} · Live (TMB)</div>`);
-          }
-          return;
-        }
+        // Live TMB data only. No live data for this line = no marker shown.
+        if(!live || live.length<2 || v.k!==0){ v.marker.setOpacity(0); return; }
         v.marker.setOpacity(1);
-        const pos = positionOnTimeline(v.line.runtime, v.line.timeline, now, v.phaseMs);
+        const pos = liveEtaPosition(v.line);
+        if(!pos){ v.marker.setOpacity(0); return; }
         v.marker.setLatLng([pos.lat,pos.lng]);
         if(pos.stopped !== v.lastStopped){
           v.lastStopped = pos.stopped;
           v.marker.setIcon(vehicleIcon(v.line.colour, pos.stopped));
           v.marker.setTooltipContent(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.94);border:1px solid #1a3050;padding:5px 9px;color:#c0d4e8">
-            <strong style="color:${v.line.colour}">${v.line.ref}</strong> · ${pos.stopped?'At station':'En route'} · simulated</div>`);
+            <strong style="color:${v.line.colour}">${v.line.ref}</strong> · ${pos.stopped?'Arriving':'En route'} · Live (TMB)</div>`);
         }
       });
     }
     if(activeFilters.has('bus')) {
+      // No live bus feed wired yet — under the live-or-nothing policy, don't show
+      // simulated bus vehicles. Bus stops and lines still render statically.
+      Object.values(busVehicleMarkers).forEach(v=>{ v.marker.setOpacity(0); });
+    }
+    if(false && activeFilters.has('bus')) {
       Object.values(busVehicleMarkers).forEach(v=>{
         const pos = positionOnTimeline(v.line.runtime, v.line.timeline, now, v.phaseMs);
         v.marker.setLatLng([pos.lat,pos.lng]);
