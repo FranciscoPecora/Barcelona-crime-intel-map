@@ -2687,7 +2687,10 @@ async function fetchTmbMetroLive() {
     return res.json();
   }));
 
-  const byLine = {}; // ref -> [{code, eta}]
+  const now = Date.now();
+  const normRef = r => String(r||'').toUpperCase().replace(/^L/,'').trim(); // "L1"->"1", "1"->"1"
+
+  const byLine = {}; // normalizedRef -> [{code, eta}]
   let anyOk = false;
   let rawLineRefs = new Set();
   let etaSamples = [];
@@ -2695,27 +2698,29 @@ async function fetchTmbMetroLive() {
     if(r.status!=='fulfilled') return;
     anyOk = true;
     (r.value.linies||[]).forEach(l=>{
-      const ref = l.nom_linia;
-      rawLineRefs.add(ref);
+      const ref = normRef(l.nom_linia);
+      rawLineRefs.add(l.nom_linia);
       (l.estacions||[]).forEach(st=>{
         (st.linies_trajectes||[]).forEach(tr=>{
           const trains = tr.propers_trens||[];
           if(!trains.length) return;
-          const eta = Math.min(...trains.map(t=>Number(t.temps_arribada)).filter(n=>isFinite(n)));
-          if(etaSamples.length<8 && isFinite(eta)) etaSamples.push(eta);
-          // Only treat an ETA as a real "train currently approaching" signal if it's
-          // genuinely imminent (service can report next scheduled train far out).
+          // temps_arribada is an ABSOLUTE unix timestamp in ms — convert to seconds remaining.
+          const etaMsList = trains.map(t=>Number(t.temps_arribada)).filter(n=>isFinite(n));
+          if(!etaMsList.length) return;
+          const eta = (Math.min(...etaMsList) - now) / 1000; // seconds until arrival
+          if(etaSamples.length<8) etaSamples.push(Math.round(eta));
+          // Only count trains genuinely approaching (0–15 min out).
           if(!isFinite(eta) || eta > 900 || eta < 0) return;
           (byLine[ref] = byLine[ref]||[]).push({code:String(st.codi_estacio), eta});
         });
       });
     });
   });
-  console.log('[TMB] anyOk:', anyOk, '| API line refs:', [...rawLineRefs], '| our line refs:', metroLines.map(l=>l.ref), '| ETA samples (s):', etaSamples);
+  console.log('[TMB] anyOk:', anyOk, '| API refs:', [...rawLineRefs], '| our refs:', metroLines.map(l=>l.ref), '| ETA remaining (s):', etaSamples, '| matched lines:', Object.keys(byLine));
 
   const newData = {};
   metroLines.forEach(line=>{
-    const entries = byLine[line.ref];
+    const entries = byLine[normRef(line.ref)];
     if(!entries || !line.runtime) return;
     const {path, cum} = line.runtime;
     const withDist = entries.map(e=>{
@@ -2728,7 +2733,7 @@ async function fetchTmbMetroLive() {
       }
       return {dist:bestDist, eta:e.eta};
     }).filter(Boolean);
-    if(withDist.length>=2) newData[line.ref] = withDist;
+    if(withDist.length>=2) newData[line.ref] = withDist; // keyed by the line's own ref for lookup
   });
 
   tmbMetroLiveData = newData;
