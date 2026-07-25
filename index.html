@@ -2689,25 +2689,29 @@ async function fetchTmbMetroLive() {
 
   const byLine = {}; // ref -> [{code, eta}]
   let anyOk = false;
+  let rawLineRefs = new Set();
+  let etaSamples = [];
   results.forEach(r=>{
     if(r.status!=='fulfilled') return;
     anyOk = true;
     (r.value.linies||[]).forEach(l=>{
       const ref = l.nom_linia;
+      rawLineRefs.add(ref);
       (l.estacions||[]).forEach(st=>{
         (st.linies_trajectes||[]).forEach(tr=>{
           const trains = tr.propers_trens||[];
           if(!trains.length) return;
           const eta = Math.min(...trains.map(t=>Number(t.temps_arribada)).filter(n=>isFinite(n)));
-          // TMB returns the next SCHEDULED train even when service is closed for the
-          // night — that can be 20+ minutes or hours away. Only treat an ETA as a real
-          // "train currently approaching" signal if it's genuinely imminent.
+          if(etaSamples.length<8 && isFinite(eta)) etaSamples.push(eta);
+          // Only treat an ETA as a real "train currently approaching" signal if it's
+          // genuinely imminent (service can report next scheduled train far out).
           if(!isFinite(eta) || eta > 900 || eta < 0) return;
           (byLine[ref] = byLine[ref]||[]).push({code:String(st.codi_estacio), eta});
         });
       });
     });
   });
+  console.log('[TMB] anyOk:', anyOk, '| API line refs:', [...rawLineRefs], '| our line refs:', metroLines.map(l=>l.ref), '| ETA samples (s):', etaSamples);
 
   const newData = {};
   metroLines.forEach(line=>{
@@ -2957,12 +2961,9 @@ out geom;`;
 
   dataLoaded.bus = true;
   console.log(`Loaded ${busLines.length} bus lines, ${busStops.length} stops from OSM`);
-  if(busLines.length && busStops.length) {
-    saveNetworkCache('providence_bus_v2', {
-      busLines: busLines.map(stripLineForCache),
-      busStops,
-    });
-  }
+  // Note: bus network is intentionally NOT cached to localStorage — it's several MB
+  // and overflows the quota, which can evict the smaller, more valuable metro/TMB
+  // caches. Bus re-fetches from OSM each session; metro + TMB stops stay cached.
 
   if(!busStops.length && !busLines.length) {
     busError = true;
