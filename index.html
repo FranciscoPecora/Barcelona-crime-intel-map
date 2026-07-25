@@ -364,11 +364,11 @@
 .cursor-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(255,255,255,.25);
   border-radius:50%;pointer-events:none;z-index:9998;
   transform:translate(-50%,-50%);transition:all .12s ease}
-.bracket{position:fixed;width:28px;height:28px;border-color:rgba(255,255,255,.1);border-style:solid;z-index:20}
-.tl{top:24px;left:24px;border-width:1px 0 0 1px}
-.tr{top:24px;right:24px;border-width:1px 1px 0 0}
-.bl{bottom:24px;left:24px;border-width:0 0 1px 1px}
-.br{bottom:24px;right:24px;border-width:0 1px 1px 0}
+.bracket{position:fixed;width:40px;height:40px;border-color:rgba(180,205,235,.35);border-style:solid;z-index:20}
+.tl{top:24px;left:24px;border-width:2px 0 0 2px}
+.tr{top:24px;right:24px;border-width:2px 2px 0 0}
+.bl{bottom:24px;left:24px;border-width:0 0 2px 2px}
+.br{bottom:24px;right:24px;border-width:0 2px 2px 0}
 .classify{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:20;
   font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;
   color:rgba(255,255,255,.4);text-transform:uppercase;
@@ -380,18 +380,20 @@
   animation:stageIn 1.4s cubic-bezier(.16,1,.3,1) forwards}
 @keyframes stageIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 .eye-container{position:relative;width:400px;height:174px}
+.eye-container::before{content:'';position:absolute;top:50%;left:50%;width:340px;height:200px;transform:translate(-50%,-50%);background:radial-gradient(ellipse at center,rgba(140,180,230,.14) 0%,rgba(140,180,230,.05) 40%,transparent 70%);pointer-events:none;z-index:-1}
+canvas#eyeCanvas{filter:drop-shadow(0 0 10px rgba(150,190,235,.18))}
 canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
 .wordmark{text-align:center;animation:wordIn .9s 1s cubic-bezier(.16,1,.3,1) both}
 @keyframes wordIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.wordmark h1{font-size:32px;font-weight:600;letter-spacing:.35em;color:#fff;text-transform:uppercase}
-.wordmark h1 span{color:#3b82f6}
-.wordmark p{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-top:8px}
+.wordmark h1{font-size:32px;font-weight:600;letter-spacing:.35em;color:#eaf2fb;text-transform:uppercase;text-shadow:0 0 18px rgba(150,190,235,.35),0 0 4px rgba(210,228,248,.4)}
+.wordmark h1 span{color:#6ba4e8}
+.wordmark p{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:rgba(190,210,235,.35);text-transform:uppercase;margin-top:8px}
 .enter-wrap{animation:wordIn .9s 1.8s cubic-bezier(.16,1,.3,1) both}
 .enter-btn{display:inline-flex;align-items:center;gap:12px;padding:11px 36px;background:transparent;
   border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.45);
   font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;
   cursor:none;transition:all .25s;text-decoration:none}
-.enter-btn:hover{border-color:rgba(59,130,246,.55);color:#3b82f6;background:rgba(59,130,246,.07)}
+.enter-btn:hover{border-color:rgba(107,164,232,.55);color:#8fbdf0;background:rgba(107,164,232,.08)}
 .arrow{transition:transform .25s;font-size:14px}
 .enter-btn:hover .arrow{transform:translateX(4px)}
 #landingOverlay.fade-out{animation:fadeOut .65s ease forwards;pointer-events:none}
