@@ -1886,7 +1886,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   if(currentMap==='aircraft'){
     map.setView([41.40,2.15],10);
     fetchAircraft();
-    aircraftInterval=setInterval(fetchAircraft,10000);
+    aircraftInterval=setInterval(fetchAircraft,60000);
   }
   if(currentMap==='transit'){
     map.setView([41.3951,2.1734],11);
