@@ -3342,17 +3342,19 @@ function renderTrafficLayer(){
     const pl = L.polyline(g.points, {
       color:meta.color, weight:meta.weight, opacity:meta.opacity, renderer:trafficCanvas,
       lineCap:'round', lineJoin:'round',
-      dashArray: '6,4', // tight dashes → continuous line with visible motion travelling through it
+      dashArray: '6,4',
     });
-    if(meta.glow>0 && pl._path) pl._path.style.filter = `drop-shadow(0 0 ${meta.glow}px ${meta.color})`;
-    if(pl._path){ trafficFlowSegments.push({path:pl._path, speed:Math.max(meta.speed,0.05)}); }
-    const predMeta = TRAFFIC_STATES[st.predicted] || TRAFFIC_STATES[0];
     pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
       <strong>${g.name}</strong><br>
       <span style="color:${meta.color}">● Now: ${meta.label}</span><br>
-      <span style="color:${predMeta.color}">○ In 15 min: ${predMeta.label}</span></div>`,
+      <span style="color:${(TRAFFIC_STATES[st.predicted]||TRAFFIC_STATES[0]).color}">○ In 15 min: ${(TRAFFIC_STATES[st.predicted]||TRAFFIC_STATES[0]).label}</span></div>`,
       {sticky:true, opacity:1, className:''});
     trafficLayer.addLayer(pl);
+    // _path only exists after the layer is added to the map — read it now.
+    if(pl._path){
+      if(meta.glow>0) pl._path.style.filter = `drop-shadow(0 0 ${meta.glow}px ${meta.color})`;
+      trafficFlowSegments.push({path:pl._path, speed:Math.max(meta.speed,0.05)});
+    }
   });
 }
 
@@ -3362,14 +3364,14 @@ let _trafficFlowOffset = 0;
 let _trafficFlowRaf = null;
 function animateTrafficFlow(){
   if(currentMap==='traffic' && trafficFlowSegments.length){
-    _trafficFlowOffset += 0.6;
+    _trafficFlowOffset += 0.8;
     trafficFlowSegments.forEach(s=>{
-      if(s.path) s.path.style.strokeDashoffset = -(_trafficFlowOffset * s.speed);
+      if(s.path){ s.path.setAttribute('stroke-dashoffset', -(_trafficFlowOffset * s.speed)); }
     });
   }
   _trafficFlowRaf = requestAnimationFrame(animateTrafficFlow);
 }
-if(!_trafficFlowRaf) animateTrafficFlow();
+animateTrafficFlow();
 
 // ─── ROAD WORKS (obres) — active + upcoming public-space works, overlaid on
 // traffic so congestion can be read against its likely cause. Daily-updated,
@@ -3447,12 +3449,11 @@ function renderRoadworksLayer(){
   roadworks.forEach(w=>{
     const meta = ROADWORK_STATUS[w.status];
     const poly = L.polygon(w.polygon, {
-      color: meta.color, weight:2, fillColor:meta.color, fillOpacity:0.22,
-      opacity:0.95, dashArray:'5,4', renderer:trafficCanvas,
+      color: meta.color, weight:3.5, fillColor:meta.color, fillOpacity:0.15,
+      opacity:1, dashArray:'6,5', renderer:trafficCanvas,
     });
-    if(poly._path) poly._path.style.filter = `drop-shadow(0 0 5px ${meta.color})`;
-    poly.on('mouseover', ()=>poly.setStyle({fillOpacity:0.4, weight:3}));
-    poly.on('mouseout',  ()=>poly.setStyle({fillOpacity:0.22, weight:2}));
+    poly.on('mouseover', ()=>poly.setStyle({fillOpacity:0.35, weight:4.5}));
+    poly.on('mouseout',  ()=>poly.setStyle({fillOpacity:0.15, weight:3.5}));
     poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8;max-width:260px">
       <div style="color:${meta.color};font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">⚠ ${meta.label} road work · ${w.type}</div>
       <strong>${w.name}</strong><br>
@@ -3461,6 +3462,7 @@ function renderRoadworksLayer(){
       ${w.promotor?`<br><span style="color:#526e8c;font-size:9px">${w.promotor}</span>`:''}
     </div>`, {sticky:true, opacity:1, className:''});
     roadworksLayer.addLayer(poly);
+    if(poly._path) poly._path.style.filter = `drop-shadow(0 0 6px ${meta.color})`;
   });
 }
 
