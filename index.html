@@ -3602,7 +3602,126 @@ const ONT_QUERIES = {
   },
 };
 
+// ═══════════════════════════════════════════════════════════════
+// CAUSAL REASONING ENGINE — probable-cause analysis over the ontology.
+// A problem is an observation that deviates from expectation. Each registered
+// "explainer" checks one kind of cause and returns candidate(s) with a weight
+// (0–1) and honest reasoning. The engine runs all explainers, ranks results,
+// and always reports the RESIDUAL (unexplained portion) as its own signal —
+// the methodological-honesty core: proximity is a candidate, not proof.
+// To make the engine smarter later, register another explainer. No rewrite.
+// ═══════════════════════════════════════════════════════════════
+const CAUSAL_EXPLAINERS = [];
+function registerExplainer(fn){ CAUSAL_EXPLAINERS.push(fn); }
+
+// confidence label from a 0–1 weight
+function confidenceLabel(w){
+  if(w>=0.66) return {label:'high',   color:'#00e676'};
+  if(w>=0.33) return {label:'moderate',color:'#ffb300'};
+  return {label:'low', color:'#ff9100'};
+}
+
+// Run all explainers against a problem object → ranked causes + residual.
+// problem = { kind:'section'|'district', ref, severity (0–1) }
+function analyzeProblem(problem){
+  const causes = [];
+  CAUSAL_EXPLAINERS.forEach(fn=>{
+    try { const out = fn(problem); if(out) causes.push(...(Array.isArray(out)?out:[out])); }
+    catch(e){ /* explainer failed silently; robustness over completeness */ }
+  });
+  causes.sort((a,b)=>b.weight-a.weight);
+  // Residual: severity not accounted for by the strongest explanations.
+  // Cap combined explanatory power at the problem's severity (can't over-explain).
+  const explained = Math.min(problem.severity, causes.reduce((s,c)=>s+c.weight,0));
+  const residual = Math.max(0, problem.severity - explained);
+  return { problem, causes, residual };
+}
+
+// ── Explainer 1: roadwork co-location (traffic problems) ──
+registerExplainer(function roadworkExplainer(p){
+  if(p.kind!=='section') return null;
+  const s = p.ref;
+  const d = s.districtId ? ONTOLOGY.districts[s.districtId] : null;
+  if(!d || d.live.roadworksActive<=0) return null;
+  // more works in-district → stronger candidate, but capped: co-location is weak evidence
+  const w = Math.min(0.45, 0.2 + 0.08*d.live.roadworksActive);
+  return { label:`Active roadwork in ${d.name}`, weight:w, kind:'roadwork',
+    reasoning:`${d.live.roadworksActive} active work${d.live.roadworksActive>1?'s':''} in this district. Co-location makes this a candidate contributor — not confirmed cause; the work may be on an unrelated street.` };
+});
+
+// ── Explainer 2: structural density (traffic problems) ──
+registerExplainer(function densityExplainer(p){
+  if(p.kind!=='section') return null;
+  const s = p.ref;
+  const d = s.districtId ? ONTOLOGY.districts[s.districtId] : null;
+  if(!d) return null;
+  const dens = d.demographic.populationDensity;
+  if(dens < 18000) return null;
+  const w = Math.min(0.3, (dens-18000)/60000);
+  return { label:`High-density corridor (${(dens/1000).toFixed(0)}k/km²)`, weight:w, kind:'structural',
+    reasoning:`${d.name} is structurally dense, so elevated congestion is partly baseline-expected here rather than an incident. Lowers how anomalous this reading is.` };
+});
+
+// ── Explainer 3: district crime co-factors (district problems) ──
+registerExplainer(function crimeCofactorExplainer(p){
+  if(p.kind!=='district') return null;
+  const d = p.ref;
+  const drivers = [];
+  const c = d.crime;
+  const top = [['theft',c.theft],['assault',c.assault],['robbery',c.robbery],['drugs',c.drugs]]
+    .sort((a,b)=>b[1]-a[1])[0];
+  if(top && top[1]>0 && c.total>0){
+    const share = top[1]/c.total;
+    drivers.push({ label:`${top[0]} dominates crime mix (${(share*100).toFixed(0)}%)`, weight:Math.min(0.4,share), kind:'crime-structure',
+      reasoning:`This district's pressure is driven disproportionately by ${top[0]}. A targeted ${top[0]} intervention would move the composite more than a broad approach.` });
+  }
+  return drivers;
+});
+
 const _origGetDistrictColor = getDistrictColor;
+
+// Click handler for the reasoning view: run the engine, render ranked causes.
+window.__analyzeProblem = function(i){
+  const p = (window.__PROBLEMS||[])[i];
+  const out = document.getElementById('reasoningOutput');
+  if(!p || !out) return;
+  const result = analyzeProblem(p);
+  const bar = (v,color)=>`<div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-top:2px"><div style="height:100%;width:${Math.round(v*100)}%;background:${color}"></div></div>`;
+  const residualPct = result.residual / Math.max(0.01, p.severity);
+  let html = `<div style="border-top:1px solid var(--border2);padding-top:10px">
+    <div style="font-family:var(--mono);font-size:9px;color:#c0d4e8;margin-bottom:2px">${p.title}</div>
+    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-bottom:10px">Problem severity ${(p.severity*100).toFixed(0)} · ${result.causes.length} candidate explanation${result.causes.length!==1?'s':''}</div>`;
+  if(result.causes.length){
+    html += result.causes.map((c,n)=>{
+      const conf = confidenceLabel(c.weight);
+      return `<div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-family:var(--mono);font-size:8px;color:#c0d4e8">${n+1}. ${c.label}</span>
+          <span style="font-family:var(--mono);font-size:7px;color:${conf.color};text-transform:uppercase;letter-spacing:.1em">${conf.label}</span>
+        </div>
+        ${bar(c.weight, conf.color)}
+        <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:3px;line-height:1.5">${c.reasoning}</div>
+      </div>`;
+    }).join('');
+  } else {
+    html += `<div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:9px">No registered explainer produced a candidate. As more causal nodes (events, weather, baselines) are added to the ontology, the engine will have more to reason with here.</div>`;
+  }
+  // Residual — the honesty signal
+  const resColor = residualPct>0.5 ? '#ff1744' : residualPct>0.25 ? '#ffb300' : '#00e676';
+  html += `<div style="border-top:1px dashed var(--border2);margin-top:8px;padding-top:8px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <span style="font-family:var(--mono);font-size:8px;color:${resColor}">⚠ Unexplained residual</span>
+      <span style="font-family:var(--mono);font-size:7px;color:${resColor}">${(residualPct*100).toFixed(0)}% of severity</span>
+    </div>
+    ${bar(residualPct, resColor)}
+    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:3px;line-height:1.5">${
+      residualPct>0.5 ? 'Most of this problem is NOT accounted for by known causes. This is the highest-value signal — something is happening here the current model cannot explain. Worth direct investigation.' :
+      residualPct>0.25 ? 'A meaningful portion remains unexplained. The candidate causes above are partial; treat them as leads, not conclusions.' :
+      'Known causes account for most of this problem. Lower investigative priority — the situation is largely understood.'
+    }</div>
+  </div></div>`;
+  out.innerHTML = html;
+};
 getDistrictColor = function(id) {
   if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit' || currentMap === 'traffic') {
     return {c:'rgba(20,25,35,0.1)',o:.1};
@@ -4285,7 +4404,38 @@ function buildAnalysisPanel() {
             </div>
           </div>
           <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:10px;line-height:1.5">Attribution is district-level proximity, not causal proof — a co-located roadwork is a candidate explanation to investigate, not a confirmed cause. Anomalies (congestion with no nearby works) are the higher-value signal: something unexplained is happening there.</div>` : `<div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Open the Traffic tab once to load live sections, then return here — congestion attribution will populate.</div>`}
-        </div>`;
+        </div>
+
+        ${(()=>{
+          // ── CAUSAL REASONING: clickable problems → ranked probable causes ──
+          const problems = [];
+          // top-pressure districts as problems
+          ONT_QUERIES.districtPressure().slice(0,3).forEach(d=>{
+            const node = ONTOLOGY.districts[d.id];
+            problems.push({ kind:'district', ref:node, severity:Math.min(1,d.score*1.4),
+              title:node.name, sub:`Pressure ${(d.score*100).toFixed(0)} · ${d.crime.toLocaleString()} crime` });
+          });
+          // most-congested sections as problems
+          const ce = ONT_QUERIES.congestionExplained();
+          [...ce.anomaly, ...ce.explained].slice(0,3).forEach(s=>{
+            const node = ONTOLOGY.sections[s.id];
+            if(node) problems.push({ kind:'section', ref:node, severity: node.congestion>=6?1:0.75,
+              title:node.name, sub:`${node.congestion>=6?'Blocked':'Congested'} · ${s.district}` });
+          });
+          if(!problems.length) return '';
+          // stash for the click handler
+          window.__PROBLEMS = problems;
+          return `<div style="background:rgba(255,109,0,.03);border:1px solid rgba(255,109,0,.14);padding:14px 16px;margin-bottom:20px">
+            <div style="font-family:var(--mono);font-size:9px;color:#ff6d00;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px">Probable-Cause Reasoning</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:12px">Click a flagged problem — the engine traverses its ontology links and ranks candidate explanations, always reporting the unexplained residual.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+              ${problems.map((p,i)=>`<button onclick="window.__analyzeProblem(${i})" style="font-family:var(--mono);font-size:8px;padding:5px 10px;background:rgba(4,12,24,.7);border:1px solid ${p.kind==='district'?'#ff6d0044':'#ff174444'};color:#c0d4e8;cursor:pointer;text-align:left">
+                <span style="color:${p.kind==='district'?'#ff6d00':'#ff1744'}">${p.kind==='district'?'▣':'▬'}</span> ${p.title}<br><span style="color:var(--muted2);font-size:7px">${p.sub}</span>
+              </button>`).join('')}
+            </div>
+            <div id="reasoningOutput" style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Select a problem above to see its probable-cause analysis.</div>
+          </div>`;
+        })()}`;
       })()}
 
       ${findings.length>0?`<div style="background:rgba(0,200,255,.04);border:1px solid rgba(0,200,255,.12);padding:10px 14px;margin-bottom:20px">
