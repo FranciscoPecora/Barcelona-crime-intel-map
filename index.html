@@ -3225,15 +3225,17 @@ let trafficLoaded = false;
 let trafficError = false;
 const trafficCanvas = L.canvas({padding:0.5});
 
-// Congestion 0–6 → color + label (0 = no data)
+// Congestion 0–6 → color + weight + opacity + glow. Fluid traffic recedes into
+// a dim desaturated background; dense/congested/blocked advance with warmth and
+// glow so problems draw the eye without removing any data from the map.
 const TRAFFIC_STATES = {
-  0: {label:'No data',   color:'#3a4556'},
-  1: {label:'Very fluid',color:'#00c853'},
-  2: {label:'Fluid',     color:'#64dd17'},
-  3: {label:'Dense',     color:'#ffb300'},
-  4: {label:'Very dense',color:'#ff6d00'},
-  5: {label:'Congested', color:'#d50000'},
-  6: {label:'Blocked',   color:'#7b1fa2'},
+  0: {label:'No data',   color:'#2a3543', weight:1.5, opacity:0.15, glow:0},
+  1: {label:'Very fluid',color:'#3d5a6c', weight:2,   opacity:0.5,  glow:0},
+  2: {label:'Fluid',     color:'#4a7d7a', weight:2,   opacity:0.55, glow:0},
+  3: {label:'Dense',     color:'#c9a227', weight:3,   opacity:0.85, glow:4},
+  4: {label:'Very dense',color:'#e07b39', weight:3.5, opacity:0.9,  glow:6},
+  5: {label:'Congested', color:'#e63946', weight:4,   opacity:0.95, glow:8},
+  6: {label:'Blocked',   color:'#b5179e', weight:4.5, opacity:1,    glow:10},
 };
 
 function trafficStateToFilter(v) {
@@ -3326,13 +3328,19 @@ async function fetchTrafficState(){
 function renderTrafficLayer(){
   if(trafficLayer){ map.removeLayer(trafficLayer); trafficLayer=null; }
   trafficLayer = L.layerGroup().addTo(map);
-  Object.entries(trafficGeom).forEach(([id, g])=>{
+  // Draw fluid first, problems last, so congestion always sits visually on top.
+  const entries = Object.entries(trafficGeom)
+    .map(([id,g])=>({id, g, v: trafficState[id]?trafficState[id].current:0}))
+    .filter(e=>e.v>0 && activeFilters.has(trafficStateToFilter(e.v)))
+    .sort((a,b)=>a.v-b.v);
+  entries.forEach(({id,g,v})=>{
     const st = trafficState[id];
-    const v = st ? st.current : 0;
-    if(v===0) return; // don't draw no-data sections
-    if(!activeFilters.has(trafficStateToFilter(v))) return;
     const meta = TRAFFIC_STATES[v] || TRAFFIC_STATES[0];
-    const pl = L.polyline(g.points, {color:meta.color, weight:4, opacity:0.85, renderer:trafficCanvas});
+    const pl = L.polyline(g.points, {
+      color:meta.color, weight:meta.weight, opacity:meta.opacity, renderer:trafficCanvas,
+      lineCap:'round', lineJoin:'round',
+    });
+    if(meta.glow>0 && pl._path) pl._path.style.filter = `drop-shadow(0 0 ${meta.glow}px ${meta.color})`;
     const predMeta = TRAFFIC_STATES[st.predicted] || TRAFFIC_STATES[0];
     pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
       <strong>${g.name}</strong><br>
@@ -3352,8 +3360,8 @@ let roadworksLayer = null;
 let roadworksLoaded = false;
 
 const ROADWORK_STATUS = {
-  active:   {label:'Active',   color:'#ffd54f'},
-  upcoming: {label:'Upcoming', color:'#4fc3f7'},
+  active:   {label:'Active',   color:'#8a7a3a'},
+  upcoming: {label:'Upcoming', color:'#3a6a8a'},
 };
 
 function parseWktPolygon(wkt){
@@ -3419,11 +3427,13 @@ function renderRoadworksLayer(){
   roadworks.forEach(w=>{
     const meta = ROADWORK_STATUS[w.status];
     const poly = L.polygon(w.polygon, {
-      color: meta.color, weight:1.5, fillColor:meta.color, fillOpacity:0.25,
-      dashArray: w.status==='upcoming' ? '4,3' : null,
+      color: meta.color, weight:1, fillColor:meta.color, fillOpacity:0.08,
+      opacity:0.5, dashArray: w.status==='upcoming' ? '3,3' : null,
     });
+    poly.on('mouseover', ()=>poly.setStyle({opacity:0.95, weight:1.5, fillOpacity:0.2}));
+    poly.on('mouseout',  ()=>poly.setStyle({opacity:0.5, weight:1, fillOpacity:0.08}));
     poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8;max-width:260px">
-      <div style="color:${meta.color};font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">${meta.label} · ${w.type}</div>
+      <div style="color:${w.status==='active'?'#ffd54f':'#4fc3f7'};font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">${meta.label} · ${w.type}</div>
       <strong>${w.name}</strong><br>
       <span style="color:#7090a8">${w.district}</span><br>
       <span style="color:#7090a8">${w.inici} → ${w.fi}</span>
@@ -3691,11 +3701,11 @@ buildControls = function() {
     document.getElementById('bottomBar').innerHTML=`<span class="bb-label">MOBILITY DOMAIN</span><span class="bb-val" style="color:var(--accent)">LIVE TRAFFIC STATE · AJUNTAMENT BCN · 5-MIN</span>`;
     document.getElementById('legend').innerHTML=`<div class="legend-title">Congestion</div><div class="legend-body">
       <div style="display:flex;flex-direction:column;gap:4px">
-        ${[['#00c853','Very fluid'],['#64dd17','Fluid'],['#ffb300','Dense'],['#ff6d00','Very dense'],['#d50000','Congested'],['#7b1fa2','Blocked']]
+        ${[['#3d5a6c','Very fluid'],['#4a7d7a','Fluid'],['#c9a227','Dense'],['#e07b39','Very dense'],['#e63946','Congested'],['#b5179e','Blocked']]
           .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:3px;background:${c}"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
         <div style="border-top:1px solid var(--border);margin:2px 0"></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#ffd54f;opacity:.5;border:1px solid #ffd54f"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (active)</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#4fc3f7;opacity:.5;border:1px dashed #4fc3f7"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (upcoming)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#8a7a3a;opacity:.4;border:1px solid #8a7a3a"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (active)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#3a6a8a;opacity:.4;border:1px dashed #3a6a8a"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (upcoming)</span></div>
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / TRAFFIC·LAYER<br>Source: Ajuntament de Barcelona · Live traffic sections';
     return;
