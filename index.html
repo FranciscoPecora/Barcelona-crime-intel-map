@@ -1366,6 +1366,7 @@ const TRAFFIC_LAYERS = [
   {id:'traffic_flow', label:'Fluid (1–2)',     color:'#00c853'},
   {id:'traffic_dense',label:'Dense (3–4)',     color:'#ff9800'},
   {id:'traffic_jam',  label:'Congested (5–6)', color:'#d50000'},
+  {id:'roadworks',    label:'Road Works',      color:'#ffd54f'},
 ];
 
 const TRANSIT_LAYERS = [
@@ -1847,6 +1848,7 @@ function wipeAllTabLayers() {
   // Traffic
   if(trafficInterval){ clearInterval(trafficInterval); trafficInterval=null; }
   if(trafficLayer){ map.removeLayer(trafficLayer); trafficLayer=null; }
+  if(roadworksLayer){ map.removeLayer(roadworksLayer); roadworksLayer=null; }
 }
 
 document.getElementById('mainNav').addEventListener('click',e=>{
@@ -1922,6 +1924,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     map.setView([41.3951,2.1734],13);
     loadTrafficGeom().then(()=>{ trafficLoaded=true; fetchTrafficState(); });
     trafficInterval=setInterval(fetchTrafficState, 300000); // 5 min
+    loadRoadworks();
   }
 });
 
@@ -3340,6 +3343,96 @@ function renderTrafficLayer(){
   });
 }
 
+// ─── ROAD WORKS (obres) — active + upcoming public-space works, overlaid on
+// traffic so congestion can be read against its likely cause. Daily-updated,
+// georeferenced WKT polygons from the Ajuntament open-data portal. ───
+const ROADWORKS_URL = 'https://opendata-ajuntament.barcelona.cat/data/dataset/fd9f355f-2160-4f89-96a1-6ece3924e3bd/resource/089bcf9e-140e-4ea3-bf93-03c6260ba0f5/download';
+let roadworks = [];        // [{status, name, type, district, dates, polygon, url, promotor}]
+let roadworksLayer = null;
+let roadworksLoaded = false;
+
+const ROADWORK_STATUS = {
+  active:   {label:'Active',   color:'#ffd54f'},
+  upcoming: {label:'Upcoming', color:'#4fc3f7'},
+};
+
+function parseWktPolygon(wkt){
+  const m = (wkt||'').match(/\(\(([^)]+)\)\)/);
+  if(!m) return null;
+  const pts = m[1].split(',').map(pair=>{
+    const [lng,lat] = pair.trim().split(/\s+/).map(Number);
+    return [lat,lng];
+  }).filter(p=>isFinite(p[0])&&isFinite(p[1]));
+  return pts.length>=3 ? pts : null;
+}
+
+function roadworkStatus(inici, fi){
+  const now = new Date();
+  const s = inici ? new Date(inici.replace(' ','T')) : null;
+  const e = fi ? new Date(fi.replace(' ','T')) : null;
+  const soon = new Date(now.getTime() + 30*24*3600*1000);
+  if(s && e && now >= s && now <= e) return 'active';
+  if(s && s > now && s <= soon) return 'upcoming';
+  return null; // finished/planned-far-off: skip
+}
+
+async function loadRoadworks(){
+  if(roadworksLoaded) return;
+  try {
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(ROADWORKS_URL)}`, {signal: AbortSignal.timeout(20000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const arr = Array.isArray(data) ? data : (data.result || data.features || []);
+    roadworks = arr.map(w=>{
+      const status = roadworkStatus(w.data_inici, w.data_fi);
+      if(!status) return null;
+      const poly = parseWktPolygon(w.geometria_wgs84);
+      if(!poly) return null;
+      return {
+        status,
+        name: fixLatin1(w.titol || w.ubicacio || 'Road work'),
+        type: fixLatin1(w.tipusobra || ''),
+        district: fixLatin1(w.nom_districte || ''),
+        location: fixLatin1(w.ubicacio || ''),
+        inici: (w.data_inici||'').slice(0,10),
+        fi: (w.data_fi||'').slice(0,10),
+        promotor: fixLatin1(w.promotor || ''),
+        url: w.url_web_obres || null,
+        polygon: poly,
+      };
+    }).filter(Boolean);
+    roadworksLoaded = true;
+    const active = roadworks.filter(w=>w.status==='active').length;
+    console.log(`Loaded ${roadworks.length} road works (${active} active, ${roadworks.length-active} upcoming)`);
+    logActivity(`Road works · ${active} active · Ajuntament BCN`, '#ffd54f');
+    if(currentMap==='traffic'){ renderRoadworksLayer(); buildHUD(); }
+  } catch(e){
+    console.warn('Road works load failed:', e.message);
+    roadworksLoaded = true;
+  }
+}
+
+function renderRoadworksLayer(){
+  if(roadworksLayer){ map.removeLayer(roadworksLayer); roadworksLayer=null; }
+  if(!activeFilters.has('roadworks')) return;
+  roadworksLayer = L.layerGroup().addTo(map);
+  roadworks.forEach(w=>{
+    const meta = ROADWORK_STATUS[w.status];
+    const poly = L.polygon(w.polygon, {
+      color: meta.color, weight:1.5, fillColor:meta.color, fillOpacity:0.25,
+      dashArray: w.status==='upcoming' ? '4,3' : null,
+    });
+    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8;max-width:260px">
+      <div style="color:${meta.color};font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">${meta.label} · ${w.type}</div>
+      <strong>${w.name}</strong><br>
+      <span style="color:#7090a8">${w.district}</span><br>
+      <span style="color:#7090a8">${w.inici} → ${w.fi}</span>
+      ${w.promotor?`<br><span style="color:#526e8c;font-size:9px">${w.promotor}</span>`:''}
+    </div>`, {sticky:true, opacity:1, className:''});
+    roadworksLayer.addLayer(poly);
+  });
+}
+
 const _origGetDistrictColor = getDistrictColor;
 getDistrictColor = function(id) {
   if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit' || currentMap === 'traffic') {
@@ -3378,6 +3471,7 @@ buildInfraMarkers = function() {
   }
   if(currentMap === 'traffic') {
     if(trafficLoaded) renderTrafficLayer();
+    if(roadworksLoaded) renderRoadworksLayer();
     return;
   }
   _origBuildInfraMarkers();
@@ -3552,6 +3646,7 @@ buildHUD = function() {
         <div class="hud-row"><span>Sections live</span><span style="color:var(--accent)">${total}</span></div>
         <div class="hud-row"><span>Dense</span><span style="color:#ff9800">${dense}</span></div>
         <div class="hud-row"><span>Congested/blocked</span><span style="color:#d50000">${jam}</span></div>
+        <div class="hud-row"><span>Road works</span><span style="color:#ffd54f">${roadworksLoaded ? roadworks.filter(w=>w.status==='active').length+' active' : '…'}</span></div>
         <div class="hud-row"><span>Source</span><span style="color:var(--green)">Ajuntament · 5-min</span></div>
       </div>`;
     return;
@@ -3598,6 +3693,9 @@ buildControls = function() {
       <div style="display:flex;flex-direction:column;gap:4px">
         ${[['#00c853','Very fluid'],['#64dd17','Fluid'],['#ffb300','Dense'],['#ff6d00','Very dense'],['#d50000','Congested'],['#7b1fa2','Blocked']]
           .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:3px;background:${c}"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
+        <div style="border-top:1px solid var(--border);margin:2px 0"></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#ffd54f;opacity:.5;border:1px solid #ffd54f"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (active)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#4fc3f7;opacity:.5;border:1px dashed #4fc3f7"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (upcoming)</span></div>
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / TRAFFIC·LAYER<br>Source: Ajuntament de Barcelona · Live traffic sections';
     return;
