@@ -1864,6 +1864,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   const analysisPanel = document.getElementById('analysisPanel');
   if(currentMap === 'analysis') {
     analysisPanel.style.display = 'block';
+    buildOntology();
     buildAnalysisPanel();
     document.getElementById('hud').style.display = 'none';
     document.getElementById('sidebar').style.display = 'none';
@@ -3466,6 +3467,141 @@ function renderRoadworksLayer(){
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// PROVIDENCE ONTOLOGY — dual-grain linked object model (live)
+// District grain (10) aggregates street-level grain (traffic sections,
+// road works). Built from REAL in-memory data, updated in place as feeds
+// refresh. This is the backbone the Analysis view queries — the engine, not
+// a picture of one. Aircraft/vessels are deliberately excluded: they are
+// situational context, not part of the causal intelligence web.
+// NS mirrors the formal .ttl model: http://providence.bcn/data#
+// ═══════════════════════════════════════════════════════════════
+const ONT_NS = 'http://providence.bcn/data#';
+
+// Point-in-polygon (ray casting). Poly is [[lat,lng],...]; pt is [lat,lng].
+function pointInPoly(pt, poly){
+  const x = pt[1], y = pt[0]; // x=lng, y=lat
+  let inside = false;
+  for(let i=0, j=poly.length-1; i<poly.length; j=i++){
+    const xi = poly[i][1], yi = poly[i][0];
+    const xj = poly[j][1], yj = poly[j][0];
+    const intersect = ((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+    if(intersect) inside = !inside;
+  }
+  return inside;
+}
+
+// Which district contains a [lat,lng] point? Returns district id '1'..'10' or null.
+function districtOf(latlng){
+  for(const [id, d] of Object.entries(DISTRICTS_GEO)){
+    if(d.coords && d.coords.length>=3 && pointInPoly(latlng, d.coords)) return id;
+  }
+  return null;
+}
+
+// The live ontology graph. Rebuilt from current in-memory state on demand.
+let ONTOLOGY = { districts:{}, sections:{}, roadworks:[], builtAt:null };
+
+function buildOntology(){
+  const districts = {};
+  // ── District grain: one node per district, carrying its real observations ──
+  Object.keys(DISTRICTS_GEO).forEach(id=>{
+    const crime = crimeData[id] || FALLBACK_CRIME[id] || {};
+    const density = HUMAN_DENSITY[id] || 0;
+    const foreign = foreignPopByDistrict[id] || 0;
+    districts[id] = {
+      id, uri: ONT_NS+'District_'+id,
+      name: DISTRICTS_GEO[id].name,
+      // observations (real fields)
+      crime: {
+        total: crime.total||0, theft:crime.theft||0, assault:crime.assault||0,
+        robbery:crime.robbery||0, vandalism:crime.vandalism||0, drugs:crime.drugs||0,
+        fraud:crime.fraud||0, year:crime.year||2023, source:crime.source||'fallback',
+        epistemicStatus: (crime.source==='live'?'observed':'baseline'),
+      },
+      demographic: {
+        populationDensity: density, foreignResidents: foreign,
+        epistemicStatus: (density>5000 && HUMAN_DENSITY[id]!==HUMAN_DENSITY_FALLBACK[id] ? 'observed':'baseline'),
+      },
+      // rolled-up live street-grain state (filled below)
+      live: { sectionsTotal:0, sectionsCongested:0, sectionsDense:0, roadworksActive:0, roadworksUpcoming:0 },
+      // links
+      sectionIds: [], roadworkIdxs: [],
+    };
+  });
+
+  // ── Street grain: TrafficSection nodes, linked up to their district ──
+  const sections = {};
+  Object.entries(trafficGeom || {}).forEach(([sid, g])=>{
+    if(!g.points || !g.points.length) return;
+    const mid = g.points[Math.floor(g.points.length/2)]; // representative point
+    const dId = districtOf(mid);
+    const st = (trafficState||{})[sid];
+    const v = st ? st.current : 0;
+    sections[sid] = {
+      id: sid, uri: ONT_NS+'TrafficSection_'+sid,
+      name: g.name, districtId: dId,
+      congestion: v, predicted: st?st.predicted:0,
+      epistemicStatus: v>0 ? 'observed' : 'no-data',
+    };
+    if(dId && districts[dId]){
+      districts[dId].sectionIds.push(sid);
+      districts[dId].live.sectionsTotal += (v>0?1:0);
+      if(v>=3 && v<=4) districts[dId].live.sectionsDense++;
+      if(v>=5) districts[dId].live.sectionsCongested++;
+    }
+  });
+
+  // ── Street grain: RoadWork nodes, linked up + spatially to sections ──
+  const rw = (roadworks||[]).map((w, idx)=>{
+    // centroid of polygon
+    let slat=0, slng=0; w.polygon.forEach(p=>{slat+=p[0];slng+=p[1];});
+    const c = [slat/w.polygon.length, slng/w.polygon.length];
+    const dId = districtOf(c);
+    if(dId && districts[dId]){
+      districts[dId].roadworkIdxs.push(idx);
+      if(w.status==='active') districts[dId].live.roadworksActive++;
+      else if(w.status==='upcoming') districts[dId].live.roadworksUpcoming++;
+    }
+    return { idx, uri:ONT_NS+'RoadWork_'+idx, name:w.name, status:w.status,
+             districtId:dId, centroid:c, type:w.type };
+  });
+
+  ONTOLOGY = { districts, sections, roadworks: rw, builtAt: Date.now() };
+  return ONTOLOGY;
+}
+
+// ── Cross-domain intelligence queries over the live ontology ──
+const ONT_QUERIES = {
+  // Districts ranked by a composite "pressure" score (crime + density + congestion)
+  districtPressure(){
+    const ds = Object.values(ONTOLOGY.districts);
+    const maxCrime = Math.max(1, ...ds.map(d=>d.crime.total));
+    const maxDens  = Math.max(1, ...ds.map(d=>d.demographic.populationDensity));
+    return ds.map(d=>{
+      const crimeN = d.crime.total/maxCrime;
+      const densN  = d.demographic.populationDensity/maxDens;
+      const congN  = d.live.sectionsTotal ? (d.live.sectionsCongested+d.live.sectionsDense)/d.live.sectionsTotal : 0;
+      const score  = (crimeN*0.45 + densN*0.25 + congN*0.30);
+      return { id:d.id, name:d.name, score, crimeN, densN, congN,
+               crime:d.crime.total, density:d.demographic.populationDensity,
+               congested:d.live.sectionsCongested, roadworks:d.live.roadworksActive };
+    }).sort((a,b)=>b.score-a.score);
+  },
+  // Congested sections split into "explained" (roadwork in same district) vs anomaly
+  congestionExplained(){
+    const explained=[], anomaly=[];
+    Object.values(ONTOLOGY.sections).forEach(s=>{
+      if(s.congestion < 5) return; // only congested/blocked
+      const d = s.districtId ? ONTOLOGY.districts[s.districtId] : null;
+      const hasWork = d && d.live.roadworksActive>0;
+      (hasWork?explained:anomaly).push({ id:s.id, name:s.name, congestion:s.congestion,
+        district: d?d.name:'—' });
+    });
+    return { explained, anomaly };
+  },
+};
+
 const _origGetDistrictColor = getDistrictColor;
 getDistrictColor = function(id) {
   if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit' || currentMap === 'traffic') {
@@ -4110,6 +4246,47 @@ function buildAnalysisPanel() {
           </div>
         </div>
       </div>
+
+      ${(()=>{
+        // ── LIVE CROSS-DOMAIN INTELLIGENCE (dual-grain ontology) ──
+        const pressure = ONT_QUERIES.districtPressure();
+        const ce = ONT_QUERIES.congestionExplained();
+        const anySections = Object.keys(ONTOLOGY.sections||{}).length>0;
+        const anyRoadworks = (ONTOLOGY.roadworks||[]).length>0;
+        const bar = (v,color)=>`<div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${Math.round(v*100)}%;background:${color}"></div></div>`;
+        const top = pressure.slice(0,10);
+        return `<div style="background:rgba(0,200,255,.03);border:1px solid rgba(0,200,255,.14);padding:14px 16px;margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase">Live Cross-Domain Intelligence</div>
+            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Dual-grain ontology · districts × ${anySections?Object.keys(ONTOLOGY.sections).length+' traffic sections':'traffic (open Traffic tab to populate)'}${anyRoadworks?' × '+ONTOLOGY.roadworks.length+' works':''}</div>
+          </div>
+
+          <div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">District Pressure Index — crime × density × live congestion</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:16px">
+            ${top.map((d,i)=>`<div style="display:flex;align-items:center;gap:8px">
+              <div style="font-family:var(--mono);font-size:11px;color:${i<3?'#ff6d00':'#7090a8'};width:18px;text-align:right">${i+1}</div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:#c0d4e8"><span>${d.name}</span><span style="color:#7090a8">${(d.score*100).toFixed(0)}</span></div>
+                ${bar(d.score, i<3?'#ff6d00':'#00a8ff')}
+                <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:2px">${d.crime.toLocaleString()} crime · ${(d.density/1000).toFixed(0)}k/km² · ${d.congested} congested${d.roadworks?' · '+d.roadworks+' works':''}</div>
+              </div>
+            </div>`).join('')}
+          </div>
+
+          ${anySections ? `<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Congestion Attribution — is the jam explained?</div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <div style="font-family:var(--mono);font-size:8px;color:#ffd54f;margin-bottom:5px">◧ Explained — active roadwork in district (${ce.explained.length})</div>
+              ${ce.explained.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:8px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">none right now</div>'}
+            </div>
+            <div style="flex:1;min-width:220px">
+              <div style="font-family:var(--mono);font-size:8px;color:#ff1744;margin-bottom:5px">⚠ Anomaly — congested, no known works (${ce.anomaly.length})</div>
+              ${ce.anomaly.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:8px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">none right now</div>'}
+            </div>
+          </div>
+          <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:10px;line-height:1.5">Attribution is district-level proximity, not causal proof — a co-located roadwork is a candidate explanation to investigate, not a confirmed cause. Anomalies (congestion with no nearby works) are the higher-value signal: something unexplained is happening there.</div>` : `<div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Open the Traffic tab once to load live sections, then return here — congestion attribution will populate.</div>`}
+        </div>`;
+      })()}
 
       ${findings.length>0?`<div style="background:rgba(0,200,255,.04);border:1px solid rgba(0,200,255,.12);padding:10px 14px;margin-bottom:20px">
         <div style="font-family:var(--mono);font-size:8px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;margin-bottom:7px">Significant Findings (|r| ≥ 0.5)</div>
