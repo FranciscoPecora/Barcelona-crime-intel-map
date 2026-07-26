@@ -420,6 +420,7 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <button class="nav-tab" data-map="maritime">Maritime</button>
     <button class="nav-tab" data-map="aircraft">Air Traffic</button>
     <button class="nav-tab" data-map="transit">Transit</button>
+    <button class="nav-tab" data-map="traffic">Traffic</button>
     <button class="nav-tab" data-map="analysis">Analysis</button>
   </nav>
   <div class="header-right">
@@ -1361,6 +1362,12 @@ const AIRCRAFT_LAYERS = [
   {id:'helicopter',label:'Helicopters',         color:'#9b6cff'},
 ];
 
+const TRAFFIC_LAYERS = [
+  {id:'traffic_flow', label:'Fluid (1–2)',     color:'#00c853'},
+  {id:'traffic_dense',label:'Dense (3–4)',     color:'#ff9800'},
+  {id:'traffic_jam',  label:'Congested (5–6)', color:'#d50000'},
+];
+
 const TRANSIT_LAYERS = [
   {id:'rodalies', label:'Rodalies Trains',   color:'#00e8a0'},
   {id:'metro',    label:'Metro (TMB)',        color:'#ff6600'},
@@ -1375,6 +1382,7 @@ const MAP_CFGS = {
   maritime: {title:'Maritime Domain',         meta:'AISStream · Live vessel tracking',      layers:MARITIME_LAYERS},
   aircraft: {title:'Air Traffic',             meta:'OpenSky Network · Live ADS-B',          layers:AIRCRAFT_LAYERS},
   transit:  {title:'Transit / Rodalies',      meta:'Renfe GTFS-RT · Live rail positions',   layers:TRANSIT_LAYERS},
+  traffic:  {title:'Traffic State',            meta:'Ajuntament BCN · Live · 5-min updates',  layers:TRAFFIC_LAYERS},
 };
 
 function buildSidebar() {
@@ -1835,6 +1843,10 @@ function wipeAllTabLayers() {
 
   // District heatmap (shared, currently unused but wiped defensively)
   if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
+
+  // Traffic
+  if(trafficInterval){ clearInterval(trafficInterval); trafficInterval=null; }
+  if(trafficLayer){ map.removeLayer(trafficLayer); trafficLayer=null; }
 }
 
 document.getElementById('mainNav').addEventListener('click',e=>{
@@ -1877,6 +1889,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     maritime:new Set(MARITIME_LAYERS.map(l=>l.id)),
     aircraft:new Set(AIRCRAFT_LAYERS.map(l=>l.id)),
     transit:new Set(TRANSIT_LAYERS.map(l=>l.id).filter(id=>id!=='bus')),
+    traffic:new Set(TRAFFIC_LAYERS.map(l=>l.id)),
   };
   activeFilters=defaults[currentMap]||new Set();
 
@@ -1904,6 +1917,11 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     loadMetroData().then(()=>{ loadTmbGtfsStops().then(fetchTmbMetroLive); });
     loadBusData();
     if(TMB_CONFIGURED && !tmbMetroInterval) tmbMetroInterval = setInterval(fetchTmbMetroLive, 25000);
+  }
+  if(currentMap==='traffic'){
+    map.setView([41.3951,2.1734],13);
+    loadTrafficGeom().then(()=>{ trafficLoaded=true; fetchTrafficState(); });
+    trafficInterval=setInterval(fetchTrafficState, 300000); // 5 min
   }
 });
 
@@ -3164,9 +3182,167 @@ function flyToMetroLine(ref) {
   map.flyToBounds(L.latLngBounds(allPts), {padding:[40,40], duration:1.1});
 }
 
+// ═══════════════════════════════════════════════════════════════
+// TRAFFIC — Live traffic state by street section (Ajuntament de Barcelona)
+// Geometry (section polylines) fetched once from the open-data portal via the
+// Worker and cached. Live state (congestion 0–6 + 15-min prediction) polled
+// every 5 min from TRAMS_TRAMS.dat. Joined on section ID, drawn green→red.
+// Real, live, weighty, spatial data — the anchor of the mobility domain.
+// ═══════════════════════════════════════════════════════════════
+const TRAFFIC_GEOM_URL = 'https://opendata-ajuntament.barcelona.cat/data/dataset/1090983a-1c40-4609-8620-14ad49aae3ab/resource/1d6c814c-70ef-4147-aa16-a49ddb952f72/download/transit_relacio_trams.csv';
+const TRAFFIC_DATASET_ID = 'trams'; // CKAN package name
+let TRAFFIC_STATE_URL = null; // resolved at runtime via CKAN package_show
+
+// Look up the live TRAMS_TRAMS.dat resource URL from CKAN so we never hardcode a
+// resource ID that could change. Finds the resource whose name/URL ends in .dat.
+async function resolveTrafficStateUrl(){
+  if(TRAFFIC_STATE_URL) return TRAFFIC_STATE_URL;
+  const apiUrl = `https://opendata-ajuntament.barcelona.cat/data/api/3/action/package_show?id=${TRAFFIC_DATASET_ID}`;
+  try {
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`, {signal: AbortSignal.timeout(12000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const resources = (data.result && data.result.resources) || [];
+    // The live feed is the .dat resource (monthly archives are .csv)
+    const live = resources.find(r => (r.url||'').toLowerCase().endsWith('.dat') ||
+                                     (r.name||'').toUpperCase().includes('TRAMS_TRAMS'));
+    if(live && live.url){ TRAFFIC_STATE_URL = live.url; console.log('Resolved live traffic URL:', live.url); return live.url; }
+    throw new Error('No .dat resource found in package');
+  } catch(e){
+    console.warn('Could not resolve traffic state URL:', e.message);
+    return null;
+  }
+}
+
+let trafficGeom = {};        // id -> {name, points:[[lat,lng],...]}
+let trafficState = {};       // id -> {current, predicted}
+let trafficLayer = null;
+let trafficInterval = null;
+let trafficLoaded = false;
+let trafficError = false;
+const trafficCanvas = L.canvas({padding:0.5});
+
+// Congestion 0–6 → color + label (0 = no data)
+const TRAFFIC_STATES = {
+  0: {label:'No data',   color:'#3a4556'},
+  1: {label:'Very fluid',color:'#00c853'},
+  2: {label:'Fluid',     color:'#64dd17'},
+  3: {label:'Dense',     color:'#ffb300'},
+  4: {label:'Very dense',color:'#ff6d00'},
+  5: {label:'Congested', color:'#d50000'},
+  6: {label:'Blocked',   color:'#7b1fa2'},
+};
+
+function trafficStateToFilter(v) {
+  if(v<=2) return 'traffic_flow';
+  if(v<=4) return 'traffic_dense';
+  return 'traffic_jam';
+}
+
+function fixLatin1(s){
+  try { return decodeURIComponent(escape(s)); } catch(e){ return s; }
+}
+
+function splitCsvLineTraffic(line){
+  const out=[]; let cur=''; let q=false;
+  for(let i=0;i<line.length;i++){const c=line[i];
+    if(c==='"'){q=!q;continue;}
+    if(c===','&&!q){out.push(cur);cur='';continue;}
+    cur+=c;}
+  out.push(cur); return out;
+}
+
+function parseTrafficGeom(csvText){
+  const lines = csvText.split(/\r?\n/).filter(l=>l.trim());
+  const geom = {};
+  for(let i=1;i<lines.length;i++){ // skip header
+    const cols = splitCsvLineTraffic(lines[i]);
+    if(cols.length<3) continue;
+    const id = cols[0].trim();
+    const name = fixLatin1(cols[1]);
+    const nums = cols[2].split(',').map(Number).filter(n=>isFinite(n));
+    const pts=[];
+    for(let j=0;j+1<nums.length;j+=2) pts.push([nums[j+1], nums[j]]); // lng,lat -> lat,lng
+    if(id && pts.length>=2) geom[id] = {name, points:pts};
+  }
+  return geom;
+}
+
+async function loadTrafficGeom(){
+  if(Object.keys(trafficGeom).length) return;
+  const cached = loadNetworkCache('providence_traffic_geom_v1');
+  if(cached){ trafficGeom = cached; return; }
+  try {
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(TRAFFIC_GEOM_URL)}`, {signal: AbortSignal.timeout(20000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    trafficGeom = parseTrafficGeom(text);
+    if(Object.keys(trafficGeom).length) saveNetworkCache('providence_traffic_geom_v1', trafficGeom);
+    console.log(`Loaded ${Object.keys(trafficGeom).length} traffic section geometries`);
+  } catch(e){
+    console.warn('Traffic geometry load failed:', e.message);
+    trafficError = true;
+  }
+}
+
+function parseTrafficState(datText){
+  const lines = datText.split(/\r?\n/).filter(l=>l.trim());
+  const state = {};
+  lines.forEach(line=>{
+    const parts = line.split('#');
+    if(parts.length<4) return;
+    const id = parts[0].trim();
+    const current = parseInt(parts[2],10);
+    const predicted = parseInt(parts[3],10);
+    if(id) state[id] = {current: isFinite(current)?current:0, predicted: isFinite(predicted)?predicted:0};
+  });
+  return state;
+}
+
+async function fetchTrafficState(){
+  if(currentMap!=='traffic') return;
+  const stateUrl = await resolveTrafficStateUrl();
+  if(!stateUrl){ showError('Could not locate the live traffic feed on the open-data portal.'); return; }
+  try {
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(stateUrl)}`, {signal: AbortSignal.timeout(12000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    trafficState = parseTrafficState(text);
+    const active = Object.values(trafficState).filter(s=>s.current>0).length;
+    renderTrafficLayer();
+    buildHUD(); buildList();
+    setFeedStatus('railFeedStatus','live','Live'); // reuse a feed indicator
+    logActivity(`Traffic feed · ${active} live sections · Ajuntament BCN`, '#ff9800');
+    showError(null);
+  } catch(e){
+    console.warn('Traffic state fetch failed:', e.message);
+    showError(`Live traffic feed unavailable (${e.message}).`);
+  }
+}
+
+function renderTrafficLayer(){
+  if(trafficLayer){ map.removeLayer(trafficLayer); trafficLayer=null; }
+  trafficLayer = L.layerGroup().addTo(map);
+  Object.entries(trafficGeom).forEach(([id, g])=>{
+    const st = trafficState[id];
+    const v = st ? st.current : 0;
+    if(v===0) return; // don't draw no-data sections
+    if(!activeFilters.has(trafficStateToFilter(v))) return;
+    const meta = TRAFFIC_STATES[v] || TRAFFIC_STATES[0];
+    const pl = L.polyline(g.points, {color:meta.color, weight:4, opacity:0.85, renderer:trafficCanvas});
+    const predMeta = TRAFFIC_STATES[st.predicted] || TRAFFIC_STATES[0];
+    pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
+      <strong>${g.name}</strong><br>
+      <span style="color:${meta.color}">● Now: ${meta.label}</span><br>
+      <span style="color:${predMeta.color}">○ In 15 min: ${predMeta.label}</span></div>`,
+      {sticky:true, opacity:1, className:''});
+    trafficLayer.addLayer(pl);
+  });
+}
+
 const _origGetDistrictColor = getDistrictColor;
 getDistrictColor = function(id) {
-  if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit') {
+  if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit' || currentMap === 'traffic') {
     return {c:'rgba(20,25,35,0.1)',o:.1};
   }
   return _origGetDistrictColor(id);
@@ -3174,7 +3350,7 @@ getDistrictColor = function(id) {
 
 const _origBuildHeatmap = buildHeatmap;
 buildHeatmap = function() {
-  if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit') {
+  if(currentMap === 'maritime' || currentMap === 'aircraft' || currentMap === 'transit' || currentMap === 'traffic') {
     if(heatLayer){map.removeLayer(heatLayer);heatLayer=null;}
     return;
   }
@@ -3198,6 +3374,10 @@ buildInfraMarkers = function() {
   }
   if(currentMap === 'transit') {
     updateAllTransitLayers();
+    return;
+  }
+  if(currentMap === 'traffic') {
+    if(trafficLoaded) renderTrafficLayer();
     return;
   }
   _origBuildInfraMarkers();
@@ -3273,6 +3453,28 @@ buildList = function() {
     el.innerHTML = trainsHtml + metroHtml + busHtml;
     return;
   }
+  if(currentMap === 'traffic') {
+    const el=document.getElementById('sbList');
+    if(!el) return;
+    if(!trafficLoaded){
+      el.innerHTML = `<div class="sb-list-label">Traffic Sections</div><div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--muted)">Loading network…</div></div>`;
+      return;
+    }
+    // Rank sections by congestion, worst first
+    const ranked = Object.entries(trafficGeom)
+      .map(([id,g])=>({id, name:g.name, v:(trafficState[id]?trafficState[id].current:0)}))
+      .filter(s=>s.v>0)
+      .sort((a,b)=>b.v-a.v)
+      .slice(0,40);
+    el.innerHTML = `<div class="sb-list-label">Sections · Most Congested Now</div>`+
+      (ranked.length ? ranked.map(s=>{
+        const meta = TRAFFIC_STATES[s.v];
+        return `<div class="list-card">
+          <div class="lc-name" style="font-size:9px">${s.name}</div>
+          <div class="lc-sub" style="color:${meta.color}">${meta.label}</div></div>`;
+      }).join('') : `<div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--muted)">Waiting for live feed…</div></div>`);
+    return;
+  }
   _origBuildList();
 };
 
@@ -3332,6 +3534,28 @@ buildHUD = function() {
       </div>`;
     return;
   }
+  if(currentMap === 'traffic') {
+    const hud=document.getElementById('hud');
+    const vals = Object.values(trafficState).map(s=>s.current).filter(v=>v>0);
+    const total = vals.length;
+    const dense = vals.filter(v=>v>=3&&v<=4).length;
+    const jam = vals.filter(v=>v>=5).length;
+    const jamPct = total ? Math.round((jam/total)*100) : 0;
+    const cityState = jamPct>15 ? 'HEAVY' : jamPct>5 ? 'MODERATE' : 'LIGHT';
+    const cityColor = jamPct>15 ? '#d50000' : jamPct>5 ? '#ff9800' : '#00c853';
+    hud.innerHTML=`
+      <div class="hud-header">Traffic State · Live</div>
+      <div class="hud-body">
+        <div class="hud-val" style="color:${cityColor}">${cityState}</div>
+        <div class="hud-sub">City-wide congestion</div>
+        <hr class="hud-div">
+        <div class="hud-row"><span>Sections live</span><span style="color:var(--accent)">${total}</span></div>
+        <div class="hud-row"><span>Dense</span><span style="color:#ff9800">${dense}</span></div>
+        <div class="hud-row"><span>Congested/blocked</span><span style="color:#d50000">${jam}</span></div>
+        <div class="hud-row"><span>Source</span><span style="color:var(--green)">Ajuntament · 5-min</span></div>
+      </div>`;
+    return;
+  }
   _origBuildHUD();
 };
 
@@ -3366,6 +3590,16 @@ buildControls = function() {
         <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#3da8ff;border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Bus Stops & Lines</span></div>
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / TRANSIT·LAYER<br>Source: Renfe GTFS-RT · TMB Metro/Bus via OpenStreetMap';
+    return;
+  }
+  if(currentMap === 'traffic') {
+    document.getElementById('bottomBar').innerHTML=`<span class="bb-label">MOBILITY DOMAIN</span><span class="bb-val" style="color:var(--accent)">LIVE TRAFFIC STATE · AJUNTAMENT BCN · 5-MIN</span>`;
+    document.getElementById('legend').innerHTML=`<div class="legend-title">Congestion</div><div class="legend-body">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${[['#00c853','Very fluid'],['#64dd17','Fluid'],['#ffb300','Dense'],['#ff6d00','Very dense'],['#d50000','Congested'],['#7b1fa2','Blocked']]
+          .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:3px;background:${c}"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
+      </div></div>`;
+    document.getElementById('watermark').innerHTML='PROVIDENCE / TRAFFIC·LAYER<br>Source: Ajuntament de Barcelona · Live traffic sections';
     return;
   }
   _origBuildControls();
