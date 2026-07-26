@@ -3223,19 +3223,19 @@ let trafficLayer = null;
 let trafficInterval = null;
 let trafficLoaded = false;
 let trafficError = false;
-const trafficCanvas = L.canvas({padding:0.5});
+const trafficCanvas = L.svg({padding:0.5}); // SVG (not canvas) so flow dashes animate per-segment
 
-// Congestion 0–6 → color + weight + opacity + glow. Fluid traffic recedes into
-// a dim desaturated background; dense/congested/blocked advance with warmth and
-// glow so problems draw the eye without removing any data from the map.
+// Congestion 0–6 → vivid color + glow + FLOW SPEED. The animated dash speed
+// encodes congestion directly: fluid roads flow fast, congested roads crawl,
+// blocked roads are frozen. Motion makes the state readable at a glance.
 const TRAFFIC_STATES = {
-  0: {label:'No data',   color:'#2a3543', weight:1.5, opacity:0.15, glow:0},
-  1: {label:'Very fluid',color:'#3d5a6c', weight:2,   opacity:0.5,  glow:0},
-  2: {label:'Fluid',     color:'#4a7d7a', weight:2,   opacity:0.55, glow:0},
-  3: {label:'Dense',     color:'#c9a227', weight:3,   opacity:0.85, glow:4},
-  4: {label:'Very dense',color:'#e07b39', weight:3.5, opacity:0.9,  glow:6},
-  5: {label:'Congested', color:'#e63946', weight:4,   opacity:0.95, glow:8},
-  6: {label:'Blocked',   color:'#b5179e', weight:4.5, opacity:1,    glow:10},
+  0: {label:'No data',   color:'#2a3543', weight:1.5, opacity:0.15, glow:0,  speed:0},
+  1: {label:'Very fluid',color:'#00e5ff', weight:2.5, opacity:0.9,  glow:3,  speed:1.0},
+  2: {label:'Fluid',     color:'#00e676', weight:2.5, opacity:0.9,  glow:3,  speed:0.7},
+  3: {label:'Dense',     color:'#ffc400', weight:3,   opacity:0.95, glow:6,  speed:0.4},
+  4: {label:'Very dense',color:'#ff9100', weight:3.5, opacity:1,    glow:8,  speed:0.22},
+  5: {label:'Congested', color:'#ff1744', weight:4,   opacity:1,    glow:10, speed:0.1},
+  6: {label:'Blocked',   color:'#f50057', weight:4.5, opacity:1,    glow:12, speed:0},
 };
 
 function trafficStateToFilter(v) {
@@ -3325,9 +3325,12 @@ async function fetchTrafficState(){
   }
 }
 
+let trafficFlowSegments = []; // {path, speed} for the flow animation
+
 function renderTrafficLayer(){
   if(trafficLayer){ map.removeLayer(trafficLayer); trafficLayer=null; }
   trafficLayer = L.layerGroup().addTo(map);
+  trafficFlowSegments = [];
   // Draw fluid first, problems last, so congestion always sits visually on top.
   const entries = Object.entries(trafficGeom)
     .map(([id,g])=>({id, g, v: trafficState[id]?trafficState[id].current:0}))
@@ -3339,8 +3342,10 @@ function renderTrafficLayer(){
     const pl = L.polyline(g.points, {
       color:meta.color, weight:meta.weight, opacity:meta.opacity, renderer:trafficCanvas,
       lineCap:'round', lineJoin:'round',
+      dashArray: meta.speed>0 ? '2,14' : null, // gaps create the "packets flowing" look
     });
     if(meta.glow>0 && pl._path) pl._path.style.filter = `drop-shadow(0 0 ${meta.glow}px ${meta.color})`;
+    if(meta.speed>0 && pl._path){ trafficFlowSegments.push({path:pl._path, speed:meta.speed}); }
     const predMeta = TRAFFIC_STATES[st.predicted] || TRAFFIC_STATES[0];
     pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
       <strong>${g.name}</strong><br>
@@ -3350,6 +3355,21 @@ function renderTrafficLayer(){
     trafficLayer.addLayer(pl);
   });
 }
+
+// Flow animation: scroll each segment's dash offset at a speed set by its
+// congestion state. Fluid = fast flow, congested = crawl, blocked = frozen.
+let _trafficFlowOffset = 0;
+let _trafficFlowRaf = null;
+function animateTrafficFlow(){
+  if(currentMap==='traffic' && trafficFlowSegments.length){
+    _trafficFlowOffset += 0.6;
+    trafficFlowSegments.forEach(s=>{
+      if(s.path) s.path.style.strokeDashoffset = -(_trafficFlowOffset * s.speed);
+    });
+  }
+  _trafficFlowRaf = requestAnimationFrame(animateTrafficFlow);
+}
+if(!_trafficFlowRaf) animateTrafficFlow();
 
 // ─── ROAD WORKS (obres) — active + upcoming public-space works, overlaid on
 // traffic so congestion can be read against its likely cause. Daily-updated,
@@ -3701,7 +3721,7 @@ buildControls = function() {
     document.getElementById('bottomBar').innerHTML=`<span class="bb-label">MOBILITY DOMAIN</span><span class="bb-val" style="color:var(--accent)">LIVE TRAFFIC STATE · AJUNTAMENT BCN · 5-MIN</span>`;
     document.getElementById('legend').innerHTML=`<div class="legend-title">Congestion</div><div class="legend-body">
       <div style="display:flex;flex-direction:column;gap:4px">
-        ${[['#3d5a6c','Very fluid'],['#4a7d7a','Fluid'],['#c9a227','Dense'],['#e07b39','Very dense'],['#e63946','Congested'],['#b5179e','Blocked']]
+        ${[['#00e5ff','Very fluid'],['#00e676','Fluid'],['#ffc400','Dense'],['#ff9100','Very dense'],['#ff1744','Congested'],['#f50057','Blocked']]
           .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:3px;background:${c}"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
         <div style="border-top:1px solid var(--border);margin:2px 0"></div>
         <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#8a7a3a;opacity:.4;border:1px solid #8a7a3a"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (active)</span></div>
