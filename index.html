@@ -3230,12 +3230,12 @@ const trafficCanvas = L.svg({padding:0.5}); // SVG (not canvas) so flow dashes a
 // blocked roads are frozen. Motion makes the state readable at a glance.
 const TRAFFIC_STATES = {
   0: {label:'No data',   color:'#2a3543', weight:1.5, opacity:0.15, glow:0,  speed:0},
-  1: {label:'Very fluid',color:'#00e5ff', weight:2.5, opacity:0.9,  glow:3,  speed:1.0},
-  2: {label:'Fluid',     color:'#00e676', weight:2.5, opacity:0.9,  glow:3,  speed:0.7},
-  3: {label:'Dense',     color:'#ffc400', weight:3,   opacity:0.95, glow:6,  speed:0.4},
-  4: {label:'Very dense',color:'#ff9100', weight:3.5, opacity:1,    glow:8,  speed:0.22},
-  5: {label:'Congested', color:'#ff1744', weight:4,   opacity:1,    glow:10, speed:0.1},
-  6: {label:'Blocked',   color:'#f50057', weight:4.5, opacity:1,    glow:12, speed:0},
+  1: {label:'Very fluid',color:'#00e5ff', weight:2.5, opacity:0.95, glow:3,  speed:1.0},
+  2: {label:'Fluid',     color:'#00e676', weight:2.5, opacity:0.95, glow:3,  speed:0.7},
+  3: {label:'Dense',     color:'#ffc400', weight:3,   opacity:1,    glow:6,  speed:0.4},
+  4: {label:'Very dense',color:'#ff9100', weight:3.5, opacity:1,    glow:8,  speed:0.25},
+  5: {label:'Congested', color:'#ff1744', weight:4,   opacity:1,    glow:10, speed:0.12},
+  6: {label:'Blocked',   color:'#f50057', weight:4.5, opacity:1,    glow:12, speed:0.05},
 };
 
 function trafficStateToFilter(v) {
@@ -3342,10 +3342,10 @@ function renderTrafficLayer(){
     const pl = L.polyline(g.points, {
       color:meta.color, weight:meta.weight, opacity:meta.opacity, renderer:trafficCanvas,
       lineCap:'round', lineJoin:'round',
-      dashArray: meta.speed>0 ? '2,14' : null, // gaps create the "packets flowing" look
+      dashArray: '6,4', // tight dashes → continuous line with visible motion travelling through it
     });
     if(meta.glow>0 && pl._path) pl._path.style.filter = `drop-shadow(0 0 ${meta.glow}px ${meta.color})`;
-    if(meta.speed>0 && pl._path){ trafficFlowSegments.push({path:pl._path, speed:meta.speed}); }
+    if(pl._path){ trafficFlowSegments.push({path:pl._path, speed:Math.max(meta.speed,0.05)}); }
     const predMeta = TRAFFIC_STATES[st.predicted] || TRAFFIC_STATES[0];
     pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
       <strong>${g.name}</strong><br>
@@ -3380,8 +3380,8 @@ let roadworksLayer = null;
 let roadworksLoaded = false;
 
 const ROADWORK_STATUS = {
-  active:   {label:'Active',   color:'#8a7a3a'},
-  upcoming: {label:'Upcoming', color:'#3a6a8a'},
+  active:   {label:'Active',   color:'#ffea00'},
+  upcoming: {label:'Upcoming', color:'#40c4ff'},
 };
 
 function parseWktPolygon(wkt){
@@ -3447,13 +3447,14 @@ function renderRoadworksLayer(){
   roadworks.forEach(w=>{
     const meta = ROADWORK_STATUS[w.status];
     const poly = L.polygon(w.polygon, {
-      color: meta.color, weight:1, fillColor:meta.color, fillOpacity:0.08,
-      opacity:0.5, dashArray: w.status==='upcoming' ? '3,3' : null,
+      color: meta.color, weight:2, fillColor:meta.color, fillOpacity:0.22,
+      opacity:0.95, dashArray:'5,4', renderer:trafficCanvas,
     });
-    poly.on('mouseover', ()=>poly.setStyle({opacity:0.95, weight:1.5, fillOpacity:0.2}));
-    poly.on('mouseout',  ()=>poly.setStyle({opacity:0.5, weight:1, fillOpacity:0.08}));
+    if(poly._path) poly._path.style.filter = `drop-shadow(0 0 5px ${meta.color})`;
+    poly.on('mouseover', ()=>poly.setStyle({fillOpacity:0.4, weight:3}));
+    poly.on('mouseout',  ()=>poly.setStyle({fillOpacity:0.22, weight:2}));
     poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8;max-width:260px">
-      <div style="color:${w.status==='active'?'#ffd54f':'#4fc3f7'};font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">${meta.label} · ${w.type}</div>
+      <div style="color:${meta.color};font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">⚠ ${meta.label} road work · ${w.type}</div>
       <strong>${w.name}</strong><br>
       <span style="color:#7090a8">${w.district}</span><br>
       <span style="color:#7090a8">${w.inici} → ${w.fi}</span>
@@ -3724,8 +3725,8 @@ buildControls = function() {
         ${[['#00e5ff','Very fluid'],['#00e676','Fluid'],['#ffc400','Dense'],['#ff9100','Very dense'],['#ff1744','Congested'],['#f50057','Blocked']]
           .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:3px;background:${c}"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
         <div style="border-top:1px solid var(--border);margin:2px 0"></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#8a7a3a;opacity:.4;border:1px solid #8a7a3a"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (active)</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#3a6a8a;opacity:.4;border:1px dashed #3a6a8a"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (upcoming)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#ffea00;opacity:.6;border:1px solid #ffea00"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (active)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#40c4ff;opacity:.6;border:1px dashed #40c4ff"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (upcoming)</span></div>
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / TRAFFIC·LAYER<br>Source: Ajuntament de Barcelona · Live traffic sections';
     return;
