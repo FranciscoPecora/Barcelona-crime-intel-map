@@ -422,6 +422,7 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <button class="nav-tab" data-map="transit">Transit</button>
     <button class="nav-tab" data-map="traffic">Traffic</button>
     <button class="nav-tab" data-map="analysis">Analysis</button>
+    <button class="nav-tab" data-map="fusion">Fusion</button>
   </nav>
   <div class="header-right">
     <div class="feed-status">
@@ -468,7 +469,9 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <div class="map-edge"></div>
     <div class="activity-feed" id="activityFeed"></div>
 
-    <div id="analysisPanel" style="display:none;position:absolute;inset:0;z-index:600;background:var(--bg);overflow-y:auto;padding:24px 28px 60px">
+    <div id="analysisPanel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:min(680px,52vw);z-index:600;background:linear-gradient(to right,rgba(4,10,20,.82),rgba(4,10,20,.97) 60px);backdrop-filter:blur(3px);overflow-y:auto;padding:20px 24px 60px;border-left:1px solid var(--border)">
+    </div>
+    <div id="fusionPanel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:min(680px,52vw);z-index:600;background:linear-gradient(to right,rgba(4,10,20,.82),rgba(4,10,20,.97) 60px);backdrop-filter:blur(3px);overflow-y:auto;padding:20px 24px 60px;border-left:1px solid var(--border)">
     </div>
 
     <div class="error-banner" id="errorBanner"></div>
@@ -485,6 +488,39 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
 const WORKER_URL = 'https://cicero.franzpec2017.workers.dev';
 
 const CKAN_BASE   = 'https://opendata-ajuntament.barcelona.cat/data/api/3/action';
+
+// Resolve the NEWEST resource in a CKAN dataset (package), so we never get stuck
+// on a hardcoded resource ID when the city publishes a new year/version. Matches
+// resources by a filename/format hint; returns the most recently modified one.
+// Falls back to the provided fallbackId if resolution fails (offline-safe).
+const _ckanResolveCache = {};
+async function resolveNewestResource(packageId, hint, fallbackId){
+  const cacheKey = packageId+'|'+(hint||'');
+  if(_ckanResolveCache[cacheKey]) return _ckanResolveCache[cacheKey];
+  try {
+    const apiUrl = `${CKAN_BASE}/package_show?id=${packageId}`;
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`, {signal:AbortSignal.timeout(12000)});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    let resources = (data.result && data.result.resources) || [];
+    if(hint){
+      const h = hint.toLowerCase();
+      const matched = resources.filter(r =>
+        (r.name||'').toLowerCase().includes(h) ||
+        (r.url||'').toLowerCase().includes(h) ||
+        (r.format||'').toLowerCase()===h);
+      if(matched.length) resources = matched;
+    }
+    // newest by last_modified / created
+    resources.sort((a,b)=> new Date(b.last_modified||b.created||0) - new Date(a.last_modified||a.created||0));
+    const chosen = resources[0];
+    if(chosen && chosen.id){ _ckanResolveCache[cacheKey]=chosen.id; return chosen.id; }
+    throw new Error('no resource matched');
+  } catch(e){
+    console.warn(`CKAN resolve (${packageId}) failed, using fallback:`, e.message);
+    return fallbackId;
+  }
+}
 const POPULATION_RESOURCE = '190095dd-feaf-4c50-9fc7-d0578a52297a';
 const CRIME_PKG   = 'seguretat-fets-penals-tipus-penal-districte';
 
@@ -1849,6 +1885,8 @@ function wipeAllTabLayers() {
   if(trafficInterval){ clearInterval(trafficInterval); trafficInterval=null; }
   if(trafficLayer){ map.removeLayer(trafficLayer); trafficLayer=null; }
   if(roadworksLayer){ map.removeLayer(roadworksLayer); roadworksLayer=null; }
+  if(typeof fusionMapLayer!=='undefined' && fusionMapLayer){ map.removeLayer(fusionMapLayer); fusionMapLayer=null; }
+  if(typeof analysisMapLayer!=='undefined' && analysisMapLayer){ map.removeLayer(analysisMapLayer); analysisMapLayer=null; }
 }
 
 document.getElementById('mainNav').addEventListener('click',e=>{
@@ -1862,6 +1900,22 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   tab.classList.add('active');
 
   const analysisPanel = document.getElementById('analysisPanel');
+  const fusionPanel = document.getElementById('fusionPanel');
+  if(currentMap === 'fusion'){
+    analysisPanel.style.display = 'none';
+    fusionPanel.style.display = 'block';
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'none';
+    if(riskLayerActive) stopRiskLayer();
+    loadEvents(); loadRoadworks();
+    loadTrafficGeom().then(()=>{ trafficLoaded=true; if(!Object.keys(trafficState).length) fetchTrafficState(); });
+    if(!window.__fusionSel) window.__fusionSel = ['crime','congestion'];
+    renderFusion();
+    return;
+  } else {
+    fusionPanel.style.display = 'none';
+    if(fusionMapLayer){ map.removeLayer(fusionMapLayer); fusionMapLayer=null; }
+  }
   if(currentMap === 'analysis') {
     analysisPanel.style.display = 'block';
     loadEvents();
@@ -1870,11 +1924,13 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     document.getElementById('hud').style.display = 'none';
     document.getElementById('sidebar').style.display = 'none';
     if(riskLayerActive) stopRiskLayer();
+    paintAnalysisMap();
     return;
   } else {
     analysisPanel.style.display = 'none';
     document.getElementById('hud').style.display = '';
     document.getElementById('sidebar').style.display = '';
+    if(analysisMapLayer){ map.removeLayer(analysisMapLayer); analysisMapLayer=null; }
   }
 
   if(prevMap === 'crime' && currentMap !== 'crime' && riskLayerActive) {
@@ -1928,6 +1984,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     trafficInterval=setInterval(fetchTrafficState, 300000); // 5 min
     loadRoadworks();
     loadEvents();
+    startFreshnessScheduler();
   }
 });
 
@@ -3409,8 +3466,8 @@ function roadworkStatus(inici, fi){
   return null; // finished/planned-far-off: skip
 }
 
-async function loadRoadworks(){
-  if(roadworksLoaded) return;
+async function loadRoadworks(force){
+  if(roadworksLoaded && !force) return;
   try {
     const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(ROADWORKS_URL)}`, {signal: AbortSignal.timeout(20000)});
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -3718,8 +3775,8 @@ function parseEventRecord(r){
   };
 }
 
-async function loadEvents(){
-  if(eventsLoaded) return;
+async function loadEvents(force){
+  if(eventsLoaded && !force) return;
   try {
     const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(EVENTS_URL)}`, {signal: AbortSignal.timeout(20000)});
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -3797,7 +3854,237 @@ registerExplainer(function eventExplainer(p){
     reasoning:`"${e.name}" (${best.ti.label}) is live now within ~500m (${e.start}${e.end!==e.start?'→'+e.end:''}${e.venue?', '+e.venue:''})${multi}. ${longRun?'Runs >2 weeks, so treated as a standing listing — weak spike cause.':'Short/festival-length run — plausible crowd driver.'} No attendance data in the feed, so intensity is inferred from event type, not measured.` };
 });
 
+// ── Data freshness: refresh daily-updated feeds on a cadence so a long-open
+// session never shows stale roadworks/events. Live feeds (traffic/transit) have
+// their own fast intervals. Annual data (crime/population) needs no refresh. ──
+const DATA_FRESHNESS = {};
+function markFresh(source){ DATA_FRESHNESS[source] = Date.now(); }
+let _freshnessScheduler = null;
+function startFreshnessScheduler(){
+  if(_freshnessScheduler) return;
+  const THREE_HOURS = 3*3600*1000;
+  _freshnessScheduler = setInterval(()=>{
+    // re-fetch daily-updated periodic feeds
+    loadRoadworks(true);
+    loadEvents(true);
+  }, THREE_HOURS);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FUSION — select 2–3 domains, overlay their layers AND compute their
+// cross-reference. Grain resolves from the domains picked: all-district →
+// district-grain correlation; all-street → spatial coincidence; mixed → the
+// dual-grain ontology bridges (street aggregates up to district). Every
+// computed relationship is labelled with honest epistemic strength — a
+// coincidence is never presented as causation.
+// ═══════════════════════════════════════════════════════════════
+const FUSION_DOMAINS = {
+  crime:      { label:'Crime',        grain:'district', color:'#ff5252',
+                perDistrict:(d)=> d.crime.total },
+  density:    { label:'Population Density', grain:'district', color:'#40c4ff',
+                perDistrict:(d)=> d.demographic.populationDensity },
+  foreign:    { label:'Foreign Residents', grain:'district', color:'#b388ff',
+                perDistrict:(d)=> d.demographic.foreignResidents },
+  congestion: { label:'Traffic Congestion', grain:'street', color:'#ff9100',
+                perDistrict:(d)=> d.live.sectionsTotal ? (d.live.sectionsCongested+d.live.sectionsDense)/d.live.sectionsTotal : 0 },
+  roadworks:  { label:'Road Works',   grain:'street', color:'#ffea00',
+                perDistrict:(d)=> d.live.roadworksActive },
+  events:     { label:'Live Events',  grain:'street', color:'#e040fb',
+                perDistrict:(d)=> d.live.eventsLiveNow },
+};
+
+// Pearson correlation with honest small-n caveat
+function pearson(xs, ys){
+  const n = xs.length;
+  if(n<3) return {r:NaN, n};
+  const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, dx=0, dy=0;
+  for(let i=0;i<n;i++){ const a=xs[i]-mx, b=ys[i]-my; num+=a*b; dx+=a*a; dy+=b*b; }
+  const r = (dx&&dy) ? num/Math.sqrt(dx*dy) : 0;
+  return {r, n};
+}
+function correlationStrength(r, n){
+  const ar = Math.abs(r);
+  let strength = ar>=0.7?'strong': ar>=0.5?'moderate': ar>=0.3?'weak':'negligible';
+  // n=10 districts is small; be honest about fragility
+  const caveat = n<=10 ? 'small sample (n='+n+') — indicative, not conclusive' : 'n='+n;
+  return {strength, caveat, dir: r>0?'positive':'negative'};
+}
+
+// Compute the cross-reference between selected domains.
+function computeFusion(domainKeys){
+  buildOntology();
+  const doms = domainKeys.map(k=>({key:k, ...FUSION_DOMAINS[k]}));
+  const ds = Object.values(ONTOLOGY.districts);
+  const grains = [...new Set(doms.map(d=>d.grain))];
+  const bridged = grains.length>1; // mixed grain → bridged via ontology
+
+  // Pairwise district-level correlations (works for all domains since street
+  // domains expose a perDistrict aggregate — this is the ontology bridge).
+  const pairs = [];
+  for(let i=0;i<doms.length;i++) for(let j=i+1;j<doms.length;j++){
+    const A=doms[i], B=doms[j];
+    const xs=[], ys=[], labels=[];
+    ds.forEach(d=>{ const a=A.perDistrict(d), b=B.perDistrict(d);
+      if(isFinite(a)&&isFinite(b)){ xs.push(a); ys.push(b); labels.push(d.name); } });
+    const {r,n} = pearson(xs,ys);
+    if(isFinite(r)) pairs.push({ a:A, b:B, r, n, ...correlationStrength(r,n),
+      points: xs.map((x,k)=>({x, y:ys[k], label:labels[k]})) });
+  }
+
+  // District composite: normalized sum across all selected domains → ranking
+  const norm = {};
+  doms.forEach(d=>{ const vals=ds.map(x=>d.perDistrict(x)); const mx=Math.max(1,...vals); norm[d.key]=mx; });
+  const composite = ds.map(d=>{
+    let score=0; doms.forEach(dom=>{ score += (dom.perDistrict(d)/norm[dom.key]); });
+    return { id:d.id, name:d.name, score:score/doms.length,
+             parts: doms.map(dom=>({key:dom.key, label:dom.label, color:dom.color, v:dom.perDistrict(d), n:dom.perDistrict(d)/norm[dom.key]})) };
+  }).sort((a,b)=>b.score-a.score);
+
+  return { doms, grains, bridged, pairs, composite };
+}
+
 const _origGetDistrictColor = getDistrictColor;
+
+// ── Fusion render: chips + map overlay + cross-reference panel ──
+let fusionMapLayer = null;
+window.__toggleFusionDomain = function(key){
+  let sel = window.__fusionSel || [];
+  if(sel.includes(key)) sel = sel.filter(k=>k!==key);
+  else { if(sel.length>=3) sel = [sel[1], sel[2], key].filter(Boolean); sel.push(key); sel=[...new Set(sel)]; }
+  window.__fusionSel = sel;
+  renderFusion();
+};
+
+function paintFusionMap(sel){
+  if(fusionMapLayer){ map.removeLayer(fusionMapLayer); fusionMapLayer=null; }
+  map.setView([41.40,2.17], 12);
+  fusionMapLayer = L.layerGroup().addTo(map);
+  const fusion = computeFusion(sel);
+  const compById = {}; fusion.composite.forEach((c,i)=>compById[c.id]={rank:i+1,...c});
+  // District choropleth by composite score of the selected domains
+  Object.entries(DISTRICTS_GEO).forEach(([id,d])=>{
+    if(!d.coords||d.coords.length<3) return;
+    const c = compById[id]; const score = c?c.score:0;
+    const hue = 200 - Math.round(Math.min(1,score)*200);
+    const color = `hsl(${hue},85%,55%)`;
+    const poly = L.polygon(d.coords, {color, weight:1.5, opacity:0.85, fillColor:color, fillOpacity:0.1+Math.min(1,score)*0.35});
+    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
+      <div style="color:${color};font-size:8px;text-transform:uppercase">#${c?c.rank:'—'} · Composite ${c?(c.score*100).toFixed(0):'—'}</div>
+      <strong>${d.name}</strong><br>
+      ${c?c.parts.map(p=>`<span style="color:${p.color}">${p.label}: ${typeof p.v==='number'&&p.v<10?p.v.toFixed(2):Math.round(p.v).toLocaleString()}</span>`).join('<br>'):''}
+    </div>`, {sticky:true, opacity:1, className:''});
+    fusionMapLayer.addLayer(poly);
+  });
+  return fusion;
+}
+
+function renderFusion(){
+  const panel = document.getElementById('fusionPanel');
+  if(!panel) return;
+  const sel = window.__fusionSel || [];
+  const fusion = sel.length>=1 ? paintFusionMap(sel) : null;
+  const chip = (key)=>{
+    const dom = FUSION_DOMAINS[key]; const on = sel.includes(key);
+    return `<button onclick="window.__toggleFusionDomain('${key}')" style="font-family:var(--mono);font-size:9px;padding:6px 12px;margin:0 6px 6px 0;background:${on?dom.color+'22':'rgba(4,12,24,.7)'};border:1px solid ${on?dom.color:'#1a3050'};color:${on?dom.color:'#7090a8'};cursor:pointer;border-radius:2px">
+      ${on?'●':'○'} ${dom.label} <span style="opacity:.6;font-size:7px">${dom.grain}</span></button>`;
+  };
+  let html = `<div style="font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;margin-bottom:2px">Fusion · Cross-Domain Synthesis</div>
+    <div style="font-family:var(--mono);font-size:20px;color:#c0d4e8;letter-spacing:.02em;margin-bottom:4px">DOMAIN FUSION</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:14px">Select 2–3 domains. Layers overlay on the map; their cross-reference computes below. Grain resolves from your picks — the ontology bridges street↔district when mixed.</div>
+    <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>`;
+
+  if(!fusion || sel.length<2){
+    html += `<div style="font-family:var(--mono);font-size:9px;color:var(--muted2);padding:20px 0">Select at least 2 domains to compute a cross-reference.</div>`;
+    panel.innerHTML = html; return;
+  }
+
+  // grain banner
+  const grainLabel = fusion.bridged ? 'Mixed grain — bridged via ontology (street aggregates up to district)' : (fusion.grains[0]==='district'?'District grain':'Street grain');
+  html += `<div style="font-family:var(--mono);font-size:8px;color:var(--accent);margin-bottom:14px;padding:6px 10px;background:rgba(0,168,255,.05);border-left:2px solid var(--accent)">${grainLabel}</div>`;
+
+  // pairwise correlations with honest labels
+  html += `<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Computed Cross-Reference</div>`;
+  fusion.pairs.forEach(p=>{
+    const col = Math.abs(p.r)>=0.5 ? (p.r>0?'#ff5252':'#40c4ff') : '#7090a8';
+    html += `<div style="border:1px solid #1a3050;padding:10px 12px;margin-bottom:8px;background:rgba(4,12,24,.5)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+        <span style="font-family:var(--mono);font-size:9px;color:#c0d4e8">${p.a.label} × ${p.b.label}</span>
+        <span style="font-family:var(--mono);font-size:14px;color:${col}">${p.r>=0?'+':''}${p.r.toFixed(2)}</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:7px;color:${col};text-transform:uppercase;letter-spacing:.1em">${p.strength} ${p.dir}</div>
+      <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:3px">${p.caveat}${fusion.bridged?' · cross-grain: correlation of aggregates, not point-level':''}</div>
+    </div>`;
+  });
+
+  // composite ranking
+  html += `<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin:16px 0 8px">Composite Ranking — districts by fused score</div>`;
+  fusion.composite.slice(0,10).forEach((c,i)=>{
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <span style="font-family:var(--mono);font-size:10px;color:${i<3?'#ff6d00':'#7090a8'};width:16px;text-align:right">${i+1}</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:#c0d4e8"><span>${c.name}</span><span style="color:#7090a8">${(c.score*100).toFixed(0)}</span></div>
+        <div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;display:flex">
+          ${c.parts.map(p=>`<div style="height:100%;width:${(p.n/c.parts.length*100).toFixed(1)}%;background:${p.color};opacity:.8"></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += `<div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:14px;line-height:1.6;border-top:1px dashed var(--border2);padding-top:10px">Fusion computes correlation and composite scores across the domains you select. Correlation is not causation — a strong r means the two move together across districts, which is a lead to investigate, not a proven mechanism. District-level n=10 is small, so treat all coefficients as indicative. Mixed-grain fusions correlate district aggregates, which can hide street-level detail.</div>`;
+  panel.innerHTML = html;
+}
+
+// ── Spatial Analysis: paint district pressure onto the map ──
+let analysisMapLayer = null;
+function paintAnalysisMap(){
+  if(analysisMapLayer){ map.removeLayer(analysisMapLayer); analysisMapLayer=null; }
+  map.setView([41.40,2.17], 12);
+  const pressure = ONT_QUERIES.districtPressure();
+  const byId = {}; pressure.forEach((d,i)=>byId[d.id]={rank:i+1, ...d});
+  analysisMapLayer = L.layerGroup().addTo(map);
+  Object.entries(DISTRICTS_GEO).forEach(([id, d])=>{
+    if(!d.coords || d.coords.length<3) return;
+    const p = byId[id];
+    const score = p ? p.score : 0;
+    // heat: low pressure = cool teal, high = hot orange/red
+    const hue = 200 - Math.round(score*200); // 200(cool)→0(hot)
+    const color = `hsl(${hue},85%,55%)`;
+    const poly = L.polygon(d.coords, {
+      color, weight:1.5, opacity:0.9,
+      fillColor:color, fillOpacity:0.12+score*0.33,
+    });
+    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
+      <div style="color:${color};font-size:8px;letter-spacing:.1em;text-transform:uppercase">#${p?p.rank:'—'} · Pressure ${p?(p.score*100).toFixed(0):'—'}</div>
+      <strong>${d.name}</strong><br>
+      <span style="color:#7090a8">${p?p.crime.toLocaleString():0} crime · ${p?(p.density/1000).toFixed(0):0}k/km²</span><br>
+      <span style="color:#7090a8">${p?p.congested:0} congested · ${p?p.roadworks:0} works</span>
+    </div>`, {sticky:true, opacity:1, className:''});
+    analysisMapLayer.addLayer(poly);
+  });
+}
+
+// ── Spatial reasoning: fly to a problem's location on the map ──
+window.__flyToProblem = function(i){
+  const p = (window.__PROBLEMS||[])[i];
+  if(!p) return;
+  if(p.kind==='section'){
+    const g = trafficGeom[p.ref.id];
+    if(g && g.points && g.points.length){
+      const mid = g.points[Math.floor(g.points.length/2)];
+      map.flyTo(mid, 15, {duration:0.8});
+      // pulse a marker
+      const mk = L.circleMarker(mid, {radius:14, color:'#ff1744', weight:2, fillColor:'#ff1744', fillOpacity:0.3}).addTo(map);
+      setTimeout(()=>map.removeLayer(mk), 2500);
+    }
+  } else if(p.kind==='district'){
+    const d = DISTRICTS_GEO[p.ref.id];
+    if(d && d.coords && d.coords.length){
+      const b = L.polygon(d.coords).getBounds();
+      map.flyToBounds(b, {duration:0.8, padding:[80,80]});
+    }
+  }
+};
 
 // Click handler for the reasoning view: run the engine, render ranked causes.
 window.__analyzeProblem = function(i){
@@ -4548,8 +4835,8 @@ function buildAnalysisPanel() {
             <div style="font-family:var(--mono);font-size:9px;color:#ff6d00;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px">Probable-Cause Reasoning</div>
             <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:12px">Click a flagged problem — the engine traverses its ontology links and ranks candidate explanations, always reporting the unexplained residual.</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-              ${problems.map((p,i)=>`<button onclick="window.__analyzeProblem(${i})" style="font-family:var(--mono);font-size:8px;padding:5px 10px;background:rgba(4,12,24,.7);border:1px solid ${p.kind==='district'?'#ff6d0044':'#ff174444'};color:#c0d4e8;cursor:pointer;text-align:left">
-                <span style="color:${p.kind==='district'?'#ff6d00':'#ff1744'}">${p.kind==='district'?'▣':'▬'}</span> ${p.title}<br><span style="color:var(--muted2);font-size:7px">${p.sub}</span>
+              ${problems.map((p,i)=>`<button onclick="window.__analyzeProblem(${i});window.__flyToProblem(${i})" style="font-family:var(--mono);font-size:8px;padding:5px 10px;background:rgba(4,12,24,.7);border:1px solid ${p.kind==='district'?'#ff6d0044':'#ff174444'};color:#c0d4e8;cursor:pointer;text-align:left">
+                <span style="color:${p.kind==='district'?'#ff6d00':'#ff1744'}">${p.kind==='district'?'▣':'▬'}</span> ${p.title}<br><span style="color:var(--muted2);font-size:7px">${p.sub} · click to locate</span>
               </button>`).join('')}
             </div>
             <div id="reasoningOutput" style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Select a problem above to see its probable-cause analysis.</div>
