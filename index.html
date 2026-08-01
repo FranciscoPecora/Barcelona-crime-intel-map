@@ -1864,6 +1864,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
   const analysisPanel = document.getElementById('analysisPanel');
   if(currentMap === 'analysis') {
     analysisPanel.style.display = 'block';
+    loadEvents();
     buildOntology();
     buildAnalysisPanel();
     document.getElementById('hud').style.display = 'none';
@@ -1926,6 +1927,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     loadTrafficGeom().then(()=>{ trafficLoaded=true; fetchTrafficState(); });
     trafficInterval=setInterval(fetchTrafficState, 300000); // 5 min
     loadRoadworks();
+    loadEvents();
   }
 });
 
@@ -3524,7 +3526,7 @@ function buildOntology(){
         epistemicStatus: (density>5000 && HUMAN_DENSITY[id]!==HUMAN_DENSITY_FALLBACK[id] ? 'observed':'baseline'),
       },
       // rolled-up live street-grain state (filled below)
-      live: { sectionsTotal:0, sectionsCongested:0, sectionsDense:0, roadworksActive:0, roadworksUpcoming:0 },
+      live: { sectionsTotal:0, sectionsCongested:0, sectionsDense:0, roadworksActive:0, roadworksUpcoming:0, eventsLiveNow:0 },
       // links
       sectionIds: [], roadworkIdxs: [],
     };
@@ -3568,6 +3570,15 @@ function buildOntology(){
   });
 
   ONTOLOGY = { districts, sections, roadworks: rw, builtAt: Date.now() };
+
+  // ── Live events → district counts (only events happening now) ──
+  if(eventsLoaded && providenceEvents.length){
+    const now = new Date();
+    providenceEvents.forEach(e=>{
+      if(!(new Date(e.start)<=now && new Date(e.end)>=now)) return;
+      if(e.districtId && districts[e.districtId]) districts[e.districtId].live.eventsLiveNow++;
+    });
+  }
   return ONTOLOGY;
 }
 
@@ -3676,6 +3687,114 @@ registerExplainer(function crimeCofactorExplainer(p){
       reasoning:`This district's pressure is driven disproportionately by ${top[0]}. A targeted ${top[0]} intervention would move the composite more than a broad approach.` });
   }
   return drivers;
+});
+
+// ═══════════════════════════════════════════════════════════════
+// EVENTS (agenda cultural) — dated, coordinate-located happenings. The next
+// causal node. Only records with a real start_date are kept (undated standing
+// listings are directory noise, excluded). An event explains congestion only
+// when it is live NOW and near the section — weighted by duration (a short
+// event happening today is a strong candidate; a months-long run is weak).
+// ═══════════════════════════════════════════════════════════════
+const EVENTS_URL = 'https://opendata-ajuntament.barcelona.cat/data/dataset/2767159c-1c98-46b8-a686-2b25b40cb053/resource/59b9c807-f6c1-4c10-ac51-1ace65485079/download';
+let providenceEvents = [];   // parsed, dated events
+let eventsLoaded = false;
+
+function parseEventRecord(r){
+  if(!r.start_date) return null; // require a real event date
+  const geo = r.location_4326_latlon && r.location_4326_latlon.geometries && r.location_4326_latlon.geometries[0];
+  if(!geo || !geo.coordinates) return null;
+  const [lat, lng] = geo.coordinates; // [lat,lng] for BCN
+  if(!(lat>40 && lat<42 && lng>1 && lng<3)) return null;
+  const start = r.start_date.slice(0,10);
+  const end = (r.end_date || r.start_date).slice(0,10);
+  return {
+    name: fixLatin1(r.name || 'Event'),
+    start, end,
+    lat, lng,
+    districtId: r.district_id ? String(parseInt(r.district_id,10)) : null,
+    venue: fixLatin1((r.addresses && r.addresses[0] && r.addresses[0].address_name) || ''),
+    durationDays: Math.max(1, Math.round((new Date(end)-new Date(start))/(864e5))+1),
+  };
+}
+
+async function loadEvents(){
+  if(eventsLoaded) return;
+  try {
+    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(EVENTS_URL)}`, {signal: AbortSignal.timeout(20000)});
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const arr = Array.isArray(data) ? data : (data.result || []);
+    providenceEvents = arr.map(parseEventRecord).filter(Boolean);
+    eventsLoaded = true;
+    const now = new Date();
+    const liveNow = providenceEvents.filter(e=> new Date(e.start)<=now && new Date(e.end)>=now).length;
+    console.log(`Loaded ${providenceEvents.length} dated events (${liveNow} live now) · agenda cultural`);
+    logActivity(`Events · ${providenceEvents.length} dated · ${liveNow} live now`, '#b388ff');
+  } catch(e){
+    console.warn('Events load failed:', e.message);
+    eventsLoaded = true;
+  }
+}
+
+// Events that are live on a given date (default now), optionally near a point.
+function eventsLiveNear(latlng, radiusKm, when){
+  const now = when || new Date();
+  return providenceEvents.filter(e=>{
+    if(!(new Date(e.start)<=now && new Date(e.end)>=now)) return false;
+    if(!latlng) return true;
+    const dLat=(e.lat-latlng[0])*111, dLng=(e.lng-latlng[1])*85; // rough km at BCN lat
+    return Math.sqrt(dLat*dLat+dLng*dLng) <= (radiusKm||0.5);
+  });
+}
+
+// ── Explainer 4: live events near a congested section ──
+// Honest weighting with no crowd-size field available. Three signals:
+//  (a) TYPE — open-air concerts/festivals/markets pull big crowds; exhibitions/
+//      workshops/talks don't. Dominant factor.
+//  (b) DURATION — only very long runs (>2 weeks) are downweighted as standing
+//      listings; days-to-two-weeks (festivals) stay full strength.
+//  (c) CONCURRENCY — several events live at once nearby raises congestion odds.
+function eventTypeIntensity(name, venue){
+  const t = ((name||'')+' '+(venue||'')).toLowerCase();
+  // high-draw, often open-air / mass-gathering
+  if(/festival|concert|festa|mercat|market|fira|revetlla|cabalgata|cavalcada|castell|correfoc|desfilada|parade|manifestaci|open.?air|a l'aire lliure|verbena|sardana|diada/.test(t)) return {w:1.0, label:'high-draw / likely open-air'};
+  // medium — performances, screenings, sports
+  if(/espectacle|teatre|cinema|dansa|ball|partit|match|esport|projecci/.test(t)) return {w:0.6, label:'medium-draw'};
+  // low — indoor, low-flow cultural offerings
+  if(/exposici|taller|workshop|conferenci|xerrada|curs|visita|lectura|presentaci|itinerari|ruta/.test(t)) return {w:0.2, label:'low-draw (indoor/dispersed)'};
+  return {w:0.45, label:'unclassified'};
+}
+registerExplainer(function eventExplainer(p){
+  if(p.kind!=='section' || !eventsLoaded || !providenceEvents.length) return null;
+  const s = p.ref;
+  const g = trafficGeom[s.id];
+  if(!g || !g.points || !g.points.length) return null;
+  const mid = g.points[Math.floor(g.points.length/2)];
+  const near = eventsLiveNear(mid, 0.5); // live now, within ~500m
+  if(!near.length) return null;
+
+  // score each nearby-live event: type (dominant) × duration gate
+  let best=null, bestScore=0;
+  near.forEach(e=>{
+    const ti = eventTypeIntensity(e.name, e.venue);
+    // duration: full strength up to ~14 days, then decays toward standing-listing
+    const durGate = e.durationDays<=14 ? 1.0 : Math.max(0.15, 14/e.durationDays);
+    const score = ti.w * durGate;
+    if(score>bestScore){ bestScore=score; best={e, ti, durGate}; }
+  });
+  if(!best || bestScore<=0.05) return null;
+
+  // concurrency bonus: multiple live events nearby → higher odds (capped)
+  const concurrency = near.length;
+  const concBonus = Math.min(0.15, (concurrency-1)*0.05);
+  const weight = Math.min(0.55, bestScore*0.4 + concBonus);
+
+  const e = best.e;
+  const longRun = e.durationDays>14;
+  const multi = concurrency>1 ? ` · ${concurrency} events live within 500m` : '';
+  return { label:`Live event: ${e.name}`, weight, kind:'event',
+    reasoning:`"${e.name}" (${best.ti.label}) is live now within ~500m (${e.start}${e.end!==e.start?'→'+e.end:''}${e.venue?', '+e.venue:''})${multi}. ${longRun?'Runs >2 weeks, so treated as a standing listing — weak spike cause.':'Short/festival-length run — plausible crowd driver.'} No attendance data in the feed, so intensity is inferred from event type, not measured.` };
 });
 
 const _origGetDistrictColor = getDistrictColor;
@@ -4387,7 +4506,7 @@ function buildAnalysisPanel() {
               <div style="flex:1;min-width:0">
                 <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:#c0d4e8"><span>${d.name}</span><span style="color:#7090a8">${(d.score*100).toFixed(0)}</span></div>
                 ${bar(d.score, i<3?'#ff6d00':'#00a8ff')}
-                <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:2px">${d.crime.toLocaleString()} crime · ${(d.density/1000).toFixed(0)}k/km² · ${d.congested} congested${d.roadworks?' · '+d.roadworks+' works':''}</div>
+                <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:2px">${d.crime.toLocaleString()} crime · ${(d.density/1000).toFixed(0)}k/km² · ${d.congested} congested${d.roadworks?' · '+d.roadworks+' works':''}${(ONTOLOGY.districts[d.id]&&ONTOLOGY.districts[d.id].live.eventsLiveNow)?' · '+ONTOLOGY.districts[d.id].live.eventsLiveNow+' events':''}</div>
               </div>
             </div>`).join('')}
           </div>
