@@ -52,7 +52,10 @@ from urllib.request import urlopen, Request
 # ----------------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------------
-WINDOW_MONTHS = 12                     # rolling window: trailing 12 months
+WINDOW_MONTHS = 2                      # START SMALL: validate end-to-end on 2
+                                       # months first. Once a run succeeds and
+                                       # produces evidence, raise to 12 for the
+                                       # full rolling window.
 CONGESTED_THRESHOLD = 5                # state >= 5 counts as "congested" (5=congestió,6=tallat)
 DENSE_THRESHOLD = 3                    # state >= 3 counts as "dense or worse"
 MIN_OBSERVATIONS = 200                 # below this, evidence is "insufficient"
@@ -66,23 +69,61 @@ GEOM_URL = ("https://opendata-ajuntament.barcelona.cat/data/dataset/"
             "1d6c814c-70ef-4147-aa16-a49ddb952f72/download/transit_relacio_trams.csv")
 OUTPUT_PATH = "roadwork_evidence.json"
 
-UA = {"User-Agent": "Providence-Pipeline/1.0 (research)"}
+import gzip
+from urllib.parse import quote
+
+# Barcelona's open-data portal blocks direct programmatic access (HTTP 403), so
+# every request goes through the same Cloudflare Worker proxy the app uses.
+WORKER = "https://cicero.franzpec2017.workers.dev"
+UA = {
+    "User-Agent": "Mozilla/5.0 (compatible; Providence-Pipeline/1.0)",
+    "Accept": "*/*",
+    "Accept-Encoding": "gzip, deflate",
+}
 
 
-def fetch(url, timeout=120):
-    """Fetch raw bytes from a URL."""
-    req = Request(url, headers=UA)
-    with urlopen(req, timeout=timeout) as r:
-        return r.read()
+def _proxied(url):
+    """Wrap a Barcelona-portal URL in the Worker proxy."""
+    if url.startswith(WORKER):
+        return url
+    return f"{WORKER}/?url={quote(url, safe='')}"
 
 
-def fetch_text(url, timeout=120):
+def fetch(url, timeout=180, use_proxy=True):
+    """Fetch raw bytes via the Worker proxy, following redirects + gzip."""
+    from urllib.request import build_opener, HTTPRedirectHandler
+    target = _proxied(url) if use_proxy else url
+    opener = build_opener(HTTPRedirectHandler())
+    req = Request(target, headers=UA)
+    with opener.open(req, timeout=timeout) as r:
+        raw = r.read()
+        enc = (r.headers.get("Content-Encoding") or "").lower()
+        if "gzip" in enc:
+            try:
+                raw = gzip.decompress(raw)
+            except OSError:
+                pass
+    return raw
+
+
+def fetch_text(url, timeout=180):
     raw = fetch(url, timeout)
-    # Barcelona files are UTF-8 sometimes mislabelled; decode leniently
-    try:
-        return raw.decode("utf-8")
-    except UnicodeDecodeError:
-        return raw.decode("latin-1")
+    for enc in ("utf-8", "latin-1"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", errors="replace")
+
+
+def fetch_json(url, timeout=180):
+    """Fetch and parse JSON, with a clear error if the response isn't JSON."""
+    text = fetch_text(url, timeout).strip()
+    if not text:
+        raise ValueError(f"empty response from {url}")
+    if text[:1] not in ("{", "["):
+        raise ValueError(f"non-JSON response from {url} (starts with: {text[:60]!r})")
+    return json.loads(text)
 
 
 # ----------------------------------------------------------------------------
@@ -91,17 +132,21 @@ def fetch_text(url, timeout=120):
 def load_geometry():
     """Return {section_id: (lat, lng)} representative point per section."""
     text = fetch_text(GEOM_URL)
+    if not text or len(text) < 100:
+        raise ValueError(f"geometry response too short ({len(text)} chars): {text[:80]!r}")
     geom = {}
     reader = csv.reader(io.StringIO(text))
-    next(reader, None)  # header
+    header = next(reader, None)  # header: Tram,Descripció,Coordenades
     for row in reader:
         if len(row) < 3:
             continue
         sid = row[0].strip()
-        coords = [float(x) for x in row[2].split(",") if x.strip()]
+        # coordinate string is the LAST field (may contain many comma-separated
+        # numbers); join everything from index 2 on, in case description had commas
+        coord_str = row[2] if len(row) == 3 else ",".join(row[2:])
+        coords = [float(x) for x in coord_str.split(",") if x.strip().replace(".", "").replace("-", "").isdigit()]
         if len(coords) < 2:
             continue
-        # coords are lng,lat,lng,lat,... — take the midpoint pair
         mid = (len(coords) // 2) // 2 * 2
         lng, lat = coords[mid], coords[mid + 1]
         geom[sid] = (lat, lng)
@@ -142,9 +187,18 @@ def load_roadwork_intervals(geom, radius_km=0.25):
     roadwork was active WITHIN radius_km of the section's representative point.
     A section is 'under roadwork' at time T if T falls in any such interval.
     """
-    raw = fetch_text(ROADWORKS_URL)
-    data = json.loads(raw)
-    works = data if isinstance(data, list) else data.get("result", [])
+    raw_works = None
+    try:
+        data = fetch_json(ROADWORKS_URL)
+        works = data if isinstance(data, list) else data.get("result", [])
+    except Exception as e:
+        print(f"    roadworks direct fetch failed ({e}); trying CKAN datastore",
+              file=sys.stderr)
+        # fallback: CKAN datastore_search for the obres resource
+        api = (f"{CKAN_BASE}/datastore_search?resource_id="
+               "089bcf9e-140e-4ea3-bf93-03c6260ba0f5&limit=5000")
+        data = fetch_json(api)
+        works = data.get("result", {}).get("records", [])
 
     # centroids of works with valid dates
     parsed = []
@@ -184,7 +238,7 @@ def under_roadwork(intervals_for_section, date):
 def resolve_monthly_resources():
     """Return list of (name, url) for monthly traffic CSVs, newest first."""
     api = f"{CKAN_BASE}/package_show?id={CKAN_PACKAGE}"
-    data = json.loads(fetch_text(api))
+    data = fetch_json(api)
     resources = data["result"]["resources"]
     monthly = []
     for r in resources:
