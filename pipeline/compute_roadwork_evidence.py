@@ -82,13 +82,20 @@ UA = {
 }
 
 
+def _encode_uri_component(s):
+    """Match JavaScript's encodeURIComponent exactly. Python's quote() has a
+    different default safe set; encodeURIComponent leaves A-Za-z0-9-_.!~*'()
+    unescaped and escapes everything else (including / : ? & =)."""
+    return quote(s, safe="-_.!~*'()")
+
+
 def _proxied(url):
-    """Wrap a Barcelona-portal URL in the Worker proxy. Format matches the app
-    exactly: WORKER?url=<encoded> — NO slash before the '?' (a slash makes the
-    Worker treat it as an unknown path and return 404)."""
+    """Wrap a Barcelona-portal URL in the Worker proxy, encoding the URL exactly
+    as the app's JS does (encodeURIComponent) so the Worker sees an identical
+    request. Format: WORKER?url=<encoded>  (no slash before '?')."""
     if url.startswith(WORKER):
         return url
-    return f"{WORKER}?url={quote(url, safe='')}"
+    return f"{WORKER}?url={_encode_uri_component(url)}"
 
 
 def fetch(url, timeout=180, use_proxy=True):
@@ -99,7 +106,9 @@ def fetch(url, timeout=180, use_proxy=True):
     opener = build_opener(HTTPRedirectHandler())
     attempts = []
     if use_proxy:
-        attempts = [_proxied(url), url]   # proxy first (GitHub IP is blocked direct), then direct
+        # Proxy works from any IP (residential or cloud); direct only works from
+        # non-blocked IPs. Proxy-first is safe everywhere.
+        attempts = [_proxied(url), url]
     else:
         attempts = [url]
     last_err = None
