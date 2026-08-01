@@ -83,27 +83,43 @@ UA = {
 
 
 def _proxied(url):
-    """Wrap a Barcelona-portal URL in the Worker proxy."""
+    """Wrap a Barcelona-portal URL in the Worker proxy. Format matches the app
+    exactly: WORKER?url=<encoded> — NO slash before the '?' (a slash makes the
+    Worker treat it as an unknown path and return 404)."""
     if url.startswith(WORKER):
         return url
-    return f"{WORKER}/?url={quote(url, safe='')}"
+    return f"{WORKER}?url={quote(url, safe='')}"
 
 
 def fetch(url, timeout=180, use_proxy=True):
-    """Fetch raw bytes via the Worker proxy, following redirects + gzip."""
+    """Fetch raw bytes. Tries direct first, then the Worker proxy on failure.
+    Barcelona blocks direct file downloads (403) but the CKAN API sometimes
+    allows direct access, so we attempt both and use whichever works."""
     from urllib.request import build_opener, HTTPRedirectHandler
-    target = _proxied(url) if use_proxy else url
     opener = build_opener(HTTPRedirectHandler())
-    req = Request(target, headers=UA)
-    with opener.open(req, timeout=timeout) as r:
-        raw = r.read()
-        enc = (r.headers.get("Content-Encoding") or "").lower()
-        if "gzip" in enc:
-            try:
-                raw = gzip.decompress(raw)
-            except OSError:
-                pass
-    return raw
+    attempts = []
+    if use_proxy:
+        attempts = [_proxied(url), url]   # proxy first (GitHub IP is blocked direct), then direct
+    else:
+        attempts = [url]
+    last_err = None
+    for target in attempts:
+        try:
+            req = Request(target, headers=UA)
+            with opener.open(req, timeout=timeout) as r:
+                raw = r.read()
+                enc = (r.headers.get("Content-Encoding") or "").lower()
+                if "gzip" in enc:
+                    try:
+                        raw = gzip.decompress(raw)
+                    except OSError:
+                        pass
+                return raw
+        except Exception as e:
+            last_err = e
+            print(f"    fetch attempt failed [{target[:70]}...]: {e}", file=sys.stderr)
+            continue
+    raise last_err if last_err else RuntimeError(f"all fetch attempts failed for {url}")
 
 
 def fetch_text(url, timeout=180):
