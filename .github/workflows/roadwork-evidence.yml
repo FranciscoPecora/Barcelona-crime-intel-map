@@ -1,0 +1,55 @@
+# Providence — weekly roadwork→congestion evidence refresh
+# ---------------------------------------------------------
+# Runs the analysis pipeline on a schedule (and on manual trigger), then commits
+# the refreshed roadwork_evidence.json back into the repo so GitHub Pages serves
+# a current summary. The heavy history is processed here in the cloud; the
+# browser only ever loads the small distilled file.
+#
+# SETUP: place this file at  .github/workflows/roadwork-evidence.yml
+#        place the pipeline at  pipeline/compute_roadwork_evidence.py
+#        the output is committed to  data/roadwork_evidence.json
+#
+# The default GITHUB_TOKEN can commit back to the same repo — no secrets needed.
+
+name: Roadwork Evidence Refresh
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"    # every Monday 04:17 UTC (off-peak, avoids the top-of-hour rush)
+  workflow_dispatch: {}      # allow manual "Run workflow" from the Actions tab
+
+permissions:
+  contents: write            # needed to commit the refreshed summary
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45      # 12 monthly files can take a while; generous ceiling
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run evidence pipeline
+        run: |
+          mkdir -p data
+          cd data
+          python ../pipeline/compute_roadwork_evidence.py
+          echo "--- summary head ---"
+          head -c 600 roadwork_evidence.json || true
+
+      - name: Commit refreshed summary
+        run: |
+          git config user.name  "providence-bot"
+          git config user.email "actions@github.com"
+          git add data/roadwork_evidence.json
+          if git diff --staged --quiet; then
+            echo "No change in evidence summary; nothing to commit."
+          else
+            git commit -m "chore: refresh roadwork→congestion evidence [skip ci]"
+            git push
+          fi
