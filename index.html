@@ -673,6 +673,33 @@ let foreignPopByDistrict={};
 // live population hasn't loaded. Real values overwrite these.
 let totalPopByDistrict={'1':105000,'2':266000,'3':180000,'4':82000,'5':147000,'6':121000,'7':170000,'8':167000,'9':190000,'10':235000};
 let transitCoverageByDistrict={}; // id -> stations+stops per 1000 residents
+// Socioeconomic layers (district-level, aggregated from census sections).
+let incomeByDistrict={};      // id -> avg gross taxable income per person (€)
+let incomeLoaded=false;
+const INCOME_URL='https://opendata-ajuntament.barcelona.cat/data/dataset/a4cc0919-0dc2-4b09-853b-897c10d08434/resource/e6cabd96-68d6-451b-bc9f-c2a381d733e6/download';
+
+async function loadIncome(){
+  if(incomeLoaded) return;
+  try{
+    const text = await resilientFetch('income', `${WORKER_URL}?url=${encodeURIComponent(INCOME_URL)}`, {parse:'text', timeout:15000});
+    const lines = text.split(/\r?\n/).filter(l=>l.trim());
+    const header = lines[0].split(',');
+    const dIdx = header.findIndex(h=>/Codi_Districte/i.test(h));
+    const vIdx = header.findIndex(h=>/Import_Renda/i.test(h));
+    const sum={}, cnt={};
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(',');
+      const d=String(parseInt(c[dIdx],10));
+      const v=parseFloat(c[vIdx]);
+      if(!d||d==='NaN'||!isFinite(v)) continue;
+      sum[d]=(sum[d]||0)+v; cnt[d]=(cnt[d]||0)+1;
+    }
+    incomeByDistrict={};
+    Object.keys(sum).forEach(d=>{ incomeByDistrict[d]=Math.round(sum[d]/cnt[d]); });
+    incomeLoaded=true;
+    console.log('Loaded income per district (€):', incomeByDistrict);
+  }catch(e){ console.warn('Income load failed:', e.message); incomeLoaded=true; }
+}
 
 let currentMap    = 'crime';
 let activeFilters = new Set(CRIME_TYPES.map(l=>l.id));
@@ -883,6 +910,7 @@ async function loadCCTVData() {
 }
 
 async function loadPopulationData() {
+  loadIncome().then(()=>{ if(currentMap==='human') buildHUD(); });
   const url = `${CKAN_BASE}/datastore_search?resource_id=${POPULATION_RESOURCE}&limit=7000`;
   try {
     const data = await proxyFetch(url, 12000);
@@ -1587,14 +1615,17 @@ function buildHUD() {
   } else if(currentMap==='human'){
     const totPop=Object.values(HUMAN_DENSITY).reduce((a,b)=>a+b,0);
     const totForeign=Object.values(foreignPopByDistrict).reduce((a,b)=>a+b,0);
+    const incVals=Object.values(incomeByDistrict).filter(v=>v>0);
+    const avgInc=incVals.length?Math.round(incVals.reduce((a,b)=>a+b,0)/incVals.length):null;
     hud.innerHTML=`
       <div class="hud-header">Human Terrain · 2025</div>
       <div class="hud-body">
         <div class="hud-val" style="color:var(--accent)">${(totForeign/1000).toFixed(0)}k</div>
         <div class="hud-sub">Foreign nationals tracked</div>
         <hr class="hud-div">
-        <div class="hud-row"><span>Pop. density avg</span><span style="color:var(--blue)">${(totPop/10000).toFixed(0)}k/km²</span></div>
-        <div class="hud-row"><span>Source</span><span style="color:var(--green)">Padró Municipal 2025</span></div>
+        <div class="hud-row"><span>Pop. density avg</span><span>${(totPop/10000).toFixed(0)}k/km²</span></div>
+        ${avgInc?`<div class="hud-row"><span>Income avg</span><span>€${avgInc.toLocaleString()}</span></div>`:''}
+        <div class="hud-row"><span>Source</span><span style="color:var(--green)">Padró · INE renda</span></div>
       </div>`;
   }
 }
@@ -1961,7 +1992,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     document.getElementById('hud').style.display = 'none';
     document.getElementById('sidebar').style.display = 'none';
     if(riskLayerActive) stopRiskLayer();
-    loadEvents(); loadRoadworks(); loadRoadworkEvidence();
+    loadEvents(); loadRoadworks(); loadRoadworkEvidence(); loadIncome();
     loadMetroData().then(()=>{ if(typeof loadBusData==='function') loadBusData().then(()=>{buildOntology(); if(currentMap==='fusion') renderFusion();}); });
     loadTrafficGeom().then(()=>{ trafficLoaded=true; if(!Object.keys(trafficState).length) fetchTrafficState(); });
     if(!window.__fusionSel) window.__fusionSel = ['crime','congestion'];
@@ -3730,7 +3761,7 @@ function buildOntology(){
   Object.keys(DISTRICTS_GEO).forEach(id=>{
     const pop = totalPopByDistrict[id]||0;
     transitCoverageByDistrict[id] = pop>0 ? +((covCount[id]||0)/(pop/1000)).toFixed(2) : 0;
-    if(districts[id]) districts[id].transitCoverage = transitCoverageByDistrict[id];
+    if(districts[id]){ districts[id].transitCoverage = transitCoverageByDistrict[id]; districts[id].income = incomeByDistrict[id]||0; }
   });
 
   // ── Live events → district counts (only events happening now) ──
@@ -3998,6 +4029,8 @@ const FUSION_DOMAINS = {
                 perDistrict:(d)=> d.live.eventsLiveNow },
   transit:    { label:'Transit Coverage', grain:'district', color:'#5aa86a',
                 perDistrict:(d)=> d.transitCoverage||0 },
+  income:     { label:'Income (€/person)', grain:'district', color:'#4db6ac',
+                perDistrict:(d)=> d.income||0 },
 };
 
 // Pearson correlation with honest small-n caveat
