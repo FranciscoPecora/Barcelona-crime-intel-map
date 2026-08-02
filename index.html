@@ -4990,16 +4990,22 @@ function buildAnalysisPanel() {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         ${correlations.map(c=>{
-          const {str,color}=getCorrelationLabel(c.r);
-          const ci=pearsonCI(c.r, c.x.length);
-          const ciStr=`95% CI [${ci.lo>=0?'+':''}${ci.lo.toFixed(2)}, ${ci.hi>=0?'+':''}${ci.hi.toFixed(2)}] · n=${c.x.length}`;
-          return `<div style="background:rgba(7,21,37,.8);border:1px solid var(--border2);padding:14px">
+          const {str,color:rawColor}=getCorrelationLabel(c.r);
+          const _ci=pearsonCI(c.r, c.x.length);
+          const crossesZero = (_ci.lo <= 0 && _ci.hi >= 0);
+          // Demote statistically non-significant results (CI crosses zero):
+          // grey them out and tag them, so the eye goes to defensible findings.
+          const sig = !crossesZero;
+          const color = sig ? rawColor : '#6a6a6e';
+          const ciStr=`95% CI [${_ci.lo>=0?'+':''}${_ci.lo.toFixed(2)}, ${_ci.hi>=0?'+':''}${_ci.hi.toFixed(2)}] · n=${c.x.length}`;
+          return `<div style="background:var(--surface);border:1px solid var(--border2);padding:14px;${sig?'':'opacity:.62'}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-              <div style="font-family:var(--mono);font-size:11px;color:#c0d4e8;letter-spacing:.06em;text-transform:uppercase;max-width:190px;line-height:1.5">${c.title}</div>
+              <div style="font-family:var(--sans);font-size:13px;font-weight:600;color:${sig?'var(--text)':'var(--text2)'};max-width:190px;line-height:1.4">${c.title}
+                ${sig?'':`<div style="font-family:var(--sans);font-size:11px;font-weight:500;color:#8a6a3a;margin-top:4px;text-transform:none">⚠ Below significance · CI crosses zero</div>`}</div>
               <div style="text-align:right;flex-shrink:0;margin-left:10px">
-                <div style="font-family:var(--mono);font-size:18px;color:${color};line-height:1">${c.r>=0?'+':''}${c.r.toFixed(3)}</div>
-                <div style="font-family:var(--mono);font-size:11px;color:${color};letter-spacing:.1em;text-transform:uppercase">${str}</div>
-                <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px;letter-spacing:.04em">${ciStr}</div>
+                <div style="font-family:var(--mono);font-size:20px;font-weight:500;color:${color};line-height:1">${c.r>=0?'+':''}${c.r.toFixed(3)}</div>
+                <div style="font-family:var(--sans);font-size:11px;font-weight:500;color:${color};letter-spacing:.02em;text-transform:uppercase;margin-top:2px">${sig?str:'not significant'}</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px">${ciStr}</div>
               </div>
             </div>
             <div style="height:2px;background:var(--border);margin-bottom:10px;position:relative">
@@ -5007,23 +5013,23 @@ function buildAnalysisPanel() {
               <div style="position:absolute;left:50%;top:-2px;width:1px;height:6px;background:var(--muted2)"></div>
             </div>
             <div style="margin-bottom:8px">${scatterSVG(c.x,c.y,color)}</div>
-            <div style="font-family:var(--mono);font-size:11px;padding:5px 8px;margin-bottom:8px;
-              background:${color}0d;border-left:2px solid ${color};color:${color};line-height:1.5">
-              ${Math.abs(c.r)>=0.5
+            <div style="font-family:var(--sans);font-size:12px;padding:6px 9px;margin-bottom:8px;
+              background:${color}12;border-left:2px solid ${color};color:${sig?color:'var(--text2)'};line-height:1.5">
+              ${sig && Math.abs(c.r)>=0.5
                 ? `${c.r>0?'↑':'↓'} ${str} — ${c.r>0?'increases':'decreases'} with ${c.title.split(' vs ')[0].toLowerCase()}`
-                : `No meaningful correlation detected`}
+                : `No statistically significant correlation at n=${c.x.length}`}
             </div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);line-height:1.6;margin-bottom:8px">${c.insight}</div>
+            <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:8px">${c.insight}</div>
             <div style="display:flex;gap:5px;flex-wrap:wrap">
-              ${c.datasets.map(d=>`<span style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:2px 5px;border:1px solid var(--border);letter-spacing:.06em">${d}</span>`).join('')}
+              ${c.datasets.map(d=>`<span style="font-family:var(--mono);font-size:11px;color:var(--muted2);padding:2px 6px;border:1px solid var(--border);border-radius:3px">${d}</span>`).join('')}
             </div>
           </div>`;
         }).join('')}
       </div>
 
-      <div style="margin-top:16px;padding:10px 14px;border:1px solid var(--border);background:rgba(7,21,37,.4)">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Methodological Note</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);line-height:1.6">Pearson r computed across ${districts.length} Barcelona districts. Small sample (n=${districts.length}) — interpret with caution. All correlations are descriptive, not causal. Confounders (tourism density, economic inequality, nighttime economy) are not controlled for. This analysis identifies hypotheses for further investigation.</div>
+      <div style="margin-top:16px;padding:11px 14px;border:1px solid var(--border);background:var(--surface)">
+        <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:4px">Methodological note</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6">Pearson r across ${districts.length} districts. With n=${districts.length}, confidence intervals are wide — correlations whose interval crosses zero are demoted above as not statistically significant. All results are descriptive, not causal; confounders (tourism, inequality, nightlife density) are uncontrolled. Findings are hypotheses for investigation, not conclusions.</div>
       </div>
     </div>`;
 }
