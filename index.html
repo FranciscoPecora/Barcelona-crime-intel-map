@@ -1907,7 +1907,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     document.getElementById('hud').style.display = 'none';
     document.getElementById('sidebar').style.display = 'none';
     if(riskLayerActive) stopRiskLayer();
-    loadEvents(); loadRoadworks();
+    loadEvents(); loadRoadworks(); loadRoadworkEvidence();
     loadTrafficGeom().then(()=>{ trafficLoaded=true; if(!Object.keys(trafficState).length) fetchTrafficState(); });
     if(!window.__fusionSel) window.__fusionSel = ['crime','congestion'];
     renderFusion();
@@ -3441,6 +3441,33 @@ let roadworks = [];        // [{status, name, type, district, dates, polygon, ur
 let roadworksLayer = null;
 let roadworksLoaded = false;
 
+// ── Historical roadwork→congestion evidence (precomputed by the pipeline) ──
+// Loaded from the repo root; distilled from 12 months of traffic history joined
+// against roadwork intervals. Per-section: how much more often congested during
+// active roadworks vs not ("lift"), with observation counts and an honesty flag.
+let roadworkEvidence = null;      // {generated, window_months, sections:[...]}
+let roadworkEvidenceById = {};    // id -> section evidence
+let evidenceLoaded = false;
+const EVIDENCE_URL = 'roadwork_evidence.json'; // repo root, same origin
+
+async function loadRoadworkEvidence(){
+  if(evidenceLoaded) return;
+  try {
+    const res = await fetch(EVIDENCE_URL, {signal: AbortSignal.timeout(15000)});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    roadworkEvidence = await res.json();
+    (roadworkEvidence.sections||[]).forEach(s=>{ roadworkEvidenceById[s.id] = s; });
+    evidenceLoaded = true;
+    const suf = (roadworkEvidence.sections||[]).filter(s=>s.evidence==='sufficient' && s.lift).length;
+    console.log(`Loaded roadwork evidence: ${roadworkEvidence.sections.length} sections, ${suf} with sufficient lift, ${roadworkEvidence.window_months}-month window`);
+    logActivity(`Evidence · ${suf} sections · ${roadworkEvidence.window_months}mo history`, '#00e5ff');
+    if(currentMap==='fusion') renderFusion();
+  } catch(e){
+    console.warn('Roadwork evidence load failed:', e.message);
+    evidenceLoaded = true; // don't retry-spam; feature degrades gracefully
+  }
+}
+
 const ROADWORK_STATUS = {
   active:   {label:'Active',   color:'#ffea00'},
   upcoming: {label:'Upcoming', color:'#40c4ff'},
@@ -3979,6 +4006,57 @@ function paintFusionMap(sel){
   return fusion;
 }
 
+// The historical evidence cross-reference: strongest roadwork→congestion signals
+// from 12 months of data. Presented honestly — absolute rates shown alongside
+// lift, so a huge ratio on tiny base rates reads differently from a strong
+// effect on high base rates. Names come from the live traffic geometry.
+function renderEvidenceBlock(){
+  if(!evidenceLoaded){
+    return `<div style="background:rgba(0,229,255,.03);border:1px solid rgba(0,229,255,.14);padding:12px 14px;margin-bottom:16px">
+      <div style="font-family:var(--mono);font-size:9px;color:#00e5ff;letter-spacing:.14em;text-transform:uppercase">Roadwork → Congestion Evidence</div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:6px">Loading historical evidence…</div></div>`;
+  }
+  if(!roadworkEvidence || !roadworkEvidence.sections){
+    return `<div style="background:rgba(0,229,255,.03);border:1px solid rgba(0,229,255,.14);padding:12px 14px;margin-bottom:16px">
+      <div style="font-family:var(--mono);font-size:9px;color:#00e5ff;letter-spacing:.14em;text-transform:uppercase">Roadwork → Congestion Evidence</div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:6px">Evidence file not available. Run the pipeline and commit roadwork_evidence.json to enable this view.</div></div>`;
+  }
+  // strongest sufficient-evidence signals, sorted by lift
+  const strong = roadworkEvidence.sections
+    .filter(s=>s.evidence==='sufficient' && s.lift && s.lift>1)
+    .sort((a,b)=>b.lift-a.lift)
+    .slice(0,12);
+  const total = roadworkEvidence.sections.filter(s=>s.evidence==='sufficient' && s.lift).length;
+  const nameFor = (id)=> (trafficGeom[id] && trafficGeom[id].name) ? trafficGeom[id].name : ('Section '+id);
+  const rows = strong.map(s=>{
+    const name = nameFor(s.id);
+    const rwPct = (s.rw_dense_rate*100).toFixed(1);
+    const norwPct = (s.norw_dense_rate*100).toFixed(1);
+    // honesty: flag high-lift-on-tiny-base as "rare-baseline"
+    const tinyBase = s.norw_dense_rate < 0.02;
+    const liftColor = s.lift>=3 ? '#ff1744' : s.lift>=2 ? '#ff9100' : '#ffc400';
+    return `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-family:var(--mono);font-size:9px;color:#c0d4e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+        <span style="font-family:var(--mono);font-size:12px;color:${liftColor};flex-shrink:0">${s.lift}×</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:1px">
+        congested ${rwPct}% during works vs ${norwPct}% without · ${s.rw_obs.toLocaleString()} obs${tinyBase?' · <span style="color:#7a6a3a">rare-baseline, ratio inflated</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="background:rgba(0,229,255,.03);border:1px solid rgba(0,229,255,.16);padding:13px 15px;margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+      <div style="font-family:var(--mono);font-size:9px;color:#00e5ff;letter-spacing:.14em;text-transform:uppercase">Roadwork → Congestion Evidence</div>
+      <div style="font-family:var(--mono);font-size:7px;color:var(--muted2)">${roadworkEvidence.window_months}-mo history · ${total} sections</div>
+    </div>
+    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-bottom:10px;line-height:1.5">Real temporal evidence: per-section congestion frequency <strong>during active roadworks</strong> vs <strong>without</strong>, over ${roadworkEvidence.months_processed} months. "Lift" = ratio of the two. This is a natural experiment per street — far stronger than live co-location, though still association, not proof.</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Strongest signals</div>
+    ${rows}
+    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:8px;line-height:1.5">Sections marked "rare-baseline" have near-zero normal congestion, so any roadwork congestion yields a large ratio — real but fragile. High-base-rate signals (e.g. 57%→ during works) are the operationally strongest.</div>
+  </div>`;
+}
+
 function renderFusion(){
   const panel = document.getElementById('fusionPanel');
   if(!panel) return;
@@ -3992,6 +4070,7 @@ function renderFusion(){
   let html = `<div style="font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;margin-bottom:2px">Fusion · Cross-Domain Synthesis</div>
     <div style="font-family:var(--mono);font-size:20px;color:#c0d4e8;letter-spacing:.02em;margin-bottom:4px">DOMAIN FUSION</div>
     <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:14px">Select 2–3 domains. Layers overlay on the map; their cross-reference computes below. Grain resolves from your picks — the ontology bridges street↔district when mixed.</div>
+    ${renderEvidenceBlock()}
     <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>`;
 
   if(!fusion || sel.length<2){
