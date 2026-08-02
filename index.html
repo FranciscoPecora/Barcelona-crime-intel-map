@@ -669,6 +669,10 @@ const HUMAN_LAYERS=[
 const HUMAN_DENSITY_FALLBACK={'1':20000,'2':35000,'3':14000,'4':9000,'5':8500,'6':31000,'7':22000,'8':28000,'9':19000,'10':23000};
 let HUMAN_DENSITY={...HUMAN_DENSITY_FALLBACK};
 let foreignPopByDistrict={};
+// Fallback population per district (2025 Padró approx) for transit coverage when
+// live population hasn't loaded. Real values overwrite these.
+let totalPopByDistrict={'1':105000,'2':266000,'3':180000,'4':82000,'5':147000,'6':121000,'7':170000,'8':167000,'9':190000,'10':235000};
+let transitCoverageByDistrict={}; // id -> stations+stops per 1000 residents
 
 let currentMap    = 'crime';
 let activeFilters = new Set(CRIME_TYPES.map(l=>l.id));
@@ -905,6 +909,7 @@ async function loadPopulationData() {
       HUMAN_DENSITY[code] = Math.round(totalByDistrict[code] / area);
     });
     foreignPopByDistrict = foreignByDistrict;
+    totalPopByDistrict = {...totalByDistrict};
 
     dataLoaded.population = true;
     console.log('Loaded real 2025 population data:', totalByDistrict);
@@ -1957,6 +1962,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     document.getElementById('sidebar').style.display = 'none';
     if(riskLayerActive) stopRiskLayer();
     loadEvents(); loadRoadworks(); loadRoadworkEvidence();
+    loadMetroData().then(()=>{ if(typeof loadBusData==='function') loadBusData().then(()=>{buildOntology(); if(currentMap==='fusion') renderFusion();}); });
     loadTrafficGeom().then(()=>{ trafficLoaded=true; if(!Object.keys(trafficState).length) fetchTrafficState(); });
     if(!window.__fusionSel) window.__fusionSel = ['crime','congestion'];
     renderFusion();
@@ -3714,6 +3720,19 @@ function buildOntology(){
 
   ONTOLOGY = { districts, sections, roadworks: rw, builtAt: Date.now() };
 
+  // ── Transit coverage per district: (metro stations + bus stops) per 1000
+  // residents. Answers "is this district underserved by transit?" — fuses with
+  // congestion (do underserved districts have worse traffic?) and crime. ──
+  const covCount = {};
+  (metroStations||[]).forEach(s=>{ const d=districtOf([s.lat,s.lng]); if(d) covCount[d]=(covCount[d]||0)+1; });
+  (busStops||[]).forEach(s=>{ const lat=s.lat||s[0], lng=s.lng||s[1]; if(isFinite(lat)&&isFinite(lng)){ const d=districtOf([lat,lng]); if(d) covCount[d]=(covCount[d]||0)+1; } });
+  transitCoverageByDistrict={};
+  Object.keys(DISTRICTS_GEO).forEach(id=>{
+    const pop = totalPopByDistrict[id]||0;
+    transitCoverageByDistrict[id] = pop>0 ? +((covCount[id]||0)/(pop/1000)).toFixed(2) : 0;
+    if(districts[id]) districts[id].transitCoverage = transitCoverageByDistrict[id];
+  });
+
   // ── Live events → district counts (only events happening now) ──
   if(eventsLoaded && providenceEvents.length){
     const now = new Date();
@@ -3977,6 +3996,8 @@ const FUSION_DOMAINS = {
                 perDistrict:(d)=> d.live.roadworksActive },
   events:     { label:'Live Events',  grain:'street', color:'#e040fb',
                 perDistrict:(d)=> d.live.eventsLiveNow },
+  transit:    { label:'Transit Coverage', grain:'district', color:'#5aa86a',
+                perDistrict:(d)=> d.transitCoverage||0 },
 };
 
 // Pearson correlation with honest small-n caveat
