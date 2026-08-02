@@ -344,7 +344,7 @@
     <div class="wordmark">
       <h1>PROVI<span></span>DENCE</h1>
       <p>City Intelligence Platform</p>
-      <p style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:rgba(255,255,255,.45);text-transform:uppercase;margin-top:8px">Francisco Pecora</p>
+      <p style="font-family:'Inter',sans-serif;font-size:12px;font-weight:500;letter-spacing:.14em;color:rgba(240,239,236,.5);text-transform:uppercase;margin-top:8px">Francisco Pecora</p>
     </div>
     <div class="enter-wrap">
       <a class="enter-btn" href="#" id="enterBtn">
@@ -366,43 +366,42 @@
 .cursor-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(255,255,255,.25);
   border-radius:50%;pointer-events:none;z-index:9998;
   transform:translate(-50%,-50%);transition:all .12s ease}
-.bracket{position:fixed;width:40px;height:40px;border-color:rgba(180,205,235,.35);border-style:solid;z-index:20}
+.bracket{position:fixed;width:40px;height:40px;border-color:rgba(217,144,47,.3);border-style:solid;z-index:20}
 .tl{top:24px;left:24px;border-width:2px 0 0 2px}
 .tr{top:24px;right:24px;border-width:2px 2px 0 0}
 .bl{bottom:24px;left:24px;border-width:0 0 2px 2px}
 .br{bottom:24px;right:24px;border-width:0 2px 2px 0}
 .classify{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:20;
-  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.22em;
-  color:rgba(174,203,238,.7);text-transform:uppercase;
-  border:1px solid rgba(150,190,235,.22);padding:5px 14px;
-  background:rgba(107,164,232,.04);
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;
+  color:rgba(217,144,47,.85);text-transform:uppercase;
+  border:1px solid rgba(217,144,47,.25);padding:5px 14px;
+  background:rgba(217,144,47,.05);
   display:flex;align-items:center;gap:8px}
 .classify::before{content:'';width:5px;height:5px;border-radius:50%;
-  background:#6ba4e8;box-shadow:0 0 6px rgba(107,164,232,.8)}
+  background:#d9902f;box-shadow:0 0 6px rgba(217,144,47,.7)}
 .timestamp{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:20;
   font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
-  color:rgba(255,255,255,.18);text-transform:uppercase}
+  color:rgba(255,255,255,.25);text-transform:uppercase}
 .stage{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:48px;
   animation:stageIn 1.4s cubic-bezier(.16,1,.3,1) forwards}
 @keyframes stageIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 .eye-container{position:relative;width:400px;height:174px}
-.eye-container::before{content:'';position:absolute;top:50%;left:50%;width:340px;height:200px;transform:translate(-50%,-50%);background:radial-gradient(ellipse at center,rgba(140,180,230,.14) 0%,rgba(140,180,230,.05) 40%,transparent 70%);pointer-events:none;z-index:-1}
-canvas#eyeCanvas{filter:drop-shadow(0 0 10px rgba(150,190,235,.18))}
+.eye-container::before{content:'';position:absolute;top:50%;left:50%;width:340px;height:200px;transform:translate(-50%,-50%);background:radial-gradient(ellipse at center,rgba(217,144,47,.1) 0%,rgba(217,144,47,.04) 40%,transparent 70%);pointer-events:none;z-index:-1}
+canvas#eyeCanvas{filter:drop-shadow(0 0 10px rgba(217,144,47,.15))}
 canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
 .wordmark{text-align:center;animation:wordIn .9s 1s cubic-bezier(.16,1,.3,1) both}
 @keyframes wordIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.wordmark h1{font-size:32px;font-weight:600;letter-spacing:.35em;color:#eaf2fb;text-transform:uppercase;text-shadow:0 0 18px rgba(150,190,235,.35),0 0 4px rgba(210,228,248,.4)}
-.wordmark h1 span{color:#6ba4e8}
-.wordmark p{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.22em;color:rgba(190,210,235,.35);text-transform:uppercase;margin-top:8px}
+.wordmark h1{font-size:34px;font-weight:600;letter-spacing:.3em;color:#f0efec;text-shadow:0 0 24px rgba(217,144,47,.25)}
+.wordmark h1 span{color:#d9902f}
+.wordmark p{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;letter-spacing:.14em;color:rgba(240,239,236,.4);text-transform:uppercase;margin-top:10px}
 .enter-wrap{animation:wordIn .9s 1.8s cubic-bezier(.16,1,.3,1) both}
 .enter-btn{display:inline-flex;align-items:center;gap:14px;padding:15px 44px;
-  background:rgba(107,164,232,.04);
-  border:1px solid rgba(150,190,235,.28);color:#aecbee;
-  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;
-  cursor:none;transition:all .3s cubic-bezier(.16,1,.3,1);text-decoration:none;
-  box-shadow:0 0 0 1px rgba(140,180,230,.04),inset 0 0 20px rgba(140,180,230,.03)}
-.enter-btn:hover{border-color:rgba(150,190,235,.6);color:#eaf2fb;background:rgba(107,164,232,.1);
-  box-shadow:0 0 24px rgba(120,165,225,.18),inset 0 0 24px rgba(140,180,230,.06)}
+  background:rgba(217,144,47,.05);
+  border:1px solid rgba(217,144,47,.32);color:#e6b566;
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  cursor:none;transition:all .3s cubic-bezier(.16,1,.3,1);text-decoration:none}
+.enter-btn:hover{border-color:rgba(217,144,47,.7);color:#f0efec;background:rgba(217,144,47,.12);
+  box-shadow:0 0 24px rgba(217,144,47,.15)}
 .arrow{transition:transform .25s;font-size:14px}
 .enter-btn:hover .arrow{transform:translateX(4px)}
 #landingOverlay.fade-out{animation:fadeOut .65s ease forwards;pointer-events:none}
@@ -419,7 +418,6 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <button class="nav-tab" data-map="sigint">SIGINT / RF</button>
     <button class="nav-tab" data-map="infra">Infrastructure</button>
     <button class="nav-tab" data-map="human">Human Terrain</button>
-    <button class="nav-tab" data-map="maritime">Maritime</button>
     <button class="nav-tab" data-map="aircraft">Air Traffic</button>
     <button class="nav-tab" data-map="transit">Transit</button>
     <button class="nav-tab" data-map="traffic">Traffic</button>
@@ -4069,8 +4067,8 @@ function renderFusion(){
   let html = `<div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase;margin-bottom:4px">Cross-domain synthesis</div>
     <div style="font-family:var(--sans);font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.01em;margin-bottom:6px">Domain Fusion</div>
     <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">Select two or three domains. Their layers overlay on the map and their cross-reference computes below. Grain resolves from your selection — the ontology bridges street and district when they mix.</div>
-    ${renderEvidenceBlock()}
-    <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>`;
+    <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>
+    ${renderEvidenceBlock()}`;
 
   if(!fusion || sel.length<2){
     html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);padding:20px 0">Select at least 2 domains to compute a cross-reference.</div>`;
@@ -5028,7 +5026,7 @@ setTimeout(()=>logActivity('System initialized · Providence v1.0','#d9902f'), 5
     const px=CX+pupilX,py=CY+pupilY*lidScale;
     ctx.save();eyePath(lidScale);ctx.clip();
     const ig=ctx.createRadialGradient(px,py,0,px,py,irisR);
-    ig.addColorStop(0,'#3a6ea5');ig.addColorStop(.55,'#1a3a5e');ig.addColorStop(1,'#0a0a0b');
+    ig.addColorStop(0,'#c9883a');ig.addColorStop(.55,'#6e4a1a');ig.addColorStop(1,'#0a0a0b');
     ctx.beginPath();ctx.arc(CX,CY,irisR,0,Math.PI*2);ctx.fillStyle=ig;ctx.fill();
     ctx.save();ctx.translate(CX,CY);ctx.rotate(globeAngle);ctx.translate(-CX,-CY);
     [11,27,44,60].forEach(r=>{ctx.beginPath();ctx.ellipse(CX,CY,irisR,r*(irisR/90),0,0,Math.PI*2);ctx.strokeStyle=`rgba(255,255,255,${.06+.08*(1-r/90)})`;ctx.lineWidth=.7;ctx.stroke();});
