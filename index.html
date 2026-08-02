@@ -3985,6 +3985,8 @@ window.__toggleFusionDomain = function(key){
 
 function paintFusionMap(sel){
   if(fusionMapLayer){ map.removeLayer(fusionMapLayer); fusionMapLayer=null; }
+  if(trafficLayer){ map.removeLayer(trafficLayer); trafficLayer=null; trafficFlowSegments=[]; }
+  if(roadworksLayer){ map.removeLayer(roadworksLayer); roadworksLayer=null; }
   map.setView([41.40,2.17], 12);
   fusionMapLayer = L.layerGroup().addTo(map);
   const fusion = computeFusion(sel);
@@ -4067,8 +4069,7 @@ function renderFusion(){
   let html = `<div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase;margin-bottom:4px">Cross-domain synthesis</div>
     <div style="font-family:var(--sans);font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.01em;margin-bottom:6px">Domain Fusion</div>
     <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">Select two or three domains. Their layers overlay on the map and their cross-reference computes below. Grain resolves from your selection — the ontology bridges street and district when they mix.</div>
-    <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>
-    ${renderEvidenceBlock()}`;
+    <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>`;
 
   if(!fusion || sel.length<2){
     html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);padding:20px 0">Select at least 2 domains to compute a cross-reference.</div>`;
@@ -4077,16 +4078,16 @@ function renderFusion(){
 
   // grain banner
   const grainLabel = fusion.bridged ? 'Mixed grain — bridged via ontology (street aggregates up to district)' : (fusion.grains[0]==='district'?'District grain':'Street grain');
-  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:14px;padding:6px 10px;background:rgba(0,168,255,.05);border-left:2px solid var(--accent)">${grainLabel}</div>`;
+  html += `<div style="font-family:var(--sans);font-size:12px;color:var(--accent);margin-bottom:14px;padding:7px 11px;background:var(--accent-dim);border-left:2px solid var(--accent)">${grainLabel}</div>`;
 
   // pairwise correlations with honest labels
-  html += `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Computed Cross-Reference</div>`;
+  html += `<div style="font-family:var(--sans);font-weight:600;font-size:11px;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Computed cross-reference</div>`;
   fusion.pairs.forEach(p=>{
-    const col = Math.abs(p.r)>=0.5 ? (p.r>0?'#ff5252':'#40c4ff') : '#7090a8';
-    html += `<div style="border:1px solid #1a3050;padding:10px 12px;margin-bottom:8px;background:rgba(16,16,20,.6)">
+    const col = Math.abs(p.r)>=0.5 ? (p.r>0?'#e0663a':'#5a9bd4') : 'var(--muted2)';
+    html += `<div style="border:1px solid var(--border2);padding:11px 13px;margin-bottom:8px;background:var(--surface)">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-        <span style="font-family:var(--mono);font-size:11px;color:#c0d4e8">${p.a.label} × ${p.b.label}</span>
-        <span style="font-family:var(--mono);font-size:14px;color:${col}">${p.r>=0?'+':''}${p.r.toFixed(2)}</span>
+        <span style="font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text)">${p.a.label} × ${p.b.label}</span>
+        <span style="font-family:var(--mono);font-size:16px;font-weight:500;color:${col}">${p.r>=0?'+':''}${p.r.toFixed(2)}</span>
       </div>
       <div style="font-family:var(--mono);font-size:11px;color:${col};text-transform:uppercase;letter-spacing:.1em">${p.strength} ${p.dir}</div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px">${p.caveat}${fusion.bridged?' · cross-grain: correlation of aggregates, not point-level':''}</div>
@@ -4107,7 +4108,8 @@ function renderFusion(){
     </div>`;
   });
 
-  html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:14px;line-height:1.6;border-top:1px dashed var(--border2);padding-top:10px">Fusion computes correlation and composite scores across the domains you select. Correlation is not causation — a strong r means the two move together across districts, which is a lead to investigate, not a proven mechanism. District-level n=10 is small, so treat all coefficients as indicative. Mixed-grain fusions correlate district aggregates, which can hide street-level detail.</div>`;
+  html += `<div style="font-family:var(--sans);font-size:12px;color:var(--muted2);margin-top:14px;line-height:1.6;border-top:1px dashed var(--border2);padding-top:10px">Fusion computes correlation and composite scores across the domains you select. Correlation is not causation — a strong r means the two move together across districts, which is a lead to investigate, not a proven mechanism. District-level n=10 is small, so treat all coefficients as indicative. Mixed-grain fusions correlate district aggregates, which can hide street-level detail.</div>
+  <div style="margin-top:22px">${renderEvidenceBlock()}</div>`;
   panel.innerHTML = html;
 }
 
