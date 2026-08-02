@@ -676,6 +676,41 @@ let transitCoverageByDistrict={}; // id -> stations+stops per 1000 residents
 // Socioeconomic layers (district-level, aggregated from census sections).
 let incomeByDistrict={};      // id -> avg gross taxable income per person (€)
 let incomeLoaded=false;
+// Age demographics: % elderly (65+) and % youth (0-17) per district.
+let elderlyPctByDistrict={}, youthPctByDistrict={}, ageLoaded=false;
+const AGE_PKG='pad_mdba_sexe_edat-1';
+
+async function loadAge(){
+  if(ageLoaded) return;
+  try{
+    // resolve newest CSV resource in the age package
+    const pkg = await resilientFetch('age_pkg', `${WORKER_URL}?url=${encodeURIComponent('https://opendata-ajuntament.barcelona.cat/data/api/3/action/package_show?id='+AGE_PKG)}`, {parse:'json', timeout:15000});
+    const res = (pkg.result.resources||[]).filter(r=>(r.format||'').toUpperCase()==='CSV');
+    res.sort((a,b)=> new Date(b.last_modified||b.created||0)-new Date(a.last_modified||a.created||0));
+    const url = res[0] && res[0].url;
+    if(!url) throw new Error('no CSV resource');
+    const text = await resilientFetch('age', `${WORKER_URL}?url=${encodeURIComponent(url)}`, {parse:'text', timeout:20000});
+    const lines = text.split(/\r?\n/).filter(l=>l.trim());
+    const h = lines[0].split(',');
+    const dIdx=h.findIndex(x=>/Codi_Districte/i.test(x)), vIdx=h.findIndex(x=>/^Valor$/i.test(x)), aIdx=h.findIndex(x=>/EDAT_1/i.test(x));
+    const tot={}, eld={}, yth={};
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(',');
+      const d=String(parseInt(c[dIdx],10)), v=parseInt(c[vIdx],10), age=parseInt(c[aIdx],10);
+      if(!d||d==='NaN'||!isFinite(v)||!isFinite(age)) continue;
+      tot[d]=(tot[d]||0)+v;
+      if(age>=65) eld[d]=(eld[d]||0)+v;
+      if(age<=17) yth[d]=(yth[d]||0)+v;
+    }
+    elderlyPctByDistrict={}; youthPctByDistrict={};
+    Object.keys(tot).forEach(d=>{
+      elderlyPctByDistrict[d]=tot[d]?+(100*(eld[d]||0)/tot[d]).toFixed(1):0;
+      youthPctByDistrict[d]=tot[d]?+(100*(yth[d]||0)/tot[d]).toFixed(1):0;
+    });
+    ageLoaded=true;
+    console.log('Loaded age: elderly%',elderlyPctByDistrict,'youth%',youthPctByDistrict);
+  }catch(e){ console.warn('Age load failed:', e.message); ageLoaded=true; }
+}
 const INCOME_URL='https://opendata-ajuntament.barcelona.cat/data/dataset/a4cc0919-0dc2-4b09-853b-897c10d08434/resource/e6cabd96-68d6-451b-bc9f-c2a381d733e6/download';
 
 async function loadIncome(){
@@ -911,6 +946,7 @@ async function loadCCTVData() {
 
 async function loadPopulationData() {
   loadIncome().then(()=>{ if(currentMap==='human') buildHUD(); });
+  loadAge().then(()=>{ if(currentMap==='human') buildHUD(); });
   const url = `${CKAN_BASE}/datastore_search?resource_id=${POPULATION_RESOURCE}&limit=7000`;
   try {
     const data = await proxyFetch(url, 12000);
@@ -1625,6 +1661,7 @@ function buildHUD() {
         <hr class="hud-div">
         <div class="hud-row"><span>Pop. density avg</span><span>${(totPop/10000).toFixed(0)}k/km²</span></div>
         ${avgInc?`<div class="hud-row"><span>Income avg</span><span>€${avgInc.toLocaleString()}</span></div>`:''}
+        ${Object.keys(elderlyPctByDistrict).length?`<div class="hud-row"><span>Elderly avg (65+)</span><span>${(Object.values(elderlyPctByDistrict).reduce((a,b)=>a+b,0)/Object.values(elderlyPctByDistrict).length).toFixed(1)}%</span></div>`:''}
         <div class="hud-row"><span>Source</span><span style="color:var(--green)">Padró · INE renda</span></div>
       </div>`;
   }
@@ -1992,7 +2029,7 @@ document.getElementById('mainNav').addEventListener('click',e=>{
     document.getElementById('hud').style.display = 'none';
     document.getElementById('sidebar').style.display = 'none';
     if(riskLayerActive) stopRiskLayer();
-    loadEvents(); loadRoadworks(); loadRoadworkEvidence(); loadIncome();
+    loadEvents(); loadRoadworks(); loadRoadworkEvidence(); loadIncome(); loadAge();
     loadMetroData().then(()=>{ if(typeof loadBusData==='function') loadBusData().then(()=>{buildOntology(); if(currentMap==='fusion') renderFusion();}); });
     loadTrafficGeom().then(()=>{ trafficLoaded=true; if(!Object.keys(trafficState).length) fetchTrafficState(); });
     if(!window.__fusionSel) window.__fusionSel = ['crime','congestion'];
@@ -3761,7 +3798,7 @@ function buildOntology(){
   Object.keys(DISTRICTS_GEO).forEach(id=>{
     const pop = totalPopByDistrict[id]||0;
     transitCoverageByDistrict[id] = pop>0 ? +((covCount[id]||0)/(pop/1000)).toFixed(2) : 0;
-    if(districts[id]){ districts[id].transitCoverage = transitCoverageByDistrict[id]; districts[id].income = incomeByDistrict[id]||0; }
+    if(districts[id]){ districts[id].transitCoverage = transitCoverageByDistrict[id]; districts[id].income = incomeByDistrict[id]||0; districts[id].elderlyPct = elderlyPctByDistrict[id]||0; districts[id].youthPct = youthPctByDistrict[id]||0; }
   });
 
   // ── Live events → district counts (only events happening now) ──
@@ -4031,6 +4068,10 @@ const FUSION_DOMAINS = {
                 perDistrict:(d)=> d.transitCoverage||0 },
   income:     { label:'Income (€/person)', grain:'district', color:'#4db6ac',
                 perDistrict:(d)=> d.income||0 },
+  elderly:    { label:'Elderly % (65+)', grain:'district', color:'#b39ddb',
+                perDistrict:(d)=> d.elderlyPct||0 },
+  youth:      { label:'Youth % (0-17)', grain:'district', color:'#ffb74d',
+                perDistrict:(d)=> d.youthPct||0 },
 };
 
 // Pearson correlation with honest small-n caveat
