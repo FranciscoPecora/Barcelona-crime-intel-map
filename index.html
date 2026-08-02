@@ -2769,7 +2769,14 @@ async function fetchTmbMetroLive() {
   }));
 
   const now = Date.now();
-  const normRef = r => String(r||'').toUpperCase().replace(/^L/,'').trim(); // "L1"->"1", "1"->"1"
+  // Normalize line refs across TMB and our data. TMB uses "L1","L9N","L10S";
+  // ours use "1","L3","L9". Strip leading L, then collapse the L9/L10 branch
+  // suffixes (9N/9S→9, 10N/10S→10) so branches match the parent line.
+  const normRef = r => {
+    let s = String(r||'').toUpperCase().replace(/^L/,'').trim();
+    s = s.replace(/^(9|10)[NS]$/,'$1'); // 9N,9S->9 ; 10N,10S->10
+    return s;
+  };
 
   const byLine = {}; // normalizedRef -> [{code, eta}]
   let anyOk = false;
