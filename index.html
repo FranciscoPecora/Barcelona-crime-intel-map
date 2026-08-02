@@ -247,11 +247,11 @@
 
 
   .error-banner{
-    position:absolute;top:0;left:0;right:0;z-index:600;
-    background:var(--amber-dim);border-bottom:1px solid rgba(245,158,11,.2);
-    padding:5px 16px;font-family:var(--mono);font-size:11px;
-    color:var(--amber);letter-spacing:.06em;text-transform:uppercase;
-    display:none;
+    position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:600;
+    background:rgba(16,16,18,.9);border:1px solid var(--border2);border-radius:4px;
+    padding:5px 14px;font-family:var(--sans);font-size:11px;font-weight:450;
+    color:var(--muted2);letter-spacing:0;
+    display:none;max-width:60%;backdrop-filter:blur(4px);
   }
 
   .bottom-bar{
@@ -832,14 +832,14 @@ out center tags;`;
       showError(null);
     } else {
       infraNodes = STATIC_INFRA_NODES;
-      showError(`Live OSM query returned too few results (${nodes.length}) — showing ${STATIC_INFRA_NODES.length} verified baseline nodes instead.`);
+      setFeedStatus("infra","stale","OSM sparse — baseline shown");
     }
     dataLoaded.infra = true;
   } catch(err) {
     console.warn('Overpass unavailable on all mirrors:', err.message);
     infraNodes = STATIC_INFRA_NODES;
     dataLoaded.infra = true;
-    showError(`Live OSM infrastructure data unavailable (Overpass unreachable: ${err.message}) — showing ${STATIC_INFRA_NODES.length} verified baseline nodes.`);
+    setFeedStatus("infra","stale","Overpass down — baseline shown");
   }
   if(currentMap==='infra') refreshAll();
 }
@@ -1841,9 +1841,58 @@ function buildSourcesPanel() {
 function showLoading(text,sub){}
 function hideLoading(){}
 function showError(msg){
+  // Errors are now surfaced subtly via the feed-status dots, not a loud banner.
+  // This remains only for genuinely critical, user-actionable messages; routine
+  // feed hiccups should call setFeedStatus() instead and stay quiet.
   const b=document.getElementById('errorBanner');
+  if(!b) return;
   if(msg){b.textContent=msg;b.style.display='block'}
   else b.style.display='none';
+}
+
+// ─── Resilience layer ───────────────────────────────────────────────
+// One wrapper every live feed routes through. Gives each feed: a sane timeout,
+// one automatic retry, and — critically — LAST-KNOWN-GOOD fallback so a single
+// failed refresh never blanks the map. Feeds degrade quietly; the only signal
+// is a small status dot (live / stale / offline), never a shouty banner.
+const FEED_STATUS = {};   // feedId -> {state:'live'|'stale'|'offline', at, lastGood}
+
+function setFeedStatus(feedId, state, note){
+  FEED_STATUS[feedId] = {state, at: Date.now(), note: note||''};
+  updateStatusDot(feedId);
+}
+
+// resilientFetch: returns parsed result, or throws only after retries exhausted.
+// On success, marks the feed live. On failure, marks stale (if we have prior
+// good data) or offline. Never shows a banner.
+async function resilientFetch(feedId, url, {parse='json', timeout=15000, retries=1}={}){
+  let lastErr;
+  for(let attempt=0; attempt<=retries; attempt++){
+    try {
+      const res = await fetch(url, {signal: AbortSignal.timeout(timeout)});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = parse==='text' ? await res.text() : await res.json();
+      setFeedStatus(feedId, 'live');
+      return data;
+    } catch(e){
+      lastErr = e;
+      if(attempt<retries) await new Promise(r=>setTimeout(r, 1200)); // brief backoff
+    }
+  }
+  // all attempts failed — degrade quietly
+  const had = FEED_STATUS[feedId] && FEED_STATUS[feedId].state==='live';
+  setFeedStatus(feedId, had ? 'stale' : 'offline', lastErr?lastErr.message:'');
+  throw lastErr;
+}
+
+function updateStatusDot(feedId){
+  // Updates a tiny dot in the source rail if present; silent otherwise.
+  const el = document.querySelector(`[data-feed-status="${feedId}"]`);
+  if(!el) return;
+  const s = FEED_STATUS[feedId];
+  const color = !s ? 'var(--muted)' : s.state==='live' ? 'var(--green)' : s.state==='stale' ? 'var(--amber)' : 'var(--muted2)';
+  el.style.background = color;
+  el.title = s ? (s.state==='live'?'Live':s.state==='stale'?'Stale — showing last known good':'Offline') : '';
 }
 
 // Single source of truth for tab isolation: removes every layer/marker/interval
@@ -2248,7 +2297,7 @@ async function fetchAircraft() {
     setFeedStatus('adsbFeedStatus','offline','—');
     if(Object.keys(aircraftData).length === 0) {
       loadAircraftFallback();
-      showError(`Live ADS-B feed unavailable (${err.message}) — showing demo aircraft. Check the Worker's domain allowlist for api.adsb.lol.`);
+      setFeedStatus('adsb','stale','rate-limited — demo aircraft shown');
     }
   }
 }
@@ -3062,7 +3111,7 @@ out geom;`;
     busError = true;
     showError('Bus network unavailable — Overpass API unreachable on all mirrors for both stops and line queries.');
   } else if(!busLines.length) {
-    showError(`Bus stops loaded (${busStops.length}), but bus line itineraries timed out on all mirrors — showing stops only.`);
+    setFeedStatus('bus','stale','line shapes unavailable — stops shown');
   } else if(!busStops.length) {
     showError(`Bus lines loaded (${busLines.length}), but the bus stops query timed out on all mirrors — showing lines only.`);
   }
@@ -3374,21 +3423,24 @@ function parseTrafficState(datText){
 async function fetchTrafficState(){
   if(currentMap!=='traffic') return;
   const stateUrl = await resolveTrafficStateUrl();
-  if(!stateUrl){ showError('Could not locate the live traffic feed on the open-data portal.'); return; }
+  if(!stateUrl){ setFeedStatus('traffic','offline','feed URL unresolved'); return; }
   try {
-    const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(stateUrl)}`, {signal: AbortSignal.timeout(12000)});
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    trafficState = parseTrafficState(text);
-    const active = Object.values(trafficState).filter(s=>s.current>0).length;
-    renderTrafficLayer();
-    buildHUD(); buildList();
-    setFeedStatus('railFeedStatus','live','Live'); // reuse a feed indicator
-    logActivity(`Traffic feed · ${active} live sections · Ajuntament BCN`, '#ff9800');
+    // Resilient: 20s timeout (the .dat can be slow), one retry, quiet on failure.
+    const text = await resilientFetch('traffic', `${WORKER_URL}?url=${encodeURIComponent(stateUrl)}`,
+      {parse:'text', timeout:20000, retries:1});
+    const parsed = parseTrafficState(text);
+    if(parsed && Object.keys(parsed).length){
+      trafficState = parsed;                 // only overwrite on a good parse
+      const active = Object.values(trafficState).filter(s=>s.current>0).length;
+      renderTrafficLayer();
+      buildHUD(); buildList();
+      logActivity(`Traffic feed · ${active} live sections · Ajuntament BCN`, '#d9902f');
+    }
     showError(null);
   } catch(e){
-    console.warn('Traffic state fetch failed:', e.message);
-    showError(`Live traffic feed unavailable (${e.message}).`);
+    // Quiet degrade: keep the last-known-good trafficState on the map, mark stale.
+    console.warn('Traffic state refresh failed (keeping last known good):', e.message);
+    // do NOT clear trafficState, do NOT show a banner — the map stays populated.
   }
 }
 
