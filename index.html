@@ -19,10 +19,10 @@
     --surface2:#16161a;
     --border:#222226;
     --border2:#303036;
-    --text:#e4e4e2;          /* off-white, high contrast body */
-    --text2:#9a9a98;         /* readable secondary (was too dim) */
-    --muted:#3a3a3e;
-    --muted2:#7a7a7c;        /* readable tertiary/labels (was #406080, too dark) */
+    --text:#ededec;          /* brighter off-white body */
+    --text2:#b4b4b1;         /* brighter secondary — was too dim/grey */
+    --muted:#4a4a4e;
+    --muted2:#8f8f8c;        /* brighter tertiary/labels */
     --accent:#d9902f;        /* amber — the single restrained accent */
     --accent-dim:rgba(217,144,47,.09);
     --accent-line:rgba(217,144,47,.28);
@@ -39,7 +39,7 @@
     --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);font-weight:450;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 
   header{
     position:fixed;top:0;left:0;right:0;z-index:1000;
@@ -160,7 +160,7 @@
   }
   .layer-row:hover{background:rgba(217,144,47,.05)}
   .layer-icon{width:2px;height:12px;flex-shrink:0;transition:opacity .15s}
-  .layer-label{font-family:var(--sans);font-size:13px;font-weight:400;color:var(--text2);flex:1;letter-spacing:0}
+  .layer-label{font-family:var(--sans);font-size:13px;font-weight:450;color:var(--text2);flex:1;letter-spacing:0}
   .layer-row.off .layer-icon{opacity:.12}
   .layer-row.off .layer-label{color:var(--muted2)}
   .layer-row input{display:none}
