@@ -5,36 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BCN · City Intelligence Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
-    --bg:#040c18;
-    --surface:#071525;
-    --surface2:#0c1e33;
-    --border:#102040;
-    --border2:#1a3050;
-    --text:#c0d4e8;
-    --text2:#7090a8;
-    --muted:#2a4060;
-    --muted2:#406080;
-    --accent:#00c8ff;
-    --accent-dim:rgba(0,200,255,.08);
-    --accent-line:rgba(0,200,255,.25);
-    --green:#00e8a0;
-    --green-dim:rgba(0,232,160,.06);
-    --amber:#ffb040;
-    --amber-dim:rgba(255,176,64,.06);
-    --red:#ff3055;
-    --red-dim:rgba(255,48,85,.06);
-    --purple:#a060ff;
-    --cyan:#00c8ff;
-    --navy:#071525;
-    --mono:'JetBrains Mono',monospace;
-    --sans:'Outfit','Inter',sans-serif;
+    /* Palantir-coded: near-black NEUTRAL surfaces (no blue tint), off-white
+       text, restrained amber accent. Text tiers brightened for readability. */
+    --bg:#0a0a0b;
+    --surface:#101012;
+    --surface2:#16161a;
+    --border:#222226;
+    --border2:#303036;
+    --text:#e4e4e2;          /* off-white, high contrast body */
+    --text2:#9a9a98;         /* readable secondary (was too dim) */
+    --muted:#3a3a3e;
+    --muted2:#7a7a7c;        /* readable tertiary/labels (was #406080, too dark) */
+    --accent:#d9902f;        /* amber — the single restrained accent */
+    --accent-dim:rgba(217,144,47,.09);
+    --accent-line:rgba(217,144,47,.28);
+    --green:#5aa86a;         /* desaturated, for "good"/live status only */
+    --green-dim:rgba(90,168,106,.07);
+    --amber:#d9902f;
+    --amber-dim:rgba(217,144,47,.07);
+    --red:#d64545;           /* desaturated alert red */
+    --red-dim:rgba(214,69,69,.07);
+    --purple:#8a7bd8;
+    --cyan:#d9902f;          /* alias to amber so stray cyan refs go warm */
+    --navy:#101012;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
@@ -51,7 +53,7 @@
   }
   .logo{font-family:var(--mono);font-size:12px;font-weight:500;
     letter-spacing:.18em;color:#d0d8e8;text-transform:uppercase}
-  .logo-sub{font-family:var(--mono);font-size:8px;color:var(--muted);
+  .logo-sub{font-family:var(--mono);font-size:10px;color:var(--muted);
     letter-spacing:.14em;text-transform:uppercase}
   nav{display:flex;flex:1;height:100%;overflow-x:auto;padding:0 4px}
   nav::-webkit-scrollbar{display:none}
@@ -83,7 +85,7 @@
     padding:0 10px;height:100%;border-right:1px solid var(--border2);
     gap:2px;min-width:72px;
   }
-  .feed-label{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+  .feed-label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
   .feed-val{font-family:var(--mono);font-size:10px;letter-spacing:.06em}
   .feed-val.live{color:var(--green)}
   .feed-val.offline{color:var(--muted)}
@@ -104,18 +106,18 @@
   }
   .main{flex:1;position:relative;overflow:hidden}
   #map{width:100%;height:100%}
-  .leaflet-container{background:#040c18 !important}
+  .leaflet-container{background:#0a0a0b !important}
 
   .map-grid-overlay{
     position:absolute;inset:0;pointer-events:none;z-index:350;
     background-image:
-      linear-gradient(rgba(0,200,255,.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,200,255,.04) 1px, transparent 1px);
+      linear-gradient(rgba(217,144,47,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(217,144,47,.05) 1px, transparent 1px);
     background-size:80px 80px;
   }
   .map-edge{
     position:absolute;inset:0;pointer-events:none;z-index:351;
-    background:radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(4,12,24,.7) 100%);
+    background:radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(12,12,14,.8) 100%);
   }
 
   .leaflet-control-zoom{border:1px solid var(--border2) !important;border-radius:0 !important}
@@ -132,11 +134,11 @@
     flex-shrink:0;
   }
   .sb-map-label{
-    font-family:var(--mono);font-size:8px;letter-spacing:.16em;
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--accent);margin-bottom:3px;
   }
   .sb-title{font-family:var(--mono);font-size:11px;font-weight:500;color:#c8d4e8;margin-bottom:1px;letter-spacing:.06em;text-transform:uppercase}
-  .sb-meta{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sb-meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   .data-source{
     display:flex;align-items:center;gap:8px;
@@ -144,12 +146,12 @@
     flex-shrink:0;
   }
   .ds-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;animation:pulse 2.5s infinite}
-  .ds-text{font-family:var(--mono);font-size:8px;letter-spacing:.08em;flex:1;text-transform:uppercase}
-  .ds-time{font-family:var(--mono);font-size:8px;color:var(--muted)}
+  .ds-text{font-family:var(--mono);font-size:10px;letter-spacing:.08em;flex:1;text-transform:uppercase}
+  .ds-time{font-family:var(--mono);font-size:10px;color:var(--muted)}
 
   .sb-section{padding:8px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0}
   .sb-label{
-    font-family:var(--mono);font-size:8px;letter-spacing:.16em;
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--muted);margin-bottom:6px;
   }
   .layer-row{
@@ -158,7 +160,7 @@
   }
   .layer-row:hover{background:rgba(74,158,255,.04)}
   .layer-icon{width:2px;height:12px;flex-shrink:0;transition:opacity .15s}
-  .layer-label{font-family:var(--mono);font-size:9px;font-weight:400;color:var(--text2);flex:1;letter-spacing:.04em}
+  .layer-label{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--text2);flex:1;letter-spacing:.04em}
   .layer-row.off .layer-icon{opacity:.12}
   .layer-row.off .layer-label{color:var(--muted)}
   .layer-row input{display:none}
@@ -167,7 +169,7 @@
   .sb-list::-webkit-scrollbar{width:2px}
   .sb-list::-webkit-scrollbar-thumb{background:var(--border2)}
   .sb-list-label{
-    font-family:var(--mono);font-size:8px;letter-spacing:.16em;
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--muted);
     padding:0 14px;margin-bottom:4px;
   }
@@ -181,39 +183,39 @@
   .lc-name{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text);margin-bottom:4px;letter-spacing:.04em}
   .lc-bar{height:1px;background:var(--border);overflow:hidden;margin-bottom:4px;position:relative}
   .lc-seg{height:100%;position:absolute;left:0;top:0;transition:width .3s}
-  .lc-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.06em}
+  .lc-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em}
 
   .hud{
     position:absolute;top:52px;right:10px;z-index:500;
-    background:rgba(4,12,24,.92);border:1px solid var(--border2);
+    background:rgba(12,12,14,.95);border:1px solid var(--border2);
     min-width:210px;backdrop-filter:blur(8px);
   }
   .hud-header{
     padding:6px 12px;border-bottom:1px solid var(--border2);
-    font-family:var(--mono);font-size:8px;letter-spacing:.16em;
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--muted);
     display:flex;justify-content:space-between;align-items:center;
   }
   .hud-body{padding:10px 12px}
   .hud-val{font-family:var(--mono);font-size:24px;font-weight:400;line-height:1;margin-bottom:2px;letter-spacing:-.01em}
-  .hud-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .hud-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
   .hud-div{border:none;border-top:1px solid var(--border);margin:8px 0}
   .hud-row{
     display:flex;justify-content:space-between;align-items:center;
-    font-family:var(--mono);font-size:9px;margin-bottom:3px;letter-spacing:.04em;
+    font-family:var(--mono);font-size:11px;margin-bottom:3px;letter-spacing:.04em;
   }
   .hud-row span:first-child{color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
   .hud-row span:last-child{color:var(--text2)}
 
   .infra-popup .leaflet-popup-content-wrapper{
-    background:rgba(4,12,24,.96) !important;
+    background:rgba(12,12,14,.97) !important;
     border:1px solid rgba(0,200,255,.2) !important;
     border-radius:0 !important;
     box-shadow:0 4px 24px rgba(0,0,0,.8) !important;
     padding:0 !important;
   }
   .infra-popup .leaflet-popup-content{margin:0 !important}
-  .infra-popup .leaflet-popup-tip{background:rgba(4,12,24,.96) !important}
+  .infra-popup .leaflet-popup-tip{background:rgba(12,12,14,.97) !important}
   .infra-popup .leaflet-popup-close-button{color:rgba(112,144,168,.6) !important;padding:6px !important}
   .pulse-marker{position:relative}
   .pulse-ring{
@@ -233,7 +235,7 @@
     pointer-events:none;
   }
   .activity-item{
-    font-family:var(--mono);font-size:9px;color:var(--muted2);
+    font-family:var(--mono);font-size:11px;color:var(--muted2);
     letter-spacing:.04em;padding:2px 0;
     display:flex;gap:8px;align-items:baseline;
     animation:slideIn .3s ease;
@@ -247,7 +249,7 @@
   .error-banner{
     position:absolute;top:0;left:0;right:0;z-index:600;
     background:var(--amber-dim);border-bottom:1px solid rgba(245,158,11,.2);
-    padding:5px 16px;font-family:var(--mono);font-size:9px;
+    padding:5px 16px;font-family:var(--mono);font-size:11px;
     color:var(--amber);letter-spacing:.06em;text-transform:uppercase;
     display:none;
   }
@@ -258,11 +260,11 @@
     padding:5px 16px;display:flex;align-items:center;gap:14px;white-space:nowrap;
     backdrop-filter:blur(4px);
   }
-  .bb-label{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
-  .bb-val{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.06em}
+  .bb-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+  .bb-val{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em}
   .coord-display{
     position:absolute;bottom:10px;right:180px;z-index:500;
-    font-family:var(--mono);font-size:9px;color:var(--muted2);
+    font-family:var(--mono);font-size:11px;color:var(--muted2);
     letter-spacing:.08em;background:rgba(10,13,21,.7);
     border:1px solid var(--border);padding:4px 10px;
   }
@@ -273,7 +275,7 @@
     padding:0;font-size:10px;min-width:130px;
   }
   .legend-title{
-    font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--muted);
     padding:6px 10px;border-bottom:1px solid var(--border);
   }
@@ -281,18 +283,18 @@
   .legend-grad{width:110px;height:4px;margin-bottom:4px}
   .legend-ends{
     display:flex;justify-content:space-between;
-    font-family:var(--mono);font-size:9px;color:var(--muted);width:110px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);width:110px;
   }
 
   .watermark{
     position:absolute;bottom:12px;left:12px;z-index:500;
-    font-family:var(--mono);font-size:8px;
+    font-family:var(--mono);font-size:10px;
     color:var(--muted);letter-spacing:.05em;line-height:1.8;pointer-events:none;
     text-transform:uppercase;opacity:.6;
   }
 
   .leaflet-popup-content-wrapper{
-    background:rgba(4,12,24,.96) !important;border:1px solid var(--border2) !important;
+    background:rgba(12,12,14,.97) !important;border:1px solid var(--border2) !important;
     border-radius:0 !important;box-shadow:0 4px 32px rgba(0,0,0,.8),0 0 0 1px rgba(0,200,255,.1) !important;
     color:var(--text) !important;font-family:var(--mono) !important;padding:0 !important;
     backdrop-filter:blur(12px);
@@ -313,15 +315,15 @@
   .pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .pop-name{font-family:var(--mono);font-size:11px;font-weight:500;color:#c0d4e8;letter-spacing:.1em;text-transform:uppercase}
   .pop-badge{
-    font-family:var(--mono);font-size:7px;padding:2px 6px;letter-spacing:.12em;text-transform:uppercase;
+    font-family:var(--mono);font-size:11px;padding:2px 6px;letter-spacing:.12em;text-transform:uppercase;
   }
   .pop-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
   .pop-dot{width:2px;height:10px;flex-shrink:0}
-  .pop-label{font-family:var(--mono);font-size:9px;color:var(--muted2);flex:1;letter-spacing:.06em;text-transform:uppercase}
+  .pop-label{font-family:var(--mono);font-size:11px;color:var(--muted2);flex:1;letter-spacing:.06em;text-transform:uppercase}
   .pop-val{font-family:var(--mono);font-size:10px;font-weight:400}
   .pop-div{border:none;border-top:1px solid var(--border);margin:7px 0}
-  .pop-total{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px}
-  .pop-src{font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:6px;letter-spacing:.08em;text-transform:uppercase}
+  .pop-total{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px}
+  .pop-src{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:.08em;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -342,7 +344,7 @@
     <div class="wordmark">
       <h1>PROVI<span></span>DENCE</h1>
       <p>City Intelligence Platform</p>
-      <p style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;color:rgba(255,255,255,.45);text-transform:uppercase;margin-top:8px">Francisco Pecora</p>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:rgba(255,255,255,.45);text-transform:uppercase;margin-top:8px">Francisco Pecora</p>
     </div>
     <div class="enter-wrap">
       <a class="enter-btn" href="#" id="enterBtn">
@@ -370,7 +372,7 @@
 .bl{bottom:24px;left:24px;border-width:0 0 2px 2px}
 .br{bottom:24px;right:24px;border-width:0 2px 2px 0}
 .classify{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:20;
-  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.22em;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.22em;
   color:rgba(174,203,238,.7);text-transform:uppercase;
   border:1px solid rgba(150,190,235,.22);padding:5px 14px;
   background:rgba(107,164,232,.04);
@@ -378,7 +380,7 @@
 .classify::before{content:'';width:5px;height:5px;border-radius:50%;
   background:#6ba4e8;box-shadow:0 0 6px rgba(107,164,232,.8)}
 .timestamp{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:20;
-  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
   color:rgba(255,255,255,.18);text-transform:uppercase}
 .stage{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:48px;
   animation:stageIn 1.4s cubic-bezier(.16,1,.3,1) forwards}
@@ -456,7 +458,7 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
   </div>
 </header>
 
-<div id="sourcesPanel" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,12,24,.92);backdrop-filter:blur(12px);overflow-y:auto">
+<div id="sourcesPanel" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(12,12,14,.95);backdrop-filter:blur(12px);overflow-y:auto">
   <div id="sourcesPanelContent" style="max-width:860px;margin:0 auto;padding:48px 32px 80px">
   </div>
 </div>
@@ -469,9 +471,9 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <div class="map-edge"></div>
     <div class="activity-feed" id="activityFeed"></div>
 
-    <div id="analysisPanel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:min(680px,52vw);z-index:600;background:linear-gradient(to right,rgba(4,10,20,.82),rgba(4,10,20,.97) 60px);backdrop-filter:blur(3px);overflow-y:auto;padding:20px 24px 60px;border-left:1px solid var(--border)">
+    <div id="analysisPanel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:min(680px,52vw);z-index:600;background:linear-gradient(to right,rgba(12,12,14,.88),rgba(12,12,14,.97) 60px);backdrop-filter:blur(3px);overflow-y:auto;padding:20px 24px 60px;border-left:1px solid var(--border)">
     </div>
-    <div id="fusionPanel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:min(680px,52vw);z-index:600;background:linear-gradient(to right,rgba(4,10,20,.82),rgba(4,10,20,.97) 60px);backdrop-filter:blur(3px);overflow-y:auto;padding:20px 24px 60px;border-left:1px solid var(--border)">
+    <div id="fusionPanel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:min(680px,52vw);z-index:600;background:linear-gradient(to right,rgba(12,12,14,.88),rgba(12,12,14,.97) 60px);backdrop-filter:blur(3px);overflow-y:auto;padding:20px 24px 60px;border-left:1px solid var(--border)">
     </div>
 
     <div class="error-banner" id="errorBanner"></div>
@@ -480,7 +482,7 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <div class="coord-display" id="coordDisplay">Move cursor over map</div>
     <div class="legend" id="legend"></div>
     <div class="watermark" id="watermark"></div>
-    <div style="position:absolute;top:60px;right:12px;z-index:500;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(82,82,110,.5)">v29</div>
+    <div style="position:absolute;top:60px;right:12px;z-index:500;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(82,82,110,.5)">v29</div>
   </main>
 </div>
 
@@ -1138,7 +1140,7 @@ function buildHeatmap() {
       for(let i=0;i<15;i++)
         pts.push([lat+(Math.random()-.5)*.014,lng+(Math.random()-.5)*.020,cov*(.7+Math.random()*.3)]);
     });
-    grad={0:'#001133',.3:'#003366',.6:'#0066AA',.85:'#00AAFF',1:'#00FFFF'};
+    grad={0:'#101012',.3:'#003366',.6:'#0066AA',.85:'#00AAFF',1:'#00FFFF'};
   } else if(currentMap==='infra'){
     const allCounts=Object.keys(DISTRICTS_GEO).map(id=>getInfraNodeDensity(id).totalCount);
     const mx=Math.max(...allCounts)||1;
@@ -1197,12 +1199,12 @@ function buildInfraNodeMarkers() {
 
     const m=L.marker([n.lat,n.lng],{icon});
     const nodeWebsite = getWebsiteForNode(n);
-    const popupContent = `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);padding:10px 14px;color:#c0d4e8;max-width:240px;min-width:180px">
-       <div style="color:${col};font-size:8px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px">${n.type.replace('_',' ')} · ${isCrit?'CRITICAL':'STANDARD'}</div>
+    const popupContent = `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);padding:10px 14px;color:#c0d4e8;max-width:240px;min-width:180px">
+       <div style="color:${col};font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px">${n.type.replace('_',' ')} · ${isCrit?'CRITICAL':'STANDARD'}</div>
        <div style="font-size:12px;font-weight:500;margin-bottom:6px;line-height:1.3">${n.name}</div>
-       ${n.phone?`<div style="color:#7090a8;font-size:9px;margin-bottom:3px">☏ ${n.phone}</div>`:''}
+       ${n.phone?`<div style="color:#7090a8;font-size:11px;margin-bottom:3px">☏ ${n.phone}</div>`:''}
        ${nodeWebsite?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,200,255,.15)">
-         <div class="infra-link" style="color:${col};font-size:9px;letter-spacing:.06em;
+         <div class="infra-link" style="color:${col};font-size:11px;letter-spacing:.06em;
            display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
            <span>↗</span><span style="text-decoration:underline">${nodeWebsite.replace('https://','').replace('http://','').split('/')[0]}</span>
          </div>
@@ -1218,7 +1220,7 @@ function buildInfraNodeMarkers() {
         if(el) el.onclick = (e) => { e.stopPropagation(); window.open(nodeWebsite,'_blank'); };
       });
     }
-    m.bindTooltip(`<span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:${col}">${n.name}</span>`,
+    m.bindTooltip(`<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${col}">${n.name}</span>`,
       {sticky:true,opacity:1,className:''}
     );
     markerGroup.addLayer(m);
@@ -1269,7 +1271,7 @@ function buildCCTVMarkers() {
 
     });
     m.bindTooltip(
-      `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
+      `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
        <strong>${t.r}</strong> Tower<br><span style="color:#2a4060">${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}</span></div>`,
       {sticky:true,opacity:1,className:''}
     );
@@ -1282,7 +1284,7 @@ function buildCCTVMarkers() {
   
       });
       m.bindTooltip(
-        `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
+        `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
          <strong>${n.type}</strong><br><span style="color:#2a4060">${n.name}</span></div>`,
         {sticky:true,opacity:1,className:''}
       );
@@ -1312,10 +1314,10 @@ function buildPopup(id, latlng) {
     const riskRow = riskLayerActive ? `
       <hr class="pop-div">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Live Risk Score</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Live Risk Score</span>
         <span style="font-family:var(--mono);font-size:10px;color:${rColor}">${riskScore}/100 · ${rLabel}</span>
       </div>
-      <div style="font-family:var(--mono);font-size:8px;color:var(--muted)">Dominant: ${getDominantThreat(id)}</div>` : '';
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Dominant: ${getDominantThreat(id)}</div>` : '';
     html=`<div class="pop-inner">
       <div class="pop-head"><div class="pop-name">${name}</div>
         <div class="pop-badge" style="background:${rc}22;border:1px solid ${rc}55;color:${rc}">${risk}</div></div>
@@ -1453,12 +1455,12 @@ function buildSidebar() {
           style="width:100%;padding:6px 10px;background:${riskLayerActive?'rgba(255,16,64,.12)':'rgba(0,200,255,.06)'};
           border:1px solid ${riskLayerActive?'rgba(255,16,64,.4)':'rgba(0,200,255,.2)'};
           color:${riskLayerActive?'#ff1040':'var(--accent)'};
-          font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+          font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
           cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center">
           <span>${riskLayerActive?'▶ LIVE RISK ACTIVE':'◎ LIVE RISK ASSESSMENT'}</span>
-          <span style="font-size:8px;opacity:.7">${riskLayerActive?'ON':'OFF'}</span>
+          <span style="font-size:10px;opacity:.7">${riskLayerActive?'ON':'OFF'}</span>
         </button>
-        ${riskLayerActive?`<div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:4px;line-height:1.5">
+        ${riskLayerActive?`<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5">
           Temporal model · Mossos 2024<br>Updates every 60 seconds
         </div>`:''}
       </div>`:''}
@@ -1597,7 +1599,7 @@ function buildHUD() {
 function buildControls() {
   const gradients={
     crime:'linear-gradient(90deg,#000033,#8B0000,#FF0000)',
-    sigint:'linear-gradient(90deg,#001133,#0066AA,#00FFFF)',
+    sigint:'linear-gradient(90deg,#101012,#0066AA,#00FFFF)',
     infra:'linear-gradient(90deg,#0a0a00,#884400,#FFCC00)',
     human:'linear-gradient(90deg,#000022,#330099,#AA66FF)',
   };
@@ -1705,7 +1707,7 @@ function buildSourcesPanel() {
       integrity:"Official Mossos d'Esquadra statistics. Same data used in Generalitat annual crime reports."
     },
     {
-      layer:'SIGINT / RF Coverage', color:'#00c8ff',
+      layer:'SIGINT / RF Coverage', color:'#d9902f',
       question:'What is the electromagnetic surveillance density across Barcelona and where are coverage gaps?',
       source:'OpenCelliD · Unwired Labs · Open Data BCN',
       endpoint:'opencellid.org · Spain dataset (MCC 214) · Open Data BCN resource cd1957a6',
@@ -1779,7 +1781,7 @@ function buildSourcesPanel() {
   document.getElementById('sourcesPanelContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;border-bottom:1px solid var(--border2);padding-bottom:20px">
       <div>
-        <div style="${mono};font-size:9px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px">Providence · City Intelligence Platform</div>
+        <div style="${mono};font-size:11px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px">Providence · City Intelligence Platform</div>
         <h1 style="${mono};font-size:22px;font-weight:400;color:#c0d4e8;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px">Sources & Methods</h1>
         <div style="${mono};font-size:10px;color:var(--muted2)">Data provenance, methodology, and analytical framework · Barcelona, Catalonia</div>
       </div>
@@ -1787,21 +1789,21 @@ function buildSourcesPanel() {
     </div>
 
     <div style="margin-bottom:36px">
-      <div style="${mono};font-size:8px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Analytical Framework</div>
+      <div style="${mono};font-size:10px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Analytical Framework</div>
       <p style="${mono};font-size:11px;color:var(--text2);line-height:1.7">
         Providence integrates seven independent open-source data streams into a unified operational picture of Barcelona. Each layer addresses a distinct analytical question sourced exclusively from official, publicly accessible APIs. No data is fabricated or estimated beyond the methods documented below.
       </p>
     </div>
 
     <div style="margin-bottom:36px">
-      <div style="${mono};font-size:8px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Data Sources</div>
+      <div style="${mono};font-size:10px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Data Sources</div>
       ${sources.map(s => `
         <div style="margin-bottom:20px;border:1px solid var(--border);padding:16px;background:rgba(7,21,37,.6)">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
             <div style="width:3px;height:20px;background:${s.color};flex-shrink:0"></div>
             <div style="${mono};font-size:11px;font-weight:500;color:#c0d4e8;letter-spacing:.08em;text-transform:uppercase">${s.layer}</div>
           </div>
-          <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 12px;${mono};font-size:9px">
+          <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 12px;${mono};font-size:11px">
             <div style="color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Analytical Question</div><div style="color:var(--text2);font-style:italic">${s.question}</div>
             <div style="color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Source</div><div style="color:var(--cyan)">${s.source}</div>
             <div style="color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Endpoint</div><div style="color:var(--muted2)">${s.endpoint}</div>
@@ -1814,17 +1816,17 @@ function buildSourcesPanel() {
     </div>
 
     <div style="margin-bottom:36px">
-      <div style="${mono};font-size:8px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Technical Architecture</div>
+      <div style="${mono};font-size:10px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Technical Architecture</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         ${techItems.map(t => `
           <div style="border:1px solid var(--border);padding:10px 12px;background:rgba(7,21,37,.4)">
-            <div style="${mono};font-size:8px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">${t.label}</div>
-            <div style="${mono};font-size:9px;color:var(--text2)">${t.val}</div>
+            <div style="${mono};font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">${t.label}</div>
+            <div style="${mono};font-size:11px;color:var(--text2)">${t.val}</div>
           </div>`).join('')}
       </div>
     </div>
 
-    <div style="${mono};font-size:8px;color:var(--muted);letter-spacing:.08em;border-top:1px solid var(--border);padding-top:16px">
+    <div style="${mono};font-size:10px;color:var(--muted);letter-spacing:.08em;border-top:1px solid var(--border);padding-top:16px">
       Providence · City Intelligence Platform · Barcelona · Built by Francisco Pecora · All data sources are open and publicly accessible · No classified or restricted information is used
     </div>`;
 }
@@ -2029,7 +2031,7 @@ function getVesselIcon(v) {
 function getVesselTooltip(v) {
   const catColors = {cargo:'#3da8ff',tanker:'#ffb800',passenger:'#00e5a0',military:'#ff3c5f',other:'#9b6cff'};
   const col = catColors[v.cat] || '#888';
-  return `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
+  return `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
     <strong>${v.name}</strong><br>
     <span style="color:${col}">${v.typeName}</span><br>
     SOG: ${v.sog.toFixed(1)} kn · COG: ${Math.round(v.cog)}°<br>
@@ -2192,7 +2194,7 @@ function updateMaritimeMarkers() {
       className:'',iconSize:[r*2,r*2],iconAnchor:[r-1,r]
     });
     const m = L.marker([v.lat, v.lng], {icon});
-    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
+    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
       <strong>${v.name}</strong><br>
       <span style="color:${col}">${v.typeName}</span><br>
       SOG: ${v.sog.toFixed(1)} kn · COG: ${Math.round(v.cog)}°<br>
@@ -2284,7 +2286,7 @@ function updateAircraftMarkers() {
       className:'',iconSize:[16,16],iconAnchor:[8,8]
     });
     const m = L.marker([a.lat, a.lng], {icon});
-    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
+    m.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
       <strong>${a.callsign||a.icao}</strong><br>
       <span style="color:${col}">${a.cat.replace('_',' ').toUpperCase()}</span><br>
       ALT: ${a.alt.toLocaleString()} ft · SPD: ${a.spd} kts<br>
@@ -2389,7 +2391,7 @@ function getTransitIcon(bearing) {
 
 function getTransitTooltip(t) {
   const statusLabel = {STOPPED_AT:'Stopped', INCOMING_AT:'Arriving', IN_TRANSIT_TO:'En route'}[t.status] || t.status;
-  return `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
+  return `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
     <strong style="color:#00e8a0">${t.line}</strong><br>
     ${statusLabel}<br>
     <span style="color:#2a4060">Stop: ${t.stopId||'—'}</span>
@@ -3089,9 +3091,9 @@ function renderMetroLayer() {
   metroStations.forEach(s=>{
     const primaryColor = METRO_LINE_COLORS[s.lines[0]] || '#ff6600';
     const m = L.circleMarker([s.lat,s.lng],{
-      radius:3.5, fillColor:'#040c18', color:primaryColor, weight:2, fillOpacity:1, renderer:transitCanvas
+      radius:3.5, fillColor:'#0a0a0b', color:primaryColor, weight:2, fillOpacity:1, renderer:transitCanvas
     });
-    const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#e8f0f8;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
+    const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#e8f0f8;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
     m.bindTooltip(tooltipHtml, {permanent:showLabels, sticky:!showLabels, direction:'right', offset:[5,0], opacity:0.95, className:''});
     metroLayerGroup.addLayer(m);
   });
@@ -3129,7 +3131,7 @@ function renderBusLayer() {
       const m = L.circleMarker([s.lat,s.lng],{
         radius:1.6, fillColor:'#3da8ff', color:'#3da8ff', weight:1, fillOpacity:0.6, renderer:transitCanvas
       });
-      const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#dce8f4;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
+      const tooltipHtml = `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#dce8f4;background:rgba(4,12,24,.8);padding:2px 5px;white-space:nowrap;pointer-events:none">${s.name}</div>`;
       m.bindTooltip(tooltipHtml, {permanent:showLabels, sticky:!showLabels, direction:'right', offset:[4,0], opacity:0.9, className:''});
       busLayerGroup.addLayer(m);
     });
@@ -3290,7 +3292,7 @@ const trafficCanvas = L.svg({padding:0.5}); // SVG (not canvas) so flow dashes a
 // blocked roads are frozen. Motion makes the state readable at a glance.
 const TRAFFIC_STATES = {
   0: {label:'No data',   color:'#2a3543', weight:1.5, opacity:0.15, glow:0,  speed:0},
-  1: {label:'Very fluid',color:'#00e5ff', weight:2.5, opacity:0.95, glow:3,  speed:1.0},
+  1: {label:'Very fluid',color:'#d9902f', weight:2.5, opacity:0.95, glow:3,  speed:1.0},
   2: {label:'Fluid',     color:'#00e676', weight:2.5, opacity:0.95, glow:3,  speed:0.7},
   3: {label:'Dense',     color:'#ffc400', weight:3,   opacity:1,    glow:6,  speed:0.4},
   4: {label:'Very dense',color:'#ff9100', weight:3.5, opacity:1,    glow:8,  speed:0.25},
@@ -3404,7 +3406,7 @@ function renderTrafficLayer(){
       lineCap:'round', lineJoin:'round',
       dashArray: '6,4',
     });
-    pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
+    pl.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:6px 10px;color:#c0d4e8">
       <strong>${g.name}</strong><br>
       <span style="color:${meta.color}">● Now: ${meta.label}</span><br>
       <span style="color:${(TRAFFIC_STATES[st.predicted]||TRAFFIC_STATES[0]).color}">○ In 15 min: ${(TRAFFIC_STATES[st.predicted]||TRAFFIC_STATES[0]).label}</span></div>`,
@@ -3460,7 +3462,7 @@ async function loadRoadworkEvidence(){
     evidenceLoaded = true;
     const suf = (roadworkEvidence.sections||[]).filter(s=>s.evidence==='sufficient' && s.lift).length;
     console.log(`Loaded roadwork evidence: ${roadworkEvidence.sections.length} sections, ${suf} with sufficient lift, ${roadworkEvidence.window_months}-month window`);
-    logActivity(`Evidence · ${suf} sections · ${roadworkEvidence.window_months}mo history`, '#00e5ff');
+    logActivity(`Evidence · ${suf} sections · ${roadworkEvidence.window_months}mo history`, '#d9902f');
     if(currentMap==='fusion') renderFusion();
   } catch(e){
     console.warn('Roadwork evidence load failed:', e.message);
@@ -3541,12 +3543,12 @@ function renderRoadworksLayer(){
     });
     poly.on('mouseover', ()=>poly.setStyle({fillOpacity:0.35, weight:4.5}));
     poly.on('mouseout',  ()=>poly.setStyle({fillOpacity:0.15, weight:3.5}));
-    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8;max-width:260px">
-      <div style="color:${meta.color};font-size:8px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">⚠ ${meta.label} road work · ${w.type}</div>
+    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8;max-width:260px">
+      <div style="color:${meta.color};font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px">⚠ ${meta.label} road work · ${w.type}</div>
       <strong>${w.name}</strong><br>
       <span style="color:#7090a8">${w.district}</span><br>
       <span style="color:#7090a8">${w.inici} → ${w.fi}</span>
-      ${w.promotor?`<br><span style="color:#526e8c;font-size:9px">${w.promotor}</span>`:''}
+      ${w.promotor?`<br><span style="color:#526e8c;font-size:11px">${w.promotor}</span>`:''}
     </div>`, {sticky:true, opacity:1, className:''});
     roadworksLayer.addLayer(poly);
     if(poly._path) poly._path.style.filter = `drop-shadow(0 0 6px ${meta.color})`;
@@ -3996,8 +3998,8 @@ function paintFusionMap(sel){
     const hue = 200 - Math.round(Math.min(1,score)*200);
     const color = `hsl(${hue},85%,55%)`;
     const poly = L.polygon(d.coords, {color, weight:1.5, opacity:0.85, fillColor:color, fillOpacity:0.1+Math.min(1,score)*0.35});
-    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
-      <div style="color:${color};font-size:8px;text-transform:uppercase">#${c?c.rank:'—'} · Composite ${c?(c.score*100).toFixed(0):'—'}</div>
+    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
+      <div style="color:${color};font-size:10px;text-transform:uppercase">#${c?c.rank:'—'} · Composite ${c?(c.score*100).toFixed(0):'—'}</div>
       <strong>${d.name}</strong><br>
       ${c?c.parts.map(p=>`<span style="color:${p.color}">${p.label}: ${typeof p.v==='number'&&p.v<10?p.v.toFixed(2):Math.round(p.v).toLocaleString()}</span>`).join('<br>'):''}
     </div>`, {sticky:true, opacity:1, className:''});
@@ -4011,17 +4013,14 @@ function paintFusionMap(sel){
 // lift, so a huge ratio on tiny base rates reads differently from a strong
 // effect on high base rates. Names come from the live traffic geometry.
 function renderEvidenceBlock(){
+  const wrap = (inner)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px;margin-bottom:20px">${inner}</div>`;
+  const label = (txt)=>`<div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase">${txt}</div>`;
   if(!evidenceLoaded){
-    return `<div style="background:rgba(0,229,255,.03);border:1px solid rgba(0,229,255,.14);padding:12px 14px;margin-bottom:16px">
-      <div style="font-family:var(--mono);font-size:9px;color:#00e5ff;letter-spacing:.14em;text-transform:uppercase">Roadwork → Congestion Evidence</div>
-      <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:6px">Loading historical evidence…</div></div>`;
+    return wrap(label('Roadwork → congestion evidence')+`<div style="font-family:var(--sans);font-size:13px;color:var(--text2);margin-top:8px">Loading historical evidence…</div>`);
   }
   if(!roadworkEvidence || !roadworkEvidence.sections){
-    return `<div style="background:rgba(0,229,255,.03);border:1px solid rgba(0,229,255,.14);padding:12px 14px;margin-bottom:16px">
-      <div style="font-family:var(--mono);font-size:9px;color:#00e5ff;letter-spacing:.14em;text-transform:uppercase">Roadwork → Congestion Evidence</div>
-      <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:6px">Evidence file not available. Run the pipeline and commit roadwork_evidence.json to enable this view.</div></div>`;
+    return wrap(label('Roadwork → congestion evidence')+`<div style="font-family:var(--sans);font-size:13px;color:var(--text2);margin-top:8px">Evidence file not available. Run the pipeline and commit roadwork_evidence.json to enable this view.</div>`);
   }
-  // strongest sufficient-evidence signals, sorted by lift
   const strong = roadworkEvidence.sections
     .filter(s=>s.evidence==='sufficient' && s.lift && s.lift>1)
     .sort((a,b)=>b.lift-a.lift)
@@ -4032,29 +4031,29 @@ function renderEvidenceBlock(){
     const name = nameFor(s.id);
     const rwPct = (s.rw_dense_rate*100).toFixed(1);
     const norwPct = (s.norw_dense_rate*100).toFixed(1);
-    // honesty: flag high-lift-on-tiny-base as "rare-baseline"
     const tinyBase = s.norw_dense_rate < 0.02;
-    const liftColor = s.lift>=3 ? '#ff1744' : s.lift>=2 ? '#ff9100' : '#ffc400';
-    return `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
-        <span style="font-family:var(--mono);font-size:9px;color:#c0d4e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
-        <span style="font-family:var(--mono);font-size:12px;color:${liftColor};flex-shrink:0">${s.lift}×</span>
+    // severity via a restrained warm scale, only for the lift figure
+    const liftColor = s.lift>=5 ? '#e0663a' : s.lift>=2.5 ? '#d9902f' : '#b8945a';
+    return `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="min-width:0;flex:1">
+        <div style="font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);margin-top:2px">
+          <span style="font-family:var(--mono);color:#cbb089">${rwPct}%</span> during works vs <span style="font-family:var(--mono);color:var(--text2)">${norwPct}%</span> without · <span style="font-family:var(--mono)">${s.rw_obs.toLocaleString()}</span> obs${tinyBase?` <span style="color:var(--muted2)">· rare baseline</span>`:''}
+        </div>
       </div>
-      <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:1px">
-        congested ${rwPct}% during works vs ${norwPct}% without · ${s.rw_obs.toLocaleString()} obs${tinyBase?' · <span style="color:#7a6a3a">rare-baseline, ratio inflated</span>':''}
-      </div>
+      <div style="font-family:var(--mono);font-size:16px;font-weight:500;color:${liftColor};flex-shrink:0">${s.lift}×</div>
     </div>`;
   }).join('');
-  return `<div style="background:rgba(0,229,255,.03);border:1px solid rgba(0,229,255,.16);padding:13px 15px;margin-bottom:18px">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
-      <div style="font-family:var(--mono);font-size:9px;color:#00e5ff;letter-spacing:.14em;text-transform:uppercase">Roadwork → Congestion Evidence</div>
-      <div style="font-family:var(--mono);font-size:7px;color:var(--muted2)">${roadworkEvidence.window_months}-mo history · ${total} sections</div>
+  return wrap(`
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+      ${label('Roadwork → congestion evidence')}
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2)"><span style="font-family:var(--mono)">${roadworkEvidence.window_months}</span>-mo history · <span style="font-family:var(--mono)">${total}</span> sections</div>
     </div>
-    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-bottom:10px;line-height:1.5">Real temporal evidence: per-section congestion frequency <strong>during active roadworks</strong> vs <strong>without</strong>, over ${roadworkEvidence.months_processed} months. "Lift" = ratio of the two. This is a natural experiment per street — far stronger than live co-location, though still association, not proof.</div>
-    <div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Strongest signals</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">Per-section congestion frequency during active roadworks versus without, over ${roadworkEvidence.months_processed} months. Lift is the ratio of the two — a natural experiment per street, far stronger than live co-location, though still association rather than proof.</div>
+    <div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Strongest signals</div>
     ${rows}
-    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:8px;line-height:1.5">Sections marked "rare-baseline" have near-zero normal congestion, so any roadwork congestion yields a large ratio — real but fragile. High-base-rate signals (e.g. 57%→ during works) are the operationally strongest.</div>
-  </div>`;
+    <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6;margin-top:10px">Sections marked "rare baseline" have near-zero normal congestion, so any roadwork congestion produces a large ratio — real but fragile. The operationally strongest signals are those with high absolute rates during works.</div>
+  `);
 }
 
 function renderFusion(){
@@ -4064,45 +4063,45 @@ function renderFusion(){
   const fusion = sel.length>=1 ? paintFusionMap(sel) : null;
   const chip = (key)=>{
     const dom = FUSION_DOMAINS[key]; const on = sel.includes(key);
-    return `<button onclick="window.__toggleFusionDomain('${key}')" style="font-family:var(--mono);font-size:9px;padding:6px 12px;margin:0 6px 6px 0;background:${on?dom.color+'22':'rgba(4,12,24,.7)'};border:1px solid ${on?dom.color:'#1a3050'};color:${on?dom.color:'#7090a8'};cursor:pointer;border-radius:2px">
-      ${on?'●':'○'} ${dom.label} <span style="opacity:.6;font-size:7px">${dom.grain}</span></button>`;
+    return `<button onclick="window.__toggleFusionDomain('${key}')" style="font-family:var(--sans);font-size:12px;font-weight:${on?'500':'400'};padding:7px 13px;margin:0 6px 6px 0;background:${on?'var(--accent-dim)':'transparent'};border:1px solid ${on?'var(--accent-line)':'var(--border2)'};color:${on?'var(--accent)':'var(--text2)'};cursor:pointer;border-radius:5px;transition:all .12s">
+      ${dom.label} <span style="opacity:.55;font-size:11px">${dom.grain}</span></button>`;
   };
-  let html = `<div style="font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;margin-bottom:2px">Fusion · Cross-Domain Synthesis</div>
-    <div style="font-family:var(--mono);font-size:20px;color:#c0d4e8;letter-spacing:.02em;margin-bottom:4px">DOMAIN FUSION</div>
-    <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:14px">Select 2–3 domains. Layers overlay on the map; their cross-reference computes below. Grain resolves from your picks — the ontology bridges street↔district when mixed.</div>
+  let html = `<div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase;margin-bottom:4px">Cross-domain synthesis</div>
+    <div style="font-family:var(--sans);font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.01em;margin-bottom:6px">Domain Fusion</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">Select two or three domains. Their layers overlay on the map and their cross-reference computes below. Grain resolves from your selection — the ontology bridges street and district when they mix.</div>
     ${renderEvidenceBlock()}
     <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>`;
 
   if(!fusion || sel.length<2){
-    html += `<div style="font-family:var(--mono);font-size:9px;color:var(--muted2);padding:20px 0">Select at least 2 domains to compute a cross-reference.</div>`;
+    html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);padding:20px 0">Select at least 2 domains to compute a cross-reference.</div>`;
     panel.innerHTML = html; return;
   }
 
   // grain banner
   const grainLabel = fusion.bridged ? 'Mixed grain — bridged via ontology (street aggregates up to district)' : (fusion.grains[0]==='district'?'District grain':'Street grain');
-  html += `<div style="font-family:var(--mono);font-size:8px;color:var(--accent);margin-bottom:14px;padding:6px 10px;background:rgba(0,168,255,.05);border-left:2px solid var(--accent)">${grainLabel}</div>`;
+  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:14px;padding:6px 10px;background:rgba(0,168,255,.05);border-left:2px solid var(--accent)">${grainLabel}</div>`;
 
   // pairwise correlations with honest labels
-  html += `<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Computed Cross-Reference</div>`;
+  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Computed Cross-Reference</div>`;
   fusion.pairs.forEach(p=>{
     const col = Math.abs(p.r)>=0.5 ? (p.r>0?'#ff5252':'#40c4ff') : '#7090a8';
-    html += `<div style="border:1px solid #1a3050;padding:10px 12px;margin-bottom:8px;background:rgba(4,12,24,.5)">
+    html += `<div style="border:1px solid #1a3050;padding:10px 12px;margin-bottom:8px;background:rgba(16,16,20,.6)">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-        <span style="font-family:var(--mono);font-size:9px;color:#c0d4e8">${p.a.label} × ${p.b.label}</span>
+        <span style="font-family:var(--mono);font-size:11px;color:#c0d4e8">${p.a.label} × ${p.b.label}</span>
         <span style="font-family:var(--mono);font-size:14px;color:${col}">${p.r>=0?'+':''}${p.r.toFixed(2)}</span>
       </div>
-      <div style="font-family:var(--mono);font-size:7px;color:${col};text-transform:uppercase;letter-spacing:.1em">${p.strength} ${p.dir}</div>
-      <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:3px">${p.caveat}${fusion.bridged?' · cross-grain: correlation of aggregates, not point-level':''}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:${col};text-transform:uppercase;letter-spacing:.1em">${p.strength} ${p.dir}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px">${p.caveat}${fusion.bridged?' · cross-grain: correlation of aggregates, not point-level':''}</div>
     </div>`;
   });
 
   // composite ranking
-  html += `<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin:16px 0 8px">Composite Ranking — districts by fused score</div>`;
+  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin:16px 0 8px">Composite Ranking — districts by fused score</div>`;
   fusion.composite.slice(0,10).forEach((c,i)=>{
     html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
       <span style="font-family:var(--mono);font-size:10px;color:${i<3?'#ff6d00':'#7090a8'};width:16px;text-align:right">${i+1}</span>
       <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:#c0d4e8"><span>${c.name}</span><span style="color:#7090a8">${(c.score*100).toFixed(0)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:#c0d4e8"><span>${c.name}</span><span style="color:#7090a8">${(c.score*100).toFixed(0)}</span></div>
         <div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;display:flex">
           ${c.parts.map(p=>`<div style="height:100%;width:${(p.n/c.parts.length*100).toFixed(1)}%;background:${p.color};opacity:.8"></div>`).join('')}
         </div>
@@ -4110,7 +4109,7 @@ function renderFusion(){
     </div>`;
   });
 
-  html += `<div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:14px;line-height:1.6;border-top:1px dashed var(--border2);padding-top:10px">Fusion computes correlation and composite scores across the domains you select. Correlation is not causation — a strong r means the two move together across districts, which is a lead to investigate, not a proven mechanism. District-level n=10 is small, so treat all coefficients as indicative. Mixed-grain fusions correlate district aggregates, which can hide street-level detail.</div>`;
+  html += `<div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:14px;line-height:1.6;border-top:1px dashed var(--border2);padding-top:10px">Fusion computes correlation and composite scores across the domains you select. Correlation is not causation — a strong r means the two move together across districts, which is a lead to investigate, not a proven mechanism. District-level n=10 is small, so treat all coefficients as indicative. Mixed-grain fusions correlate district aggregates, which can hide street-level detail.</div>`;
   panel.innerHTML = html;
 }
 
@@ -4133,8 +4132,8 @@ function paintAnalysisMap(){
       color, weight:1.5, opacity:0.9,
       fillColor:color, fillOpacity:0.12+score*0.33,
     });
-    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(4,12,24,.96);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
-      <div style="color:${color};font-size:8px;letter-spacing:.1em;text-transform:uppercase">#${p?p.rank:'—'} · Pressure ${p?(p.score*100).toFixed(0):'—'}</div>
+    poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
+      <div style="color:${color};font-size:10px;letter-spacing:.1em;text-transform:uppercase">#${p?p.rank:'—'} · Pressure ${p?(p.score*100).toFixed(0):'—'}</div>
       <strong>${d.name}</strong><br>
       <span style="color:#7090a8">${p?p.crime.toLocaleString():0} crime · ${p?(p.density/1000).toFixed(0):0}k/km²</span><br>
       <span style="color:#7090a8">${p?p.congested:0} congested · ${p?p.roadworks:0} works</span>
@@ -4174,32 +4173,32 @@ window.__analyzeProblem = function(i){
   const bar = (v,color)=>`<div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-top:2px"><div style="height:100%;width:${Math.round(v*100)}%;background:${color}"></div></div>`;
   const residualPct = result.residual / Math.max(0.01, p.severity);
   let html = `<div style="border-top:1px solid var(--border2);padding-top:10px">
-    <div style="font-family:var(--mono);font-size:9px;color:#c0d4e8;margin-bottom:2px">${p.title}</div>
-    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-bottom:10px">Problem severity ${(p.severity*100).toFixed(0)} · ${result.causes.length} candidate explanation${result.causes.length!==1?'s':''}</div>`;
+    <div style="font-family:var(--mono);font-size:11px;color:#c0d4e8;margin-bottom:2px">${p.title}</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-bottom:10px">Problem severity ${(p.severity*100).toFixed(0)} · ${result.causes.length} candidate explanation${result.causes.length!==1?'s':''}</div>`;
   if(result.causes.length){
     html += result.causes.map((c,n)=>{
       const conf = confidenceLabel(c.weight);
       return `<div style="margin-bottom:9px">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
-          <span style="font-family:var(--mono);font-size:8px;color:#c0d4e8">${n+1}. ${c.label}</span>
-          <span style="font-family:var(--mono);font-size:7px;color:${conf.color};text-transform:uppercase;letter-spacing:.1em">${conf.label}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:#c0d4e8">${n+1}. ${c.label}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:${conf.color};text-transform:uppercase;letter-spacing:.1em">${conf.label}</span>
         </div>
         ${bar(c.weight, conf.color)}
-        <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:3px;line-height:1.5">${c.reasoning}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px;line-height:1.5">${c.reasoning}</div>
       </div>`;
     }).join('');
   } else {
-    html += `<div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:9px">No registered explainer produced a candidate. As more causal nodes (events, weather, baselines) are added to the ontology, the engine will have more to reason with here.</div>`;
+    html += `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:9px">No registered explainer produced a candidate. As more causal nodes (events, weather, baselines) are added to the ontology, the engine will have more to reason with here.</div>`;
   }
   // Residual — the honesty signal
   const resColor = residualPct>0.5 ? '#ff1744' : residualPct>0.25 ? '#ffb300' : '#00e676';
   html += `<div style="border-top:1px dashed var(--border2);margin-top:8px;padding-top:8px">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
-      <span style="font-family:var(--mono);font-size:8px;color:${resColor}">⚠ Unexplained residual</span>
-      <span style="font-family:var(--mono);font-size:7px;color:${resColor}">${(residualPct*100).toFixed(0)}% of severity</span>
+      <span style="font-family:var(--mono);font-size:10px;color:${resColor}">⚠ Unexplained residual</span>
+      <span style="font-family:var(--mono);font-size:11px;color:${resColor}">${(residualPct*100).toFixed(0)}% of severity</span>
     </div>
     ${bar(residualPct, resColor)}
-    <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:3px;line-height:1.5">${
+    <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px;line-height:1.5">${
       residualPct>0.5 ? 'Most of this problem is NOT accounted for by known causes. This is the highest-value signal — something is happening here the current model cannot explain. Worth direct investigation.' :
       residualPct>0.25 ? 'A meaningful portion remains unexplained. The candidate causes above are partial; treat them as leads, not conclusions.' :
       'Known causes account for most of this problem. Lower investigative priority — the situation is largely understood.'
@@ -4337,7 +4336,7 @@ buildList = function() {
       (ranked.length ? ranked.map(s=>{
         const meta = TRAFFIC_STATES[s.v];
         return `<div class="list-card">
-          <div class="lc-name" style="font-size:9px">${s.name}</div>
+          <div class="lc-name" style="font-size:11px">${s.name}</div>
           <div class="lc-sub" style="color:${meta.color}">${meta.label}</div></div>`;
       }).join('') : `<div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--muted)">Waiting for live feed…</div></div>`);
     return;
@@ -4434,7 +4433,7 @@ buildControls = function() {
     document.getElementById('legend').innerHTML=`<div class="legend-title">Vessel Types</div><div class="legend-body">
       <div style="display:flex;flex-direction:column;gap:4px">
         ${[['#3da8ff','Cargo'],['#ffb800','Tanker'],['#00e5a0','Passenger'],['#ff3c5f','Military'],['#9b6cff','Other']]
-          .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:${c};border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
+          .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:${c};border-radius:50%"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${l}</span></div>`).join('')}
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / MARITIME·LAYER<br>Source: AISStream · Barcelona Coast';
     return;
@@ -4444,7 +4443,7 @@ buildControls = function() {
     document.getElementById('legend').innerHTML=`<div class="legend-title">Aircraft Types</div><div class="legend-body">
       <div style="display:flex;flex-direction:column;gap:4px">
         ${[['#3da8ff','Commercial'],['#ffb800','Cargo'],['#00e5a0','Private'],['#ff3c5f','Military'],['#9b6cff','Helicopter']]
-          .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:${c};border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
+          .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:${c};border-radius:50%"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${l}</span></div>`).join('')}
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / AIR·LAYER<br>Source: OpenSky Network · ADS-B';
     return;
@@ -4453,9 +4452,9 @@ buildControls = function() {
     document.getElementById('bottomBar').innerHTML=`<span class="bb-label">TRANSIT DOMAIN</span><span class="bb-val" style="color:var(--accent)">RODALIES LIVE · TMB METRO & BUS · OSM</span>`;
     document.getElementById('legend').innerHTML=`<div class="legend-title">Transit</div><div class="legend-body">
       <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#00e8a0;border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Rodalies Trains</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#ff6600;border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Metro Stations & Lines</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#3da8ff;border-radius:50%"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Bus Stops & Lines</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#00e8a0;border-radius:50%"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Rodalies Trains</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#ff6600;border-radius:50%"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Metro Stations & Lines</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;background:#3da8ff;border-radius:50%"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Bus Stops & Lines</span></div>
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / TRANSIT·LAYER<br>Source: Renfe GTFS-RT · TMB Metro/Bus via OpenStreetMap';
     return;
@@ -4464,11 +4463,11 @@ buildControls = function() {
     document.getElementById('bottomBar').innerHTML=`<span class="bb-label">MOBILITY DOMAIN</span><span class="bb-val" style="color:var(--accent)">LIVE TRAFFIC STATE · AJUNTAMENT BCN · 5-MIN</span>`;
     document.getElementById('legend').innerHTML=`<div class="legend-title">Congestion</div><div class="legend-body">
       <div style="display:flex;flex-direction:column;gap:4px">
-        ${[['#00e5ff','Very fluid'],['#00e676','Fluid'],['#ffc400','Dense'],['#ff9100','Very dense'],['#ff1744','Congested'],['#f50057','Blocked']]
-          .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:3px;background:${c}"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">${l}</span></div>`).join('')}
+        ${[['#d9902f','Very fluid'],['#00e676','Fluid'],['#ffc400','Dense'],['#ff9100','Very dense'],['#ff1744','Congested'],['#f50057','Blocked']]
+          .map(([c,l])=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:3px;background:${c}"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${l}</span></div>`).join('')}
         <div style="border-top:1px solid var(--border);margin:2px 0"></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#ffea00;opacity:.6;border:1px solid #ffea00"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (active)</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#40c4ff;opacity:.6;border:1px dashed #40c4ff"></div><span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Road work (upcoming)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#ffea00;opacity:.6;border:1px solid #ffea00"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Road work (active)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:8px;background:#40c4ff;opacity:.6;border:1px dashed #40c4ff"></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Road work (upcoming)</span></div>
       </div></div>`;
     document.getElementById('watermark').innerHTML='PROVIDENCE / TRAFFIC·LAYER<br>Source: Ajuntament de Barcelona · Live traffic sections';
     return;
@@ -4538,7 +4537,7 @@ function getRiskLevel(score) {
   if(score >= 80) return {label:'CRITICAL',color:'#ff1040',bg:'rgba(255,16,64,.12)'};
   if(score >= 60) return {label:'HIGH',    color:'#ff4060',bg:'rgba(255,64,96,.10)'};
   if(score >= 40) return {label:'ELEVATED',color:'#ffb040',bg:'rgba(255,176,64,.10)'};
-  if(score >= 20) return {label:'MODERATE',color:'#00c8ff',bg:'rgba(0,200,255,.08)'};
+  if(score >= 20) return {label:'MODERATE',color:'#d9902f',bg:'rgba(0,200,255,.08)'};
   return              {label:'LOW',      color:'#00e8a0',bg:'rgba(0,232,160,.08)'};
 }
 
@@ -4604,12 +4603,12 @@ const timeStr = `${String(hour).padStart(2,'0')}:${String(mins).padStart(2,'0')}
   hud.innerHTML = `
     <div class="hud-header">
       LIVE RISK ASSESSMENT
-      <span style="font-size:8px;color:var(--muted)">${timeStr}</span>
+      <span style="font-size:10px;color:var(--muted)">${timeStr}</span>
     </div>
     <div class="hud-body">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
         <div class="hud-val" style="color:${cityColor}">${cityLevel}</div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted)">CITY THREAT</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">CITY THREAT</div>
       </div>
       <div class="hud-sub">Temporal model · Mossos 2024 baseline</div>
       <hr class="hud-div">
@@ -4649,7 +4648,7 @@ function buildRiskList() {
         style="${isSel?'':''}border-left-color:${color}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
           <div class="lc-name">${DISTRICTS_GEO[id]?.name}</div>
-          <div style="font-family:var(--mono);font-size:8px;padding:1px 5px;background:${bg};color:${color};letter-spacing:.08em">${label}</div>
+          <div style="font-family:var(--mono);font-size:10px;padding:1px 5px;background:${bg};color:${color};letter-spacing:.08em">${label}</div>
         </div>
         <div class="lc-bar">
           <div class="lc-seg" style="width:${score}%;background:${color};opacity:0.8;transition:width 1s ease"></div>
@@ -4696,7 +4695,7 @@ function getCorrelationLabel(r) {
   const abs = Math.abs(r);
   const dir = r >= 0 ? 'positive' : 'negative';
   if(abs >= 0.8) return {str:`Strong ${dir}`,  color: r>=0?'#ff4060':'#00e8a0'};
-  if(abs >= 0.6) return {str:`Moderate ${dir}`, color: r>=0?'#ffb040':'#00c8ff'};
+  if(abs >= 0.6) return {str:`Moderate ${dir}`, color: r>=0?'#ffb040':'#d9902f'};
   if(abs >= 0.3) return {str:`Weak ${dir}`,     color:'#7090a8'};
   return              {str:'No correlation',   color:'#3d4a5c'};
 }
@@ -4838,11 +4837,11 @@ function buildAnalysisPanel() {
     <div style="max-width:1080px;margin:0 auto">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:1px solid var(--border2);padding-bottom:14px">
         <div>
-          <div style="font-family:var(--mono);font-size:8px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px">Providence · Intelligence Analysis · Barcelona</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px">Providence · Intelligence Analysis · Barcelona</div>
           <div style="font-family:var(--mono);font-size:17px;color:#c0d4e8;letter-spacing:.06em;text-transform:uppercase">Cross-Domain Correlation Analysis</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:3px">Pearson r · ${districts.length} districts · Mossos ${dataYear} × OpenCelliD 2025 × Padró Municipal 2025</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px">Pearson r · ${districts.length} districts · Mossos ${dataYear} × OpenCelliD 2025 × Padró Municipal 2025</div>
         </div>
-        <div style="font-family:var(--mono);font-size:8px;text-align:right;line-height:1.9">
+        <div style="font-family:var(--mono);font-size:10px;text-align:right;line-height:1.9">
           <div>n = ${districts.length} observations</div>
           <div>Method: Pearson correlation</div>
           <div style="color:${dataSource==='live'?'var(--green)':dataSource==='mixed'?'var(--amber)':'var(--muted2)'}">
@@ -4859,36 +4858,36 @@ function buildAnalysisPanel() {
         const anyRoadworks = (ONTOLOGY.roadworks||[]).length>0;
         const bar = (v,color)=>`<div style="height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden"><div style="height:100%;width:${Math.round(v*100)}%;background:${color}"></div></div>`;
         const top = pressure.slice(0,10);
-        return `<div style="background:rgba(0,200,255,.03);border:1px solid rgba(0,200,255,.14);padding:14px 16px;margin-bottom:20px">
+        return `<div style="background:rgba(217,144,47,.04);border:1px solid rgba(217,144,47,.18);padding:14px 16px;margin-bottom:20px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
-            <div style="font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase">Live Cross-Domain Intelligence</div>
-            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Dual-grain ontology · districts × ${anySections?Object.keys(ONTOLOGY.sections).length+' traffic sections':'traffic (open Traffic tab to populate)'}${anyRoadworks?' × '+ONTOLOGY.roadworks.length+' works':''}</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase">Live Cross-Domain Intelligence</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">Dual-grain ontology · districts × ${anySections?Object.keys(ONTOLOGY.sections).length+' traffic sections':'traffic (open Traffic tab to populate)'}${anyRoadworks?' × '+ONTOLOGY.roadworks.length+' works':''}</div>
           </div>
 
-          <div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">District Pressure Index — crime × density × live congestion</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">District Pressure Index — crime × density × live congestion</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:16px">
             ${top.map((d,i)=>`<div style="display:flex;align-items:center;gap:8px">
               <div style="font-family:var(--mono);font-size:11px;color:${i<3?'#ff6d00':'#7090a8'};width:18px;text-align:right">${i+1}</div>
               <div style="flex:1;min-width:0">
-                <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:#c0d4e8"><span>${d.name}</span><span style="color:#7090a8">${(d.score*100).toFixed(0)}</span></div>
+                <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:#c0d4e8"><span>${d.name}</span><span style="color:#7090a8">${(d.score*100).toFixed(0)}</span></div>
                 ${bar(d.score, i<3?'#ff6d00':'#00a8ff')}
-                <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:2px">${d.crime.toLocaleString()} crime · ${(d.density/1000).toFixed(0)}k/km² · ${d.congested} congested${d.roadworks?' · '+d.roadworks+' works':''}${(ONTOLOGY.districts[d.id]&&ONTOLOGY.districts[d.id].live.eventsLiveNow)?' · '+ONTOLOGY.districts[d.id].live.eventsLiveNow+' events':''}</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:2px">${d.crime.toLocaleString()} crime · ${(d.density/1000).toFixed(0)}k/km² · ${d.congested} congested${d.roadworks?' · '+d.roadworks+' works':''}${(ONTOLOGY.districts[d.id]&&ONTOLOGY.districts[d.id].live.eventsLiveNow)?' · '+ONTOLOGY.districts[d.id].live.eventsLiveNow+' events':''}</div>
               </div>
             </div>`).join('')}
           </div>
 
-          ${anySections ? `<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Congestion Attribution — is the jam explained?</div>
+          ${anySections ? `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Congestion Attribution — is the jam explained?</div>
           <div style="display:flex;gap:20px;flex-wrap:wrap">
             <div style="flex:1;min-width:220px">
-              <div style="font-family:var(--mono);font-size:8px;color:#ffd54f;margin-bottom:5px">◧ Explained — active roadwork in district (${ce.explained.length})</div>
-              ${ce.explained.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:8px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">none right now</div>'}
+              <div style="font-family:var(--mono);font-size:10px;color:#ffd54f;margin-bottom:5px">◧ Explained — active roadwork in district (${ce.explained.length})</div>
+              ${ce.explained.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:10px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">none right now</div>'}
             </div>
             <div style="flex:1;min-width:220px">
-              <div style="font-family:var(--mono);font-size:8px;color:#ff1744;margin-bottom:5px">⚠ Anomaly — congested, no known works (${ce.anomaly.length})</div>
-              ${ce.anomaly.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:8px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">none right now</div>'}
+              <div style="font-family:var(--mono);font-size:10px;color:#ff1744;margin-bottom:5px">⚠ Anomaly — congested, no known works (${ce.anomaly.length})</div>
+              ${ce.anomaly.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:10px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">none right now</div>'}
             </div>
           </div>
-          <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:10px;line-height:1.5">Attribution is district-level proximity, not causal proof — a co-located roadwork is a candidate explanation to investigate, not a confirmed cause. Anomalies (congestion with no nearby works) are the higher-value signal: something unexplained is happening there.</div>` : `<div style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Open the Traffic tab once to load live sections, then return here — congestion attribution will populate.</div>`}
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:10px;line-height:1.5">Attribution is district-level proximity, not causal proof — a co-located roadwork is a candidate explanation to investigate, not a confirmed cause. Anomalies (congestion with no nearby works) are the higher-value signal: something unexplained is happening there.</div>` : `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">Open the Traffic tab once to load live sections, then return here — congestion attribution will populate.</div>`}
         </div>
 
         ${(()=>{
@@ -4911,22 +4910,22 @@ function buildAnalysisPanel() {
           // stash for the click handler
           window.__PROBLEMS = problems;
           return `<div style="background:rgba(255,109,0,.03);border:1px solid rgba(255,109,0,.14);padding:14px 16px;margin-bottom:20px">
-            <div style="font-family:var(--mono);font-size:9px;color:#ff6d00;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px">Probable-Cause Reasoning</div>
-            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:12px">Click a flagged problem — the engine traverses its ontology links and ranks candidate explanations, always reporting the unexplained residual.</div>
+            <div style="font-family:var(--mono);font-size:11px;color:#ff6d00;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px">Probable-Cause Reasoning</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:12px">Click a flagged problem — the engine traverses its ontology links and ranks candidate explanations, always reporting the unexplained residual.</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-              ${problems.map((p,i)=>`<button onclick="window.__analyzeProblem(${i});window.__flyToProblem(${i})" style="font-family:var(--mono);font-size:8px;padding:5px 10px;background:rgba(4,12,24,.7);border:1px solid ${p.kind==='district'?'#ff6d0044':'#ff174444'};color:#c0d4e8;cursor:pointer;text-align:left">
-                <span style="color:${p.kind==='district'?'#ff6d00':'#ff1744'}">${p.kind==='district'?'▣':'▬'}</span> ${p.title}<br><span style="color:var(--muted2);font-size:7px">${p.sub} · click to locate</span>
+              ${problems.map((p,i)=>`<button onclick="window.__analyzeProblem(${i});window.__flyToProblem(${i})" style="font-family:var(--mono);font-size:10px;padding:5px 10px;background:rgba(12,12,14,.8);border:1px solid ${p.kind==='district'?'#ff6d0044':'#ff174444'};color:#c0d4e8;cursor:pointer;text-align:left">
+                <span style="color:${p.kind==='district'?'#ff6d00':'#ff1744'}">${p.kind==='district'?'▣':'▬'}</span> ${p.title}<br><span style="color:var(--muted2);font-size:11px">${p.sub} · click to locate</span>
               </button>`).join('')}
             </div>
-            <div id="reasoningOutput" style="font-family:var(--mono);font-size:8px;color:var(--muted2)">Select a problem above to see its probable-cause analysis.</div>
+            <div id="reasoningOutput" style="font-family:var(--mono);font-size:10px;color:var(--muted2)">Select a problem above to see its probable-cause analysis.</div>
           </div>`;
         })()}`;
       })()}
 
-      ${findings.length>0?`<div style="background:rgba(0,200,255,.04);border:1px solid rgba(0,200,255,.12);padding:10px 14px;margin-bottom:20px">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;margin-bottom:7px">Significant Findings (|r| ≥ 0.5)</div>
+      ${findings.length>0?`<div style="background:rgba(217,144,47,.05);border:1px solid rgba(217,144,47,.16);padding:10px 14px;margin-bottom:20px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;margin-bottom:7px">Significant Findings (|r| ≥ 0.5)</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${findings.map(c=>{const {str,color}=getCorrelationLabel(c.r);const ci=pearsonCI(c.r,c.x.length);return `<div style="font-family:var(--mono);font-size:8px;padding:3px 8px;background:rgba(4,12,24,.7);border:1px solid ${color}44;color:${color}">${c.title} · r=${c.r>=0?'+':''}${c.r.toFixed(2)} · 95% CI [${ci.lo>=0?'+':''}${ci.lo.toFixed(2)}, ${ci.hi>=0?'+':''}${ci.hi.toFixed(2)}] · ${str}</div>`;}).join('')}
+          ${findings.map(c=>{const {str,color}=getCorrelationLabel(c.r);const ci=pearsonCI(c.r,c.x.length);return `<div style="font-family:var(--mono);font-size:10px;padding:3px 8px;background:rgba(12,12,14,.8);border:1px solid ${color}44;color:${color}">${c.title} · r=${c.r>=0?'+':''}${c.r.toFixed(2)} · 95% CI [${ci.lo>=0?'+':''}${ci.lo.toFixed(2)}, ${ci.hi>=0?'+':''}${ci.hi.toFixed(2)}] · ${str}</div>`;}).join('')}
         </div>
       </div>`:''}
 
@@ -4937,11 +4936,11 @@ function buildAnalysisPanel() {
           const ciStr=`95% CI [${ci.lo>=0?'+':''}${ci.lo.toFixed(2)}, ${ci.hi>=0?'+':''}${ci.hi.toFixed(2)}] · n=${c.x.length}`;
           return `<div style="background:rgba(7,21,37,.8);border:1px solid var(--border2);padding:14px">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-              <div style="font-family:var(--mono);font-size:9px;color:#c0d4e8;letter-spacing:.06em;text-transform:uppercase;max-width:190px;line-height:1.5">${c.title}</div>
+              <div style="font-family:var(--mono);font-size:11px;color:#c0d4e8;letter-spacing:.06em;text-transform:uppercase;max-width:190px;line-height:1.5">${c.title}</div>
               <div style="text-align:right;flex-shrink:0;margin-left:10px">
                 <div style="font-family:var(--mono);font-size:18px;color:${color};line-height:1">${c.r>=0?'+':''}${c.r.toFixed(3)}</div>
-                <div style="font-family:var(--mono);font-size:7px;color:${color};letter-spacing:.1em;text-transform:uppercase">${str}</div>
-                <div style="font-family:var(--mono);font-size:7px;color:var(--muted2);margin-top:3px;letter-spacing:.04em">${ciStr}</div>
+                <div style="font-family:var(--mono);font-size:11px;color:${color};letter-spacing:.1em;text-transform:uppercase">${str}</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px;letter-spacing:.04em">${ciStr}</div>
               </div>
             </div>
             <div style="height:2px;background:var(--border);margin-bottom:10px;position:relative">
@@ -4949,23 +4948,23 @@ function buildAnalysisPanel() {
               <div style="position:absolute;left:50%;top:-2px;width:1px;height:6px;background:var(--muted2)"></div>
             </div>
             <div style="margin-bottom:8px">${scatterSVG(c.x,c.y,color)}</div>
-            <div style="font-family:var(--mono);font-size:9px;padding:5px 8px;margin-bottom:8px;
+            <div style="font-family:var(--mono);font-size:11px;padding:5px 8px;margin-bottom:8px;
               background:${color}0d;border-left:2px solid ${color};color:${color};line-height:1.5">
               ${Math.abs(c.r)>=0.5
                 ? `${c.r>0?'↑':'↓'} ${str} — ${c.r>0?'increases':'decreases'} with ${c.title.split(' vs ')[0].toLowerCase()}`
                 : `No meaningful correlation detected`}
             </div>
-            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);line-height:1.6;margin-bottom:8px">${c.insight}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);line-height:1.6;margin-bottom:8px">${c.insight}</div>
             <div style="display:flex;gap:5px;flex-wrap:wrap">
-              ${c.datasets.map(d=>`<span style="font-family:var(--mono);font-size:7px;color:var(--muted);padding:2px 5px;border:1px solid var(--border);letter-spacing:.06em">${d}</span>`).join('')}
+              ${c.datasets.map(d=>`<span style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:2px 5px;border:1px solid var(--border);letter-spacing:.06em">${d}</span>`).join('')}
             </div>
           </div>`;
         }).join('')}
       </div>
 
       <div style="margin-top:16px;padding:10px 14px;border:1px solid var(--border);background:rgba(7,21,37,.4)">
-        <div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Methodological Note</div>
-        <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);line-height:1.6">Pearson r computed across ${districts.length} Barcelona districts. Small sample (n=${districts.length}) — interpret with caution. All correlations are descriptive, not causal. Confounders (tourism density, economic inequality, nighttime economy) are not controlled for. This analysis identifies hypotheses for further investigation.</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Methodological Note</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);line-height:1.6">Pearson r computed across ${districts.length} Barcelona districts. Small sample (n=${districts.length}) — interpret with caution. All correlations are descriptive, not causal. Confounders (tourism density, economic inequality, nighttime economy) are not controlled for. This analysis identifies hypotheses for further investigation.</div>
       </div>
     </div>`;
 }
@@ -4997,7 +4996,7 @@ loadInfraData();
 loadCCTVData();
 loadPopulationData();
 loadDistrictGeoJSON();
-setTimeout(()=>logActivity('System initialized · Providence v1.0','#00c8ff'), 500);
+setTimeout(()=>logActivity('System initialized · Providence v1.0','#d9902f'), 500);
 
 (function(){
   let landingActive = true;
@@ -5029,7 +5028,7 @@ setTimeout(()=>logActivity('System initialized · Providence v1.0','#00c8ff'), 5
     const px=CX+pupilX,py=CY+pupilY*lidScale;
     ctx.save();eyePath(lidScale);ctx.clip();
     const ig=ctx.createRadialGradient(px,py,0,px,py,irisR);
-    ig.addColorStop(0,'#3a6ea5');ig.addColorStop(.55,'#1a3a5e');ig.addColorStop(1,'#04101c');
+    ig.addColorStop(0,'#3a6ea5');ig.addColorStop(.55,'#1a3a5e');ig.addColorStop(1,'#0a0a0b');
     ctx.beginPath();ctx.arc(CX,CY,irisR,0,Math.PI*2);ctx.fillStyle=ig;ctx.fill();
     ctx.save();ctx.translate(CX,CY);ctx.rotate(globeAngle);ctx.translate(-CX,-CY);
     [11,27,44,60].forEach(r=>{ctx.beginPath();ctx.ellipse(CX,CY,irisR,r*(irisR/90),0,0,Math.PI*2);ctx.strokeStyle=`rgba(255,255,255,${.06+.08*(1-r/90)})`;ctx.lineWidth=.7;ctx.stroke();});
