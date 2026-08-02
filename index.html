@@ -85,7 +85,7 @@
     padding:0 10px;height:100%;border-right:1px solid var(--border2);
     gap:2px;min-width:72px;
   }
-  .feed-label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+  .feed-label{font-family:var(--sans);font-weight:600;font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
   .feed-val{font-family:var(--mono);font-size:10px;letter-spacing:.06em}
   .feed-val.live{color:var(--green)}
   .feed-val.offline{color:var(--muted)}
@@ -260,7 +260,7 @@
     padding:5px 16px;display:flex;align-items:center;gap:14px;white-space:nowrap;
     backdrop-filter:blur(4px);
   }
-  .bb-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+  .bb-label{font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
   .bb-val{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em}
   .coord-display{
     position:absolute;bottom:10px;right:180px;z-index:500;
@@ -4082,7 +4082,7 @@ function renderFusion(){
   html += `<div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:14px;padding:6px 10px;background:rgba(0,168,255,.05);border-left:2px solid var(--accent)">${grainLabel}</div>`;
 
   // pairwise correlations with honest labels
-  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Computed Cross-Reference</div>`;
+  html += `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Computed Cross-Reference</div>`;
   fusion.pairs.forEach(p=>{
     const col = Math.abs(p.r)>=0.5 ? (p.r>0?'#ff5252':'#40c4ff') : '#7090a8';
     html += `<div style="border:1px solid #1a3050;padding:10px 12px;margin-bottom:8px;background:rgba(16,16,20,.6)">
@@ -4096,7 +4096,7 @@ function renderFusion(){
   });
 
   // composite ranking
-  html += `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin:16px 0 8px">Composite Ranking — districts by fused score</div>`;
+  html += `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px">Composite Ranking — districts by fused score</div>`;
   fusion.composite.slice(0,10).forEach((c,i)=>{
     html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
       <span style="font-family:var(--mono);font-size:10px;color:${i<3?'#ff6d00':'#7090a8'};width:16px;text-align:right">${i+1}</span>
@@ -4837,12 +4837,12 @@ function buildAnalysisPanel() {
     <div style="max-width:1080px;margin:0 auto">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:1px solid var(--border2);padding-bottom:14px">
         <div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px">Providence · Intelligence Analysis · Barcelona</div>
-          <div style="font-family:var(--mono);font-size:17px;color:#c0d4e8;letter-spacing:.06em;text-transform:uppercase">Cross-Domain Correlation Analysis</div>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px">Pearson r · ${districts.length} districts · Mossos ${dataYear} × OpenCelliD 2025 × Padró Municipal 2025</div>
+          <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--accent);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px">Intelligence analysis · Barcelona</div>
+          <div style="font-family:var(--sans);font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.01em">Cross-domain correlation</div>
+          <div style="font-family:var(--sans);font-size:13px;color:var(--text2);margin-top:4px">Pearson r · <span style="font-family:var(--mono)">${districts.length}</span> districts · Mossos ${dataYear} × OpenCelliD 2025 × Padró Municipal 2025</div>
         </div>
-        <div style="font-family:var(--mono);font-size:10px;text-align:right;line-height:1.9">
-          <div>n = ${districts.length} observations</div>
+        <div style="font-family:var(--sans);font-size:12px;text-align:right;line-height:1.9;color:var(--text2)">
+          <div>n = <span style="font-family:var(--mono);color:var(--text)">${districts.length}</span> observations</div>
           <div>Method: Pearson correlation</div>
           <div style="color:${dataSource==='live'?'var(--green)':dataSource==='mixed'?'var(--amber)':'var(--muted2)'}">
             ${dataSource==='live'?'● Live data · '+dataYear:dataSource==='mixed'?'◐ Mixed · live crime / baseline pop':'○ Verified baseline · 2023'}
@@ -4860,11 +4860,11 @@ function buildAnalysisPanel() {
         const top = pressure.slice(0,10);
         return `<div style="background:rgba(217,144,47,.04);border:1px solid rgba(217,144,47,.18);padding:14px 16px;margin-bottom:20px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
-            <div style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase">Live Cross-Domain Intelligence</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">Dual-grain ontology · districts × ${anySections?Object.keys(ONTOLOGY.sections).length+' traffic sections':'traffic (open Traffic tab to populate)'}${anyRoadworks?' × '+ONTOLOGY.roadworks.length+' works':''}</div>
+            <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--accent);letter-spacing:.04em;text-transform:uppercase">Live cross-domain intelligence</div>
+            <div style="font-family:var(--sans);font-size:12px;color:var(--text2)">Dual-grain ontology · districts × ${anySections?Object.keys(ONTOLOGY.sections).length+' traffic sections':'traffic (open Traffic tab to populate)'}${anyRoadworks?' × '+ONTOLOGY.roadworks.length+' works':''}</div>
           </div>
 
-          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">District Pressure Index — crime × density × live congestion</div>
+          <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:8px">District pressure index — crime × density × live congestion</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:16px">
             ${top.map((d,i)=>`<div style="display:flex;align-items:center;gap:8px">
               <div style="font-family:var(--mono);font-size:11px;color:${i<3?'#ff6d00':'#7090a8'};width:18px;text-align:right">${i+1}</div>
@@ -4876,7 +4876,7 @@ function buildAnalysisPanel() {
             </div>`).join('')}
           </div>
 
-          ${anySections ? `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px">Congestion Attribution — is the jam explained?</div>
+          ${anySections ? `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Congestion Attribution — is the jam explained?</div>
           <div style="display:flex;gap:20px;flex-wrap:wrap">
             <div style="flex:1;min-width:220px">
               <div style="font-family:var(--mono);font-size:10px;color:#ffd54f;margin-bottom:5px">◧ Explained — active roadwork in district (${ce.explained.length})</div>
@@ -4910,7 +4910,7 @@ function buildAnalysisPanel() {
           // stash for the click handler
           window.__PROBLEMS = problems;
           return `<div style="background:rgba(255,109,0,.03);border:1px solid rgba(255,109,0,.14);padding:14px 16px;margin-bottom:20px">
-            <div style="font-family:var(--mono);font-size:11px;color:#ff6d00;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px">Probable-Cause Reasoning</div>
+            <div style="font-family:var(--sans);font-weight:600;font-size:11px;color:#ff6d00;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Probable-Cause Reasoning</div>
             <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:12px">Click a flagged problem — the engine traverses its ontology links and ranks candidate explanations, always reporting the unexplained residual.</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
               ${problems.map((p,i)=>`<button onclick="window.__analyzeProblem(${i});window.__flyToProblem(${i})" style="font-family:var(--mono);font-size:10px;padding:5px 10px;background:rgba(12,12,14,.8);border:1px solid ${p.kind==='district'?'#ff6d0044':'#ff174444'};color:#c0d4e8;cursor:pointer;text-align:left">
@@ -4923,7 +4923,7 @@ function buildAnalysisPanel() {
       })()}
 
       ${findings.length>0?`<div style="background:rgba(217,144,47,.05);border:1px solid rgba(217,144,47,.16);padding:10px 14px;margin-bottom:20px">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;margin-bottom:7px">Significant Findings (|r| ≥ 0.5)</div>
+        <div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--accent);letter-spacing:.04em;text-transform:uppercase;margin-bottom:7px">Significant Findings (|r| ≥ 0.5)</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           ${findings.map(c=>{const {str,color}=getCorrelationLabel(c.r);const ci=pearsonCI(c.r,c.x.length);return `<div style="font-family:var(--mono);font-size:10px;padding:3px 8px;background:rgba(12,12,14,.8);border:1px solid ${color}44;color:${color}">${c.title} · r=${c.r>=0?'+':''}${c.r.toFixed(2)} · 95% CI [${ci.lo>=0?'+':''}${ci.lo.toFixed(2)}, ${ci.hi>=0?'+':''}${ci.hi.toFixed(2)}] · ${str}</div>`;}).join('')}
         </div>
