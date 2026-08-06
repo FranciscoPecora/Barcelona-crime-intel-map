@@ -20,10 +20,10 @@
     --border:#222226;
     --border2:#303036;
     --text:#ededec;          /* brighter off-white body */
-    --text2:#b4b4b1;         /* brighter secondary — was too dim/grey */
+    --text2:#b4b4b1;         /* brighter secondary, was too dim/grey */
     --muted:#4a4a4e;
     --muted2:#8f8f8c;        /* brighter tertiary/labels */
-    --accent:#d9902f;        /* amber — the single restrained accent */
+    --accent:#d9902f;        /* amber, the single restrained accent */
     --accent-dim:rgba(217,144,47,.09);
     --accent-line:rgba(217,144,47,.28);
     --green:#5aa86a;         /* desaturated, for "good"/live status only */
@@ -419,7 +419,6 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <button class="nav-tab" data-map="infra">Infrastructure</button>
     <button class="nav-tab" data-map="human">Human Terrain</button>
     <button class="nav-tab" data-map="aircraft">Air Traffic</button>
-    <button class="nav-tab" data-map="transit">Transit</button>
     <button class="nav-tab" data-map="traffic">Traffic</button>
     <button class="nav-tab" data-map="analysis">Analysis</button>
     <button class="nav-tab" data-map="fusion">Fusion</button>
@@ -427,23 +426,23 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
   <div class="header-right">
     <div class="feed-status">
       <div class="feed-label">Crime</div>
-      <div class="feed-val connecting" id="crimeFeedStatus">—</div>
+      <div class="feed-val connecting" id="crimeFeedStatus">, </div>
     </div>
     <div class="feed-status">
       <div class="feed-label">AIS</div>
-      <div class="feed-val offline" id="aisFeedStatus">—</div>
+      <div class="feed-val offline" id="aisFeedStatus">, </div>
     </div>
     <div class="feed-status">
       <div class="feed-label">ADS-B</div>
-      <div class="feed-val offline" id="adsbFeedStatus">—</div>
+      <div class="feed-val offline" id="adsbFeedStatus">, </div>
     </div>
     <div class="feed-status">
       <div class="feed-label">Rail</div>
-      <div class="feed-val offline" id="railFeedStatus">—</div>
+      <div class="feed-val offline" id="railFeedStatus">, </div>
     </div>
     <div class="feed-status">
       <div class="feed-label">Padró</div>
-      <div class="feed-val offline" id="popFeedStatus">—</div>
+      <div class="feed-val offline" id="popFeedStatus">, </div>
     </div>
     <div class="sys-clock">
       <div class="feed-label">UTC</div>
@@ -898,14 +897,14 @@ out center tags;`;
       showError(null);
     } else {
       infraNodes = STATIC_INFRA_NODES;
-      setFeedStatus("infra","stale","OSM sparse — baseline shown");
+      setFeedStatus("infra","stale","OSM sparse, baseline shown");
     }
     dataLoaded.infra = true;
   } catch(err) {
     console.warn('Overpass unavailable on all mirrors:', err.message);
     infraNodes = STATIC_INFRA_NODES;
     dataLoaded.infra = true;
-    setFeedStatus("infra","stale","Overpass down — baseline shown");
+    setFeedStatus("infra","stale","Overpass down, baseline shown");
   }
   if(currentMap==='infra') refreshAll();
 }
@@ -994,36 +993,36 @@ async function loadPopulationData() {
 }
 
 const STATIC_INFRA_NODES = [
-  {lat:41.3756,lng:2.1492,type:'police',name:'Mossos d\'Esquadra — Comissaria Sants-Montjuïc',crit:3},
-  {lat:41.3875,lng:2.1698,type:'police',name:'Mossos d\'Esquadra — Comissaria Eixample',       crit:3},
-  {lat:41.4033,lng:2.1931,type:'police',name:'Mossos d\'Esquadra — Comissaria Sant Martí',     crit:3},
-  {lat:41.4143,lng:2.1802,type:'police',name:'Mossos d\'Esquadra — Comissaria Nou Barris',     crit:2},
-  {lat:41.4262,lng:2.1862,type:'police',name:'Mossos d\'Esquadra — Comissaria Sant Andreu',    crit:2},
-  {lat:41.4108,lng:2.1543,type:'police',name:'Mossos d\'Esquadra — Comissaria Horta-Guinardó', crit:2},
-  {lat:41.3993,lng:2.1414,type:'police',name:'Mossos d\'Esquadra — Comissaria Les Corts',      crit:2},
-  {lat:41.4072,lng:2.1418,type:'police',name:'Mossos d\'Esquadra — Comissaria Sarrià',         crit:2},
-  {lat:41.3994,lng:2.1601,type:'police',name:'Mossos d\'Esquadra — Comissaria Gràcia',         crit:2},
-  {lat:41.3840,lng:2.1733,type:'police',name:'Mossos d\'Esquadra — Comissaria Ciutat Vella',   crit:3},
-  {lat:41.3830,lng:2.1760,type:'police',name:'Guàrdia Urbana — Rambla',                        crit:2},
-  {lat:41.3778,lng:2.1396,type:'police',name:'Guàrdia Urbana — Zona Franca',                   crit:2},
-  {lat:41.4005,lng:2.2012,type:'police',name:'Guàrdia Urbana — Vila Olímpica',                 crit:2},
-  {lat:41.3780,lng:2.1519,type:'fire',name:'Parc de Bombers — Zona Franca',     crit:3},
-  {lat:41.4047,lng:2.1724,type:'fire',name:'Parc de Bombers — Eixample Nord',   crit:2},
-  {lat:41.3892,lng:2.1524,type:'fire',name:'Parc de Bombers — Les Corts',       crit:2},
-  {lat:41.4201,lng:2.1956,type:'fire',name:'Parc de Bombers — Sant Andreu',     crit:2},
-  {lat:41.3972,lng:2.1982,type:'fire',name:'Parc de Bombers — Poblenou',        crit:2},
-  {lat:41.4293,lng:2.1758,type:'fire',name:'Parc de Bombers — Nou Barris',      crit:2},
-  {lat:41.4112,lng:2.1438,type:'fire',name:'Parc de Bombers — Sarrià',          crit:2},
-  {lat:41.4201,lng:2.1543,type:'fire',name:'Parc de Bombers — Vall d\'Hebron',  crit:2},
+  {lat:41.3756,lng:2.1492,type:'police',name:'Mossos d\'Esquadra, Comissaria Sants-Montjuïc',crit:3},
+  {lat:41.3875,lng:2.1698,type:'police',name:'Mossos d\'Esquadra, Comissaria Eixample',       crit:3},
+  {lat:41.4033,lng:2.1931,type:'police',name:'Mossos d\'Esquadra, Comissaria Sant Martí',     crit:3},
+  {lat:41.4143,lng:2.1802,type:'police',name:'Mossos d\'Esquadra, Comissaria Nou Barris',     crit:2},
+  {lat:41.4262,lng:2.1862,type:'police',name:'Mossos d\'Esquadra, Comissaria Sant Andreu',    crit:2},
+  {lat:41.4108,lng:2.1543,type:'police',name:'Mossos d\'Esquadra, Comissaria Horta-Guinardó', crit:2},
+  {lat:41.3993,lng:2.1414,type:'police',name:'Mossos d\'Esquadra, Comissaria Les Corts',      crit:2},
+  {lat:41.4072,lng:2.1418,type:'police',name:'Mossos d\'Esquadra, Comissaria Sarrià',         crit:2},
+  {lat:41.3994,lng:2.1601,type:'police',name:'Mossos d\'Esquadra, Comissaria Gràcia',         crit:2},
+  {lat:41.3840,lng:2.1733,type:'police',name:'Mossos d\'Esquadra, Comissaria Ciutat Vella',   crit:3},
+  {lat:41.3830,lng:2.1760,type:'police',name:'Guàrdia Urbana, Rambla',                        crit:2},
+  {lat:41.3778,lng:2.1396,type:'police',name:'Guàrdia Urbana, Zona Franca',                   crit:2},
+  {lat:41.4005,lng:2.2012,type:'police',name:'Guàrdia Urbana, Vila Olímpica',                 crit:2},
+  {lat:41.3780,lng:2.1519,type:'fire',name:'Parc de Bombers, Zona Franca',     crit:3},
+  {lat:41.4047,lng:2.1724,type:'fire',name:'Parc de Bombers, Eixample Nord',   crit:2},
+  {lat:41.3892,lng:2.1524,type:'fire',name:'Parc de Bombers, Les Corts',       crit:2},
+  {lat:41.4201,lng:2.1956,type:'fire',name:'Parc de Bombers, Sant Andreu',     crit:2},
+  {lat:41.3972,lng:2.1982,type:'fire',name:'Parc de Bombers, Poblenou',        crit:2},
+  {lat:41.4293,lng:2.1758,type:'fire',name:'Parc de Bombers, Nou Barris',      crit:2},
+  {lat:41.4112,lng:2.1438,type:'fire',name:'Parc de Bombers, Sarrià',          crit:2},
+  {lat:41.4201,lng:2.1543,type:'fire',name:'Parc de Bombers, Vall d\'Hebron',  crit:2},
   {lat:41.3826,lng:2.1769,type:'gov',name:'Ajuntament de Barcelona',            crit:3},
   {lat:41.3847,lng:2.1669,type:'gov',name:'Generalitat de Catalunya',           crit:3},
   {lat:41.3841,lng:2.1840,type:'gov',name:'Parlament de Catalunya',             crit:3},
   {lat:41.3878,lng:2.1693,type:'gov',name:'Delegació del Govern a Catalunya',   crit:3},
   {lat:41.3834,lng:2.1784,type:'gov',name:'Palau de la Generalitat',            crit:3},
-  {lat:41.3862,lng:2.1697,type:'gov',name:'Palau Robert — Generalitat',         crit:2},
+  {lat:41.3862,lng:2.1697,type:'gov',name:'Palau Robert, Generalitat',         crit:2},
   {lat:41.3791,lng:2.1404,type:'gov',name:'Zona Franca Consorci',               crit:2},
   {lat:41.3974,lng:2.1908,type:'gov',name:'Districte 22@ Innovation',           crit:2},
-  {lat:41.3841,lng:2.1217,type:'gov',name:'Aeroport El Prat — Control',         crit:3},
+  {lat:41.3841,lng:2.1217,type:'gov',name:'Aeroport El Prat, Control',         crit:3},
   {lat:41.3961,lng:2.1539,type:'embassy',name:'Consolat General dels Estats Units',      crit:3},
   {lat:41.3943,lng:2.1525,type:'embassy',name:'Consolat General del Regne Unit',         crit:3},
   {lat:41.3927,lng:2.1547,type:'embassy',name:'Consolat General d\'Alemanya',            crit:3},
@@ -1495,7 +1494,7 @@ function buildSidebar() {
   const cfg=MAP_CFGS[currentMap];
   const srcColor = dataSource==='api'?'var(--green)':dataSource==='fallback'?'var(--amber)':'var(--muted)';
   const srcLabel = dataSource==='api'?'Live · Generalitat API':dataSource==='fallback'?'Verified · Mossos 2023':'Loading...';
-  const dateStr  = lastUpdated ? lastUpdated.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  const dateStr  = lastUpdated ? lastUpdated.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : ', ';
   document.getElementById('sidebar').innerHTML=`
     <div class="sb-header">
       <div class="sb-map-label">${currentMap.toUpperCase()} · LAYER</div>
@@ -1773,8 +1772,8 @@ function buildSourcesPanel() {
       source:"Mossos d'Esquadra · Generalitat de Catalunya Open Data",
       endpoint:'analisi.transparenciacatalunya.cat · Dataset qnyt-emjc',
       update:'Monthly · Current data: 2024',
-      method:"Aggregated by ABP (Àrea Bàsica Policial) — the 10 Barcelona police districts. Single-month fetch (June 2024) multiplied by 12 for annual estimate. Crime types mapped from Catalan Penal Code categories to six operational categories: theft, assault, robbery, vandalism, drugs, fraud.",
-      limitation:"Annual figures are estimates extrapolated from one month. Seasonal variation not captured. Data covers Mossos jurisdiction only — Guàrdia Urbana incidents reported separately.",
+      method:"Aggregated by ABP (Àrea Bàsica Policial), the 10 Barcelona police districts. Single-month fetch (June 2024) multiplied by 12 for annual estimate. Crime types mapped from Catalan Penal Code categories to six operational categories: theft, assault, robbery, vandalism, drugs, fraud.",
+      limitation:"Annual figures are estimates extrapolated from one month. Seasonal variation not captured. Data covers Mossos jurisdiction only, Guàrdia Urbana incidents reported separately.",
       integrity:"Official Mossos d'Esquadra statistics. Same data used in Generalitat annual crime reports."
     },
     {
@@ -1784,7 +1783,7 @@ function buildSourcesPanel() {
       endpoint:'opencellid.org · Spain dataset (MCC 214) · Open Data BCN resource cd1957a6',
       update:'OpenCelliD: annual snapshot 2025 · CCTV: live via CKAN API',
       method:"885 cell towers filtered to Barcelona bounding box from 96,403 Spanish towers. 165 CCTV cameras from Ajuntament de Barcelona's official surveillance camera inventory.",
-      limitation:"OpenCelliD is crowdsourced — tower positions accurate to ~50m. Coverage % is a density proxy, not a signal propagation model.",
+      limitation:"OpenCelliD is crowdsourced, tower positions accurate to ~50m. Coverage % is a density proxy, not a signal propagation model.",
       integrity:"OpenCelliD data is CC BY 4.0. CCTV inventory is official Ajuntament data."
     },
     {
@@ -1804,8 +1803,8 @@ function buildSourcesPanel() {
       endpoint:'opendata-ajuntament.barcelona.cat · Resource 190095dd',
       update:'Annual · Current data: 1 January 2025',
       method:"6,665 records aggregated by Codi_Districte. Foreign nationals counted by NACIONALITAT_G codes: 2 (EU), 3 (non-EU), 4 (stateless).",
-      limitation:"Registered residents only — does not capture undocumented residents or daily population fluctuation from tourists.",
-      integrity:"Official Padró Municipal — the same register used for electoral rolls and public service allocation."
+      limitation:"Registered residents only, does not capture undocumented residents or daily population fluctuation from tourists.",
+      integrity:"Official Padró Municipal, the same register used for electoral rolls and public service allocation."
     },
     {
       layer:'Maritime Domain', color:'#00e8a0',
@@ -1813,7 +1812,7 @@ function buildSourcesPanel() {
       source:'AISStream · Automatic Identification System',
       endpoint:'stream.aisstream.io · WebSocket · Western Mediterranean bounding box',
       update:'Real-time · Position reports every 2–180 seconds depending on vessel speed',
-      method:"WebSocket connection to AISStream. API key fetched from a Cloudflare Worker route — never exposed in client code. Vessel type decoded from AIS type code to six operational categories.",
+      method:"WebSocket connection to AISStream. API key fetched from a Cloudflare Worker route, never exposed in client code. Vessel type decoded from AIS type code to six operational categories.",
       limitation:"AIS is self-reported and can be spoofed. Free tier may throttle connections. Fishing vessels under 15m not legally required to carry AIS. If the Worker's key endpoint is unreachable, the map falls back to 5 clearly-labelled demo vessels rather than showing nothing, and automatically switches to live data the moment a real connection succeeds.",
       integrity:"AIS is the international standard mandated by IMO SOLAS convention for vessels over 300 GT."
     },
@@ -1824,7 +1823,7 @@ function buildSourcesPanel() {
       endpoint:'api.adsb.lol/v2/lat/41.39/lon/2.17/dist/150 · 150nm radius',
       update:'Real-time · Polled every 10 seconds',
       method:"REST API returning ADS-B state vectors, proxied through the Cloudflare Worker. Aircraft categorised by callsign pattern: ICAO airline codes for commercial, cargo operators by prefix, low-altitude low-speed as helicopter.",
-      limitation:"Military aircraft with Mode S transponders may not appear. Helicopter classification is approximate — altitude and speed heuristics only. If the proxy request fails (e.g. the Worker's domain allowlist doesn't include api.adsb.lol), the map falls back to 10 clearly-labelled demo aircraft rather than showing nothing.",
+      limitation:"Military aircraft with Mode S transponders may not appear. Helicopter classification is approximate, altitude and speed heuristics only. If the proxy request fails (e.g. the Worker's domain allowlist doesn't include api.adsb.lol), the map falls back to 10 clearly-labelled demo aircraft rather than showing nothing.",
       integrity:"adsb.lol is a community-operated ADS-B network. Data is open access."
     },
     {
@@ -1834,7 +1833,7 @@ function buildSourcesPanel() {
       endpoint:'gtfsrt.renfe.com/vehicle_positions.json · api.tmb.cat (optional) · overpass-api.de and mirrors (route=subway, route=bus, highway=bus_stop)',
       update:'Trains: live, ~20s · Metro/bus vehicles: live if a TMB key is configured, otherwise simulated continuously · Network geometry: static, loaded once per session',
       method:"Rodalies trains are parsed from Renfe's public JSON feed with client-side interpolation and bearing-based icon rotation, as before. Metro and bus station/stop order and line geometry come from OpenStreetMap Overpass route relations. Metro and bus vehicles are calculated positions: each line's real geometry is converted into a travel timetable using published average speeds and typical headways, so a marker moves continuously along the actual route and pauses briefly at each real stop in sequence, in both directions. If a TMB Open Data API key is configured, the platform instead uses TMB's official arrival-time data to place vehicles; without one, it runs the schedule-based calculation only. Every vehicle tooltip states outright whether its position is live or simulated.",
-      limitation:"The schedule-based positions are a calculated approximation from published frequencies, not GPS — real vehicles bunch, run early/late, or skip stops in ways this doesn't capture. OSM's bus route relations are extensive and occasionally incomplete at network edges; a handful of infrequent lines may be missing, and the initial load can take up to a minute given the network's size.",
+      limitation:"The schedule-based positions are a calculated approximation from published frequencies, not GPS, real vehicles bunch, run early/late, or skip stops in ways this doesn't capture. OSM's bus route relations are extensive and occasionally incomplete at network edges; a handful of infrequent lines may be missing, and the initial load can take up to a minute given the network's size.",
       integrity:"Renfe GTFS-Realtime is published under Creative Commons Attribution 4.0. OpenStreetMap data is ODbL licensed. TMB Open Data is published under its own open licence terms."
     }
   ];
@@ -1925,7 +1924,7 @@ function showError(msg){
 
 // ─── Resilience layer ───────────────────────────────────────────────
 // One wrapper every live feed routes through. Gives each feed: a sane timeout,
-// one automatic retry, and — critically — LAST-KNOWN-GOOD fallback so a single
+// one automatic retry, and, critically, LAST-KNOWN-GOOD fallback so a single
 // failed refresh never blanks the map. Feeds degrade quietly; the only signal
 // is a small status dot (live / stale / offline), never a shouty banner.
 const FEED_STATUS = {};   // feedId -> {state:'live'|'stale'|'offline', at, lastGood}
@@ -1952,7 +1951,7 @@ async function resilientFetch(feedId, url, {parse='json', timeout=15000, retries
       if(attempt<retries) await new Promise(r=>setTimeout(r, 1200)); // brief backoff
     }
   }
-  // all attempts failed — degrade quietly
+  // all attempts failed, degrade quietly
   const had = FEED_STATUS[feedId] && FEED_STATUS[feedId].state==='live';
   setFeedStatus(feedId, had ? 'stale' : 'offline', lastErr?lastErr.message:'');
   throw lastErr;
@@ -1965,7 +1964,7 @@ function updateStatusDot(feedId){
   const s = FEED_STATUS[feedId];
   const color = !s ? 'var(--muted)' : s.state==='live' ? 'var(--green)' : s.state==='stale' ? 'var(--amber)' : 'var(--muted2)';
   el.style.background = color;
-  el.title = s ? (s.state==='live'?'Live':s.state==='stale'?'Stale — showing last known good':'Offline') : '';
+  el.title = s ? (s.state==='live'?'Live':s.state==='stale'?'Stale, showing last known good':'Offline') : '';
 }
 
 // Single source of truth for tab isolation: removes every layer/marker/interval
@@ -2196,7 +2195,7 @@ function connectAIS() {
       aisKeyFailCount++;
       console.warn(`AIS key fetch failed (attempt ${aisKeyFailCount}):`, err.message);
       if(aisKeyFailCount === 2 && Object.keys(maritimeVessels).length === 0) {
-        showError(`AIS feed unavailable (${err.message}) — showing demo vessels. Check that the Worker exposes a working /ais-key route.`);
+        showError(`AIS feed unavailable (${err.message}), showing demo vessels. Check that the Worker exposes a working /ais-key route.`);
         loadMaritimeFallback();
       }
       if(currentMap === 'maritime') setTimeout(connectAIS, 8000);
@@ -2223,7 +2222,7 @@ function _connectAISWithKey(apiKey) {
     setFeedStatus('aisFeedStatus','live','Live');
     showError(null);
     logActivity('AIS stream connected · Barcelona coast', 'var(--green)');
-    console.log('AIS WebSocket connected — live vessel tracking active');
+    console.log('AIS WebSocket connected, live vessel tracking active');
   };
 
   aisSocket.onmessage = (evt) => {
@@ -2277,7 +2276,7 @@ function _connectAISWithKey(apiKey) {
   };
 
   aisSocket.onclose = () => {
-    console.log('AIS WebSocket closed — reconnecting in 5s');
+    console.log('AIS WebSocket closed, reconnecting in 5s');
     setFeedStatus('aisFeedStatus','connecting','...');
     if(currentMap === 'maritime') setTimeout(connectAIS, 5000);
   };
@@ -2339,7 +2338,7 @@ async function fetchAircraft() {
     const apiUrl = 'https://api.adsb.lol/v2/lat/41.39/lon/2.17/dist/40';
     const workerUrl = `${WORKER_URL}?url=${encodeURIComponent(apiUrl)}`;
     const res = await fetch(workerUrl, {signal: AbortSignal.timeout(15000)});
-    if(!res.ok) throw new Error(`HTTP ${res.status} from proxy — check that api.adsb.lol is allowlisted on the Cloudflare Worker`);
+    if(!res.ok) throw new Error(`HTTP ${res.status} from proxy, check that api.adsb.lol is allowlisted on the Cloudflare Worker`);
     const data = await res.json();
     if(!data.ac) throw new Error('No aircraft data in response');
 
@@ -2368,10 +2367,10 @@ async function fetchAircraft() {
     showError(null);
   } catch(err) {
     console.warn('ADS-B fetch failed:', err.message);
-    setFeedStatus('adsbFeedStatus','offline','—');
+    setFeedStatus('adsbFeedStatus','offline',', ');
     if(Object.keys(aircraftData).length === 0) {
       loadAircraftFallback();
-      setFeedStatus('adsb','stale','rate-limited — demo aircraft shown');
+      setFeedStatus('adsb','stale','rate-limited, demo aircraft shown');
     }
   }
 }
@@ -2391,7 +2390,7 @@ function loadAircraftFallback() {
   ];
   fallback.forEach(v => { aircraftData[v.icao] = v; });
   updateAircraftMarkers();
-  setFeedStatus('adsbFeedStatus','offline','—');
+  setFeedStatus('adsbFeedStatus','offline',', ');
 }
 
 function updateAircraftMarkers() {
@@ -2419,7 +2418,7 @@ function updateAircraftMarkers() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TRANSIT — Renfe GTFS-Realtime · Live Rodalies train positions
+// TRANSIT, Renfe GTFS-Realtime · Live Rodalies train positions
 // Public JSON feed (CC BY 4.0), updates ~20s. Routed through the
 // same Cloudflare Worker used for ADS-B, since Renfe's CORS policy
 // is unconfirmed from the browser.
@@ -2490,7 +2489,7 @@ async function fetchTransit() {
     logActivity(`Rodalies feed · ${seen.size} trains · Barcelona lines`, 'var(--green)');
   } catch(err) {
     console.warn('Renfe transit fetch failed:', err.message);
-    setFeedStatus('railFeedStatus','offline','—');
+    setFeedStatus('railFeedStatus','offline',', ');
   }
 }
 
@@ -2515,7 +2514,7 @@ function getTransitTooltip(t) {
   return `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:8px 12px;color:#c0d4e8">
     <strong style="color:#00e8a0">${t.line}</strong><br>
     ${statusLabel}<br>
-    <span style="color:#2a4060">Stop: ${t.stopId||'—'}</span>
+    <span style="color:#2a4060">Stop: ${t.stopId||', '}</span>
     </div>`;
 }
 
@@ -2566,7 +2565,7 @@ function updateTransitMarkers() {
   });
 }
 
-// Smooth glide between ~20s polls — runs continuously in the background,
+// Smooth glide between ~20s polls, runs continuously in the background,
 // only moves markers while the transit tab is actually open.
 function animateTransit() {
   if(currentMap === 'transit') {
@@ -2585,10 +2584,10 @@ function animateTransit() {
 }
 requestAnimationFrame(animateTransit);
 
-// ─── Metro & Bus (TMB network) — ordered stops + line itineraries via OSM Overpass,
+// ─── Metro & Bus (TMB network), ordered stops + line itineraries via OSM Overpass,
 // with vehicles animated moving between stops (pausing at each one), driven by a
 // live TMB feed when configured, and a schedule/headway-based simulation otherwise.
-// The simulation is clearly labeled as such in every tooltip — it is a calculated
+// The simulation is clearly labeled as such in every tooltip, it is a calculated
 // approximation from published frequencies, not a claim of true GPS tracking. ───
 
 const METRO_LINE_COLORS = {
@@ -2597,7 +2596,7 @@ const METRO_LINE_COLORS = {
 };
 
 // Published/typical TMB headways (seconds) and average speeds (m/s, incl. dwell),
-// used only to drive the schedule-simulated movement — approximations, not exact
+// used only to drive the schedule-simulated movement, approximations, not exact
 // timetables. Clearly surfaced to the user as "simulated" wherever shown.
 const METRO_HEADWAY_S = {
   'L1':240,'L2':300,'L3':240,'L4':360,'L5':300,'L9N':420,'L9S':420,'L10N':480,'L10S':480,'L11':480,
@@ -2608,11 +2607,11 @@ const BUS_HEADWAY_S   = 480;    // ~8 min, used for every bus line (frequency va
 const BUS_SPEED_MPS   = 6.0;    // ~21 km/h average including stops/traffic
 const BUS_DWELL_MS    = 9000;
 
-// ─── TMB Open Data — OPTIONAL live feed ───
+// ─── TMB Open Data, OPTIONAL live feed ───
 // Register a free account at https://developer.tmb.cat for an app_id/app_key,
 // then add "api.tmb.cat" to your Cloudflare Worker's domain allowlist (same
 // pattern as gtfsrt.renfe.com / api.adsb.lol). Leave these blank to run entirely
-// on the schedule simulation above — everything still works, just simulated.
+// on the schedule simulation above, everything still works, just simulated.
 // NOTE: the exact TMB response shape isn't verified against a live key here;
 // fetchTmbLineEta() logs the raw response to console so field names can be
 // adjusted quickly once real data is flowing.
@@ -2696,7 +2695,7 @@ function dedupeLinesByRef(lines) {
       return true;
     });
 
-    // Use only ONE direction's geometry for the simulated path — the ping-pong
+    // Use only ONE direction's geometry for the simulated path, the ping-pong
     // simulation already provides the return trip, so combining both directions
     // here would double back on itself and zigzag. Pick whichever variant has
     // the most total points as the fuller/more representative direction.
@@ -2799,7 +2798,7 @@ function positionOnTimeline(runtime, tl, nowMs, phaseMs) {
 // station codes the real-time API requires (matched to our OSM stations by
 // proximity); (2) repeatedly, fetch live next-arrival ETAs for those codes and
 // use them to place each line's vehicle between its two soonest-arrival stations,
-// weighted by ETA — a position derived directly from TMB's official real-time data.
+// weighted by ETA, a position derived directly from TMB's official real-time data.
 let tmbStopsList = [];        // [{id, code, name, lat, lng}] from GTFS stops.txt
 let tmbMetroLiveData = {};    // lineRef -> [{dist, eta}]
 let tmbMetroInterval = null;
@@ -2915,7 +2914,7 @@ async function fetchTmbMetroLive() {
         (st.linies_trajectes||[]).forEach(tr=>{
           const trains = tr.propers_trens||[];
           if(!trains.length) return;
-          // temps_arribada is an ABSOLUTE unix timestamp in ms — convert to seconds remaining.
+          // temps_arribada is an ABSOLUTE unix timestamp in ms, convert to seconds remaining.
           const etaMsList = trains.map(t=>Number(t.temps_arribada)).filter(n=>isFinite(n));
           if(!etaMsList.length) return;
           const eta = (Math.min(...etaMsList) - now) / 1000; // seconds until arrival
@@ -2955,7 +2954,7 @@ async function fetchTmbMetroLive() {
 }
 
 // Positions a vehicle between the two soonest-arrival stations on a line,
-// weighted by ETA (closer ETA = closer to that station) — a real position
+// weighted by ETA (closer ETA = closer to that station), a real position
 // calculated from TMB's official arrival predictions, not GPS, not a guess.
 function liveEtaPosition(line) {
   const entries = tmbMetroLiveData[line.ref];
@@ -3075,7 +3074,7 @@ out geom;`;
 
     if(!metroLines.length){
       metroError = true;
-      showError('Metro network query returned no lines — Overpass may have partially timed out. Try reopening the Transit tab.');
+      showError('Metro network query returned no lines, Overpass may have partially timed out. Try reopening the Transit tab.');
     }
 
     console.log(`Loaded ${metroLines.length} metro lines, ${metroStations.length} stations from OSM`);
@@ -3091,7 +3090,7 @@ out geom;`;
     console.warn('Metro Overpass fetch failed on all mirrors:', err.message);
     metroError = true;
     dataLoaded.metro = true;
-    showError(`Metro network unavailable — Overpass unreachable on all mirrors (${err.message}).`);
+    showError(`Metro network unavailable, Overpass unreachable on all mirrors (${err.message}).`);
     if(currentMap==='transit'){ buildHUD(); buildList(); }
   }
 }
@@ -3177,17 +3176,17 @@ out geom;`;
 
   dataLoaded.bus = true;
   console.log(`Loaded ${busLines.length} bus lines, ${busStops.length} stops from OSM`);
-  // Note: bus network is intentionally NOT cached to localStorage — it's several MB
+  // Note: bus network is intentionally NOT cached to localStorage, it's several MB
   // and overflows the quota, which can evict the smaller, more valuable metro/TMB
   // caches. Bus re-fetches from OSM each session; metro + TMB stops stay cached.
 
   if(!busStops.length && !busLines.length) {
     busError = true;
-    showError('Bus network unavailable — Overpass API unreachable on all mirrors for both stops and line queries.');
+    showError('Bus network unavailable, Overpass API unreachable on all mirrors for both stops and line queries.');
   } else if(!busLines.length) {
-    setFeedStatus('bus','stale','line shapes unavailable — stops shown');
+    setFeedStatus('bus','stale','line shapes unavailable, stops shown');
   } else if(!busStops.length) {
-    showError(`Bus lines loaded (${busLines.length}), but the bus stops query timed out on all mirrors — showing lines only.`);
+    showError(`Bus lines loaded (${busLines.length}), but the bus stops query timed out on all mirrors, showing lines only.`);
   }
 
   logActivity(`Bus feed · ${busLines.length} lines · ${busStops.length} stops · OSM`, '#3da8ff');
@@ -3339,7 +3338,7 @@ function animateNetworkVehicles(nowRaf) {
       });
     }
     if(activeFilters.has('bus')) {
-      // No live bus feed wired yet — under the live-or-nothing policy, don't show
+      // No live bus feed wired yet, under the live-or-nothing policy, don't show
       // simulated bus vehicles. Bus stops and lines still render statically.
       Object.values(busVehicleMarkers).forEach(v=>{ v.marker.setOpacity(0); });
     }
@@ -3366,7 +3365,7 @@ function updateAllTransitLayers() {
   renderBusLayer();
 }
 
-// Fly the map to fit a whole metro line's geometry — called from the sidebar metro list.
+// Fly the map to fit a whole metro line's geometry, called from the sidebar metro list.
 function flyToMetroLine(ref) {
   const line = metroLines.find(l=>l.ref===ref);
   if(!line) return;
@@ -3376,11 +3375,11 @@ function flyToMetroLine(ref) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TRAFFIC — Live traffic state by street section (Ajuntament de Barcelona)
+// TRAFFIC, Live traffic state by street section (Ajuntament de Barcelona)
 // Geometry (section polylines) fetched once from the open-data portal via the
 // Worker and cached. Live state (congestion 0–6 + 15-min prediction) polled
 // every 5 min from TRAMS_TRAMS.dat. Joined on section ID, drawn green→red.
-// Real, live, weighty, spatial data — the anchor of the mobility domain.
+// Real, live, weighty, spatial data, the anchor of the mobility domain.
 // ═══════════════════════════════════════════════════════════════
 const TRAFFIC_GEOM_URL = 'https://opendata-ajuntament.barcelona.cat/data/dataset/1090983a-1c40-4609-8620-14ad49aae3ab/resource/1d6c814c-70ef-4147-aa16-a49ddb952f72/download/transit_relacio_trams.csv';
 const TRAFFIC_DATASET_ID = 'trams'; // CKAN package name
@@ -3514,7 +3513,7 @@ async function fetchTrafficState(){
   } catch(e){
     // Quiet degrade: keep the last-known-good trafficState on the map, mark stale.
     console.warn('Traffic state refresh failed (keeping last known good):', e.message);
-    // do NOT clear trafficState, do NOT show a banner — the map stays populated.
+    // do NOT clear trafficState, do NOT show a banner, the map stays populated.
   }
 }
 
@@ -3543,7 +3542,7 @@ function renderTrafficLayer(){
       <span style="color:${(TRAFFIC_STATES[st.predicted]||TRAFFIC_STATES[0]).color}">○ In 15 min: ${(TRAFFIC_STATES[st.predicted]||TRAFFIC_STATES[0]).label}</span></div>`,
       {sticky:true, opacity:1, className:''});
     trafficLayer.addLayer(pl);
-    // _path only exists after the layer is added to the map — read it now.
+    // _path only exists after the layer is added to the map, read it now.
     if(pl._path){
       if(meta.glow>0) pl._path.style.filter = `drop-shadow(0 0 ${meta.glow}px ${meta.color})`;
       trafficFlowSegments.push({path:pl._path, speed:Math.max(meta.speed,0.05)});
@@ -3566,7 +3565,7 @@ function animateTrafficFlow(){
 }
 animateTrafficFlow();
 
-// ─── ROAD WORKS (obres) — active + upcoming public-space works, overlaid on
+// ─── ROAD WORKS (obres), active + upcoming public-space works, overlaid on
 // traffic so congestion can be read against its likely cause. Daily-updated,
 // georeferenced WKT polygons from the Ajuntament open-data portal. ───
 const ROADWORKS_URL = 'https://opendata-ajuntament.barcelona.cat/data/dataset/fd9f355f-2160-4f89-96a1-6ece3924e3bd/resource/089bcf9e-140e-4ea3-bf93-03c6260ba0f5/download';
@@ -3687,10 +3686,10 @@ function renderRoadworksLayer(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PROVIDENCE ONTOLOGY — dual-grain linked object model (live)
+// PROVIDENCE ONTOLOGY, dual-grain linked object model (live)
 // District grain (10) aggregates street-level grain (traffic sections,
 // road works). Built from REAL in-memory data, updated in place as feeds
-// refresh. This is the backbone the Analysis view queries — the engine, not
+// refresh. This is the backbone the Analysis view queries, the engine, not
 // a picture of one. Aircraft/vessels are deliberately excluded: they are
 // situational context, not part of the causal intelligence web.
 // NS mirrors the formal .ttl model: http://providence.bcn/data#
@@ -3789,7 +3788,7 @@ function buildOntology(){
   ONTOLOGY = { districts, sections, roadworks: rw, builtAt: Date.now() };
 
   // ── Transit coverage per district: (metro stations + bus stops) per 1000
-  // residents. Answers "is this district underserved by transit?" — fuses with
+  // residents. Answers "is this district underserved by transit?", fuses with
   // congestion (do underserved districts have worse traffic?) and crime. ──
   const covCount = {};
   (metroStations||[]).forEach(s=>{ const d=districtOf([s.lat,s.lng]); if(d) covCount[d]=(covCount[d]||0)+1; });
@@ -3837,18 +3836,18 @@ const ONT_QUERIES = {
       const d = s.districtId ? ONTOLOGY.districts[s.districtId] : null;
       const hasWork = d && d.live.roadworksActive>0;
       (hasWork?explained:anomaly).push({ id:s.id, name:s.name, congestion:s.congestion,
-        district: d?d.name:'—' });
+        district: d?d.name:', ' });
     });
     return { explained, anomaly };
   },
 };
 
 // ═══════════════════════════════════════════════════════════════
-// CAUSAL REASONING ENGINE — probable-cause analysis over the ontology.
+// CAUSAL REASONING ENGINE, probable-cause analysis over the ontology.
 // A problem is an observation that deviates from expectation. Each registered
 // "explainer" checks one kind of cause and returns candidate(s) with a weight
 // (0–1) and honest reasoning. The engine runs all explainers, ranks results,
-// and always reports the RESIDUAL (unexplained portion) as its own signal —
+// and always reports the RESIDUAL (unexplained portion) as its own signal , 
 // the methodological-honesty core: proximity is a candidate, not proof.
 // To make the engine smarter later, register another explainer. No rewrite.
 // ═══════════════════════════════════════════════════════════════
@@ -3887,7 +3886,7 @@ registerExplainer(function roadworkExplainer(p){
   // more works in-district → stronger candidate, but capped: co-location is weak evidence
   const w = Math.min(0.45, 0.2 + 0.08*d.live.roadworksActive);
   return { label:`Active roadwork in ${d.name}`, weight:w, kind:'roadwork',
-    reasoning:`${d.live.roadworksActive} active work${d.live.roadworksActive>1?'s':''} in this district. Co-location makes this a candidate contributor — not confirmed cause; the work may be on an unrelated street.` };
+    reasoning:`${d.live.roadworksActive} active work${d.live.roadworksActive>1?'s':''} in this district. Co-location makes this a candidate contributor, not confirmed cause; the work may be on an unrelated street.` };
 });
 
 // ── Explainer 2: structural density (traffic problems) ──
@@ -3920,10 +3919,10 @@ registerExplainer(function crimeCofactorExplainer(p){
 });
 
 // ═══════════════════════════════════════════════════════════════
-// EVENTS (agenda cultural) — dated, coordinate-located happenings. The next
+// EVENTS (agenda cultural), dated, coordinate-located happenings. The next
 // causal node. Only records with a real start_date are kept (undated standing
 // listings are directory noise, excluded). An event explains congestion only
-// when it is live NOW and near the section — weighted by duration (a short
+// when it is live NOW and near the section, weighted by duration (a short
 // event happening today is a strong candidate; a months-long run is weak).
 // ═══════════════════════════════════════════════════════════════
 const EVENTS_URL = 'https://opendata-ajuntament.barcelona.cat/data/dataset/2767159c-1c98-46b8-a686-2b25b40cb053/resource/59b9c807-f6c1-4c10-ac51-1ace65485079/download';
@@ -3980,18 +3979,18 @@ function eventsLiveNear(latlng, radiusKm, when){
 
 // ── Explainer 4: live events near a congested section ──
 // Honest weighting with no crowd-size field available. Three signals:
-//  (a) TYPE — open-air concerts/festivals/markets pull big crowds; exhibitions/
+//  (a) TYPE, open-air concerts/festivals/markets pull big crowds; exhibitions/
 //      workshops/talks don't. Dominant factor.
-//  (b) DURATION — only very long runs (>2 weeks) are downweighted as standing
+//  (b) DURATION, only very long runs (>2 weeks) are downweighted as standing
 //      listings; days-to-two-weeks (festivals) stay full strength.
-//  (c) CONCURRENCY — several events live at once nearby raises congestion odds.
+//  (c) CONCURRENCY, several events live at once nearby raises congestion odds.
 function eventTypeIntensity(name, venue){
   const t = ((name||'')+' '+(venue||'')).toLowerCase();
   // high-draw, often open-air / mass-gathering
   if(/festival|concert|festa|mercat|market|fira|revetlla|cabalgata|cavalcada|castell|correfoc|desfilada|parade|manifestaci|open.?air|a l'aire lliure|verbena|sardana|diada/.test(t)) return {w:1.0, label:'high-draw / likely open-air'};
-  // medium — performances, screenings, sports
+  // medium, performances, screenings, sports
   if(/espectacle|teatre|cinema|dansa|ball|partit|match|esport|projecci/.test(t)) return {w:0.6, label:'medium-draw'};
-  // low — indoor, low-flow cultural offerings
+  // low, indoor, low-flow cultural offerings
   if(/exposici|taller|workshop|conferenci|xerrada|curs|visita|lectura|presentaci|itinerari|ruta/.test(t)) return {w:0.2, label:'low-draw (indoor/dispersed)'};
   return {w:0.45, label:'unclassified'};
 }
@@ -4024,7 +4023,7 @@ registerExplainer(function eventExplainer(p){
   const longRun = e.durationDays>14;
   const multi = concurrency>1 ? ` · ${concurrency} events live within 500m` : '';
   return { label:`Live event: ${e.name}`, weight, kind:'event',
-    reasoning:`"${e.name}" (${best.ti.label}) is live now within ~500m (${e.start}${e.end!==e.start?'→'+e.end:''}${e.venue?', '+e.venue:''})${multi}. ${longRun?'Runs >2 weeks, so treated as a standing listing — weak spike cause.':'Short/festival-length run — plausible crowd driver.'} No attendance data in the feed, so intensity is inferred from event type, not measured.` };
+    reasoning:`"${e.name}" (${best.ti.label}) is live now within ~500m (${e.start}${e.end!==e.start?'→'+e.end:''}${e.venue?', '+e.venue:''})${multi}. ${longRun?'Runs >2 weeks, so treated as a standing listing, weak spike cause.':'Short/festival-length run, plausible crowd driver.'} No attendance data in the feed, so intensity is inferred from event type, not measured.` };
 });
 
 // ── Data freshness: refresh daily-updated feeds on a cadence so a long-open
@@ -4044,11 +4043,11 @@ function startFreshnessScheduler(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FUSION — select 2–3 domains, overlay their layers AND compute their
+// FUSION, select 2–3 domains, overlay their layers AND compute their
 // cross-reference. Grain resolves from the domains picked: all-district →
 // district-grain correlation; all-street → spatial coincidence; mixed → the
 // dual-grain ontology bridges (street aggregates up to district). Every
-// computed relationship is labelled with honest epistemic strength — a
+// computed relationship is labelled with honest epistemic strength, a
 // coincidence is never presented as causation.
 // ═══════════════════════════════════════════════════════════════
 const FUSION_DOMAINS = {
@@ -4088,7 +4087,7 @@ function correlationStrength(r, n){
   const ar = Math.abs(r);
   let strength = ar>=0.7?'strong': ar>=0.5?'moderate': ar>=0.3?'weak':'negligible';
   // n=10 districts is small; be honest about fragility
-  const caveat = n<=10 ? 'small sample (n='+n+') — indicative, not conclusive' : 'n='+n;
+  const caveat = n<=10 ? 'small sample (n='+n+'), indicative, not conclusive' : 'n='+n;
   return {strength, caveat, dir: r>0?'positive':'negative'};
 }
 
@@ -4101,7 +4100,7 @@ function computeFusion(domainKeys){
   const bridged = grains.length>1; // mixed grain → bridged via ontology
 
   // Pairwise district-level correlations (works for all domains since street
-  // domains expose a perDistrict aggregate — this is the ontology bridge).
+  // domains expose a perDistrict aggregate, this is the ontology bridge).
   const pairs = [];
   for(let i=0;i<doms.length;i++) for(let j=i+1;j<doms.length;j++){
     const A=doms[i], B=doms[j];
@@ -4153,7 +4152,7 @@ function paintFusionMap(sel){
     const color = `hsl(${hue},85%,55%)`;
     const poly = L.polygon(d.coords, {color, weight:1.5, opacity:0.85, fillColor:color, fillOpacity:0.1+Math.min(1,score)*0.35});
     poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
-      <div style="color:${color};font-size:10px;text-transform:uppercase">#${c?c.rank:'—'} · Composite ${c?(c.score*100).toFixed(0):'—'}</div>
+      <div style="color:${color};font-size:10px;text-transform:uppercase">#${c?c.rank:', '} · Composite ${c?(c.score*100).toFixed(0):', '}</div>
       <strong>${d.name}</strong><br>
       ${c?c.parts.map(p=>`<span style="color:${p.color}">${p.label}: ${typeof p.v==='number'&&p.v<10?p.v.toFixed(2):Math.round(p.v).toLocaleString()}</span>`).join('<br>'):''}
     </div>`, {sticky:true, opacity:1, className:''});
@@ -4163,7 +4162,7 @@ function paintFusionMap(sel){
 }
 
 // The historical evidence cross-reference: strongest roadwork→congestion signals
-// from 12 months of data. Presented honestly — absolute rates shown alongside
+// from 12 months of data. Presented honestly, absolute rates shown alongside
 // lift, so a huge ratio on tiny base rates reads differently from a strong
 // effect on high base rates. Names come from the live traffic geometry.
 function renderEvidenceBlock(){
@@ -4203,10 +4202,10 @@ function renderEvidenceBlock(){
       ${label('Roadwork → congestion evidence')}
       <div style="font-family:var(--sans);font-size:12px;color:var(--text2)"><span style="font-family:var(--mono)">${roadworkEvidence.window_months}</span>-mo history · <span style="font-family:var(--mono)">${total}</span> sections</div>
     </div>
-    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">Per-section congestion frequency during active roadworks versus without, over ${roadworkEvidence.months_processed} months. Lift is the ratio of the two — a natural experiment per street, far stronger than live co-location, though still association rather than proof.</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">Per-section congestion frequency during active roadworks versus without, over ${roadworkEvidence.months_processed} months. Lift is the ratio of the two, a natural experiment per street, far stronger than live co-location, though still association rather than proof.</div>
     <div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Strongest signals</div>
     ${rows}
-    <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6;margin-top:10px">Sections marked "rare baseline" have near-zero normal congestion, so any roadwork congestion produces a large ratio — real but fragile. The operationally strongest signals are those with high absolute rates during works.</div>
+    <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6;margin-top:10px">Sections marked "rare baseline" have near-zero normal congestion, so any roadwork congestion produces a large ratio, real but fragile. The operationally strongest signals are those with high absolute rates during works.</div>
   `);
 }
 
@@ -4222,7 +4221,7 @@ function renderFusion(){
   };
   let html = `<div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase;margin-bottom:4px">Cross-domain synthesis</div>
     <div style="font-family:var(--sans);font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.01em;margin-bottom:6px">Domain Fusion</div>
-    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">Select two or three domains. Their layers overlay on the map and their cross-reference computes below. Grain resolves from your selection — the ontology bridges street and district when they mix.</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">Select two or three domains. Their layers overlay on the map and their cross-reference computes below. Grain resolves from your selection, the ontology bridges street and district when they mix.</div>
     <div style="margin-bottom:16px">${Object.keys(FUSION_DOMAINS).map(chip).join('')}</div>`;
 
   if(!fusion || sel.length<2){
@@ -4231,7 +4230,7 @@ function renderFusion(){
   }
 
   // grain banner
-  const grainLabel = fusion.bridged ? 'Mixed grain — bridged via ontology (street aggregates up to district)' : (fusion.grains[0]==='district'?'District grain':'Street grain');
+  const grainLabel = fusion.bridged ? 'Mixed grain, bridged via ontology (street aggregates up to district)' : (fusion.grains[0]==='district'?'District grain':'Street grain');
   html += `<div style="font-family:var(--sans);font-size:12px;color:var(--accent);margin-bottom:14px;padding:7px 11px;background:var(--accent-dim);border-left:2px solid var(--accent)">${grainLabel}</div>`;
 
   // pairwise correlations with honest labels
@@ -4249,7 +4248,7 @@ function renderFusion(){
   });
 
   // composite ranking
-  html += `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px">Composite Ranking — districts by fused score</div>`;
+  html += `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px">Composite Ranking, districts by fused score</div>`;
   fusion.composite.slice(0,10).forEach((c,i)=>{
     html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
       <span style="font-family:var(--mono);font-size:10px;color:${i<3?'#ff6d00':'#7090a8'};width:16px;text-align:right">${i+1}</span>
@@ -4262,7 +4261,7 @@ function renderFusion(){
     </div>`;
   });
 
-  html += `<div style="font-family:var(--sans);font-size:12px;color:var(--muted2);margin-top:14px;line-height:1.6;border-top:1px dashed var(--border2);padding-top:10px">Fusion computes correlation and composite scores across the domains you select. Correlation is not causation — a strong r means the two move together across districts, which is a lead to investigate, not a proven mechanism. District-level n=10 is small, so treat all coefficients as indicative. Mixed-grain fusions correlate district aggregates, which can hide street-level detail.</div>
+  html += `<div style="font-family:var(--sans);font-size:12px;color:var(--muted2);margin-top:14px;line-height:1.6;border-top:1px dashed var(--border2);padding-top:10px">Fusion computes correlation and composite scores across the domains you select. Correlation is not causation, a strong r means the two move together across districts, which is a lead to investigate, not a proven mechanism. District-level n=10 is small, so treat all coefficients as indicative. Mixed-grain fusions correlate district aggregates, which can hide street-level detail.</div>
   <div style="margin-top:22px">${renderEvidenceBlock()}</div>`;
   panel.innerHTML = html;
 }
@@ -4287,7 +4286,7 @@ function paintAnalysisMap(){
       fillColor:color, fillOpacity:0.12+score*0.33,
     });
     poly.bindTooltip(`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(12,12,14,.97);border:1px solid #1a3050;padding:7px 11px;color:#c0d4e8">
-      <div style="color:${color};font-size:10px;letter-spacing:.1em;text-transform:uppercase">#${p?p.rank:'—'} · Pressure ${p?(p.score*100).toFixed(0):'—'}</div>
+      <div style="color:${color};font-size:10px;letter-spacing:.1em;text-transform:uppercase">#${p?p.rank:', '} · Pressure ${p?(p.score*100).toFixed(0):', '}</div>
       <strong>${d.name}</strong><br>
       <span style="color:#7090a8">${p?p.crime.toLocaleString():0} crime · ${p?(p.density/1000).toFixed(0):0}k/km²</span><br>
       <span style="color:#7090a8">${p?p.congested:0} congested · ${p?p.roadworks:0} works</span>
@@ -4344,7 +4343,7 @@ window.__analyzeProblem = function(i){
   } else {
     html += `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:9px">No registered explainer produced a candidate. As more causal nodes (events, weather, baselines) are added to the ontology, the engine will have more to reason with here.</div>`;
   }
-  // Residual — the honesty signal
+  // Residual, the honesty signal
   const resColor = residualPct>0.5 ? '#ff1744' : residualPct>0.25 ? '#ffb300' : '#00e676';
   html += `<div style="border-top:1px dashed var(--border2);margin-top:8px;padding-top:8px">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -4353,9 +4352,9 @@ window.__analyzeProblem = function(i){
     </div>
     ${bar(residualPct, resColor)}
     <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:3px;line-height:1.5">${
-      residualPct>0.5 ? 'Most of this problem is NOT accounted for by known causes. This is the highest-value signal — something is happening here the current model cannot explain. Worth direct investigation.' :
+      residualPct>0.5 ? 'Most of this problem is NOT accounted for by known causes. This is the highest-value signal, something is happening here the current model cannot explain. Worth direct investigation.' :
       residualPct>0.25 ? 'A meaningful portion remains unexplained. The candidate causes above are partial; treat them as leads, not conclusions.' :
-      'Known causes account for most of this problem. Lower investigative priority — the situation is largely understood.'
+      'Known causes account for most of this problem. Lower investigative priority, the situation is largely understood.'
     }</div>
   </div></div>`;
   out.innerHTML = html;
@@ -4444,7 +4443,7 @@ buildList = function() {
       (trains.length ? trains.map(t=>{
         return `<div class="list-card" onclick="flyToTrain('${t.id}')">
           <div class="lc-name">${t.line}</div>
-          <div class="lc-sub" style="color:#00e8a0">${statusLabel[t.status]||t.status} · Stop ${t.stopId||'—'}</div></div>`;
+          <div class="lc-sub" style="color:#00e8a0">${statusLabel[t.status]||t.status} · Stop ${t.stopId||', '}</div></div>`;
       }).join('') : `<div class="list-card" style="cursor:default"><div class="lc-sub" style="color:var(--muted)">Waiting for feed…</div></div>`);
 
     let metroHtml;
@@ -4910,7 +4909,7 @@ function buildAnalysisPanel() {
       x:cctvDensity, xLabel:'CCTV cameras per district',
       y:crimeTotal,  yLabel:'Total annual incidents',
       r:pearsonCorrelation(cctvDensity, crimeTotal),
-      insight:'Strong positive correlation — but this is likely reactive, not causal. Barcelona\'s Ajuntament deploys CCTV where crime is already high, not the other way around. This is a classic example of confounding: cameras concentrate in high-crime areas as a policy response, making it appear cameras cause crime when the causality runs the other way.',
+      insight:'Strong positive correlation, but this is likely reactive, not causal. Barcelona\'s Ajuntament deploys CCTV where crime is already high, not the other way around. This is a classic example of confounding: cameras concentrate in high-crime areas as a policy response, making it appear cameras cause crime when the causality runs the other way.',
       datasets:['Open Data BCN · CCTV Inventory 2024','Mossos d\'Esquadra 2024']
     },
     {
@@ -4918,7 +4917,7 @@ function buildAnalysisPanel() {
       x:popDensity, xLabel:'Population per km²',
       y:crimeTotal, yLabel:'Total annual incidents',
       r:pearsonCorrelation(popDensity, crimeTotal),
-      insight:'Moderate positive correlation — consistent with routine activity theory. Dense districts generate more opportunities for contact between potential offenders and victims. Ciutat Vella and Eixample are outliers driven by tourism multiplying effective population well beyond registered residents.',
+      insight:'Moderate positive correlation, consistent with routine activity theory. Dense districts generate more opportunities for contact between potential offenders and victims. Ciutat Vella and Eixample are outliers driven by tourism multiplying effective population well beyond registered residents.',
       datasets:['Padró Municipal BCN 2025','Mossos d\'Esquadra 2024']
     },
     {
@@ -4926,7 +4925,7 @@ function buildAnalysisPanel() {
       x:cctvDensity, xLabel:'CCTV cameras per district',
       y:crimeTheft,  yLabel:'Annual theft incidents',
       r:pearsonCorrelation(cctvDensity, crimeTheft),
-      insight:'Near-perfect correlation between CCTV deployment and theft — the strongest relationship in this dataset. Reinforces the reactive deployment hypothesis: theft hotspots receive the most cameras. Does not support the deterrence hypothesis that cameras reduce theft.',
+      insight:'Near-perfect correlation between CCTV deployment and theft, the strongest relationship in this dataset. Reinforces the reactive deployment hypothesis: theft hotspots receive the most cameras. Does not support the deterrence hypothesis that cameras reduce theft.',
       datasets:['Open Data BCN · CCTV Inventory 2024','Mossos d\'Esquadra 2024']
     },
     {
@@ -4934,7 +4933,7 @@ function buildAnalysisPanel() {
       x:foreignPct, xLabel:'Registered foreign residents %',
       y:crimeAssault, yLabel:'Annual assault incidents',
       r:pearsonCorrelation(foreignPct, crimeAssault),
-      insight:'Critical data limitation: Padró Municipal excludes undocumented residents concentrated in Ciutat Vella. The apparent correlation likely reflects nighttime economy density — bars, clubs, and hospitality venues — which co-locates with both registered foreign residents and assault incidents in the same districts.',
+      insight:'Critical data limitation: Padró Municipal excludes undocumented residents concentrated in Ciutat Vella. The apparent correlation likely reflects nighttime economy density, bars, clubs, and hospitality venues, which co-locates with both registered foreign residents and assault incidents in the same districts.',
       datasets:['Padró Municipal BCN 2025 (registered only)','Mossos d\'Esquadra 2024']
     },
     {
@@ -4942,7 +4941,7 @@ function buildAnalysisPanel() {
       x:popDensity, xLabel:'Population per km²',
       y:crimeRobbery, yLabel:'Annual robbery incidents',
       r:pearsonCorrelation(popDensity, crimeRobbery),
-      insight:'Robbery with violence concentrates in high-density tourist areas — Ciutat Vella and Eixample. The correlation with population density likely reflects tourist density rather than resident density, as robbery in Barcelona disproportionately targets tourists in crowded public spaces.',
+      insight:'Robbery with violence concentrates in high-density tourist areas, Ciutat Vella and Eixample. The correlation with population density likely reflects tourist density rather than resident density, as robbery in Barcelona disproportionately targets tourists in crowded public spaces.',
       datasets:['Padró Municipal BCN 2025','Mossos d\'Esquadra 2024']
     },
     {
@@ -4950,7 +4949,7 @@ function buildAnalysisPanel() {
       x:policeDensity, xLabel:'Police stations per district',
       y:crimeAssault,  yLabel:'Annual assault incidents',
       r:pearsonCorrelation(policeDensity, crimeAssault),
-      insight:'Moderate positive correlation — again likely reactive deployment. Police commissaries are concentrated in high-crime districts. This illustrates the fundamental challenge of crime analysis: resources follow crime, making it appear that more policing correlates with more crime when the causal arrow points the other way.',
+      insight:'Moderate positive correlation, again likely reactive deployment. Police commissaries are concentrated in high-crime districts. This illustrates the fundamental challenge of crime analysis: resources follow crime, making it appear that more policing correlates with more crime when the causal arrow points the other way.',
       datasets:['OpenStreetMap · Mossos + Guàrdia Urbana stations','Mossos d\'Esquadra 2024']
     },
   ];
@@ -5018,7 +5017,7 @@ function buildAnalysisPanel() {
             <div style="font-family:var(--sans);font-size:12px;color:var(--text2)">Dual-grain ontology · districts × ${anySections?Object.keys(ONTOLOGY.sections).length+' traffic sections':'traffic (open Traffic tab to populate)'}${anyRoadworks?' × '+ONTOLOGY.roadworks.length+' works':''}</div>
           </div>
 
-          <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:8px">District pressure index — crime × density × live congestion</div>
+          <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:8px">District pressure index, crime × density × live congestion</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:16px">
             ${top.map((d,i)=>`<div style="display:flex;align-items:center;gap:8px">
               <div style="font-family:var(--mono);font-size:11px;color:${i<3?'#ff6d00':'#7090a8'};width:18px;text-align:right">${i+1}</div>
@@ -5030,18 +5029,18 @@ function buildAnalysisPanel() {
             </div>`).join('')}
           </div>
 
-          ${anySections ? `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Congestion Attribution — is the jam explained?</div>
+          ${anySections ? `<div style="font-family:var(--sans);font-weight:600;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Congestion Attribution, is the jam explained?</div>
           <div style="display:flex;gap:20px;flex-wrap:wrap">
             <div style="flex:1;min-width:220px">
-              <div style="font-family:var(--mono);font-size:10px;color:#ffd54f;margin-bottom:5px">◧ Explained — active roadwork in district (${ce.explained.length})</div>
+              <div style="font-family:var(--mono);font-size:10px;color:#ffd54f;margin-bottom:5px">◧ Explained, active roadwork in district (${ce.explained.length})</div>
               ${ce.explained.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:10px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">none right now</div>'}
             </div>
             <div style="flex:1;min-width:220px">
-              <div style="font-family:var(--mono);font-size:10px;color:#ff1744;margin-bottom:5px">⚠ Anomaly — congested, no known works (${ce.anomaly.length})</div>
+              <div style="font-family:var(--mono);font-size:10px;color:#ff1744;margin-bottom:5px">⚠ Anomaly, congested, no known works (${ce.anomaly.length})</div>
               ${ce.anomaly.slice(0,6).map(s=>`<div style="font-family:var(--mono);font-size:10px;color:#8fa8bc;padding:2px 0">${s.name} · <span style="color:#7090a8">${s.district}</span></div>`).join('') || '<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">none right now</div>'}
             </div>
           </div>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:10px;line-height:1.5">Attribution is district-level proximity, not causal proof — a co-located roadwork is a candidate explanation to investigate, not a confirmed cause. Anomalies (congestion with no nearby works) are the higher-value signal: something unexplained is happening there.</div>` : `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">Open the Traffic tab once to load live sections, then return here — congestion attribution will populate.</div>`}
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:10px;line-height:1.5">Attribution is district-level proximity, not causal proof, a co-located roadwork is a candidate explanation to investigate, not a confirmed cause. Anomalies (congestion with no nearby works) are the higher-value signal: something unexplained is happening there.</div>` : `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">Open the Traffic tab once to load live sections, then return here, congestion attribution will populate.</div>`}
         </div>
 
         ${(()=>{
@@ -5065,7 +5064,7 @@ function buildAnalysisPanel() {
           window.__PROBLEMS = problems;
           return `<div style="background:rgba(255,109,0,.03);border:1px solid rgba(255,109,0,.14);padding:14px 16px;margin-bottom:20px">
             <div style="font-family:var(--sans);font-weight:600;font-size:11px;color:#ff6d00;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Probable-Cause Reasoning</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:12px">Click a flagged problem — the engine traverses its ontology links and ranks candidate explanations, always reporting the unexplained residual.</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:12px">Click a flagged problem, the engine traverses its ontology links and ranks candidate explanations, always reporting the unexplained residual.</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
               ${problems.map((p,i)=>`<button onclick="window.__analyzeProblem(${i});window.__flyToProblem(${i})" style="font-family:var(--mono);font-size:10px;padding:5px 10px;background:rgba(12,12,14,.8);border:1px solid ${p.kind==='district'?'#ff6d0044':'#ff174444'};color:#c0d4e8;cursor:pointer;text-align:left">
                 <span style="color:${p.kind==='district'?'#ff6d00':'#ff1744'}">${p.kind==='district'?'▣':'▬'}</span> ${p.title}<br><span style="color:var(--muted2);font-size:11px">${p.sub} · click to locate</span>
@@ -5111,7 +5110,7 @@ function buildAnalysisPanel() {
             <div style="font-family:var(--sans);font-size:12px;padding:6px 9px;margin-bottom:8px;
               background:${color}12;border-left:2px solid ${color};color:${sig?color:'var(--text2)'};line-height:1.5">
               ${sig && Math.abs(c.r)>=0.5
-                ? `${c.r>0?'↑':'↓'} ${str} — ${c.r>0?'increases':'decreases'} with ${c.title.split(' vs ')[0].toLowerCase()}`
+                ? `${c.r>0?'↑':'↓'} ${str}, ${c.r>0?'increases':'decreases'} with ${c.title.split(' vs ')[0].toLowerCase()}`
                 : `No statistically significant correlation at n=${c.x.length}`}
             </div>
             <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:8px">${c.insight}</div>
@@ -5124,7 +5123,7 @@ function buildAnalysisPanel() {
 
       <div style="margin-top:16px;padding:11px 14px;border:1px solid var(--border);background:var(--surface)">
         <div style="font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:4px">Methodological note</div>
-        <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6">Pearson r across ${districts.length} districts. With n=${districts.length}, confidence intervals are wide — correlations whose interval crosses zero are demoted above as not statistically significant. All results are descriptive, not causal; confounders (tourism, inequality, nightlife density) are uncontrolled. Findings are hypotheses for investigation, not conclusions.</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6">Pearson r across ${districts.length} districts. With n=${districts.length}, confidence intervals are wide, correlations whose interval crosses zero are demoted above as not statistically significant. All results are descriptive, not causal; confounders (tourism, inequality, nightlife density) are uncontrolled. Findings are hypotheses for investigation, not conclusions.</div>
       </div>
     </div>`;
 }
