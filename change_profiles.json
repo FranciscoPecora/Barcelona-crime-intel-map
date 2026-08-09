@@ -1,0 +1,1229 @@
+{
+  "generated": "2026-08-09T18:13:21.766346+00:00",
+  "city": "Barcelona",
+  "profiles": [
+    {
+      "area": {
+        "id": "1-1",
+        "name": "el Raval"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_1_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_1_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 12133,
+          "after": 14481,
+          "delta": 2348,
+          "direction": "up",
+          "pct_change": 19.4,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+19.4%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 19.4% over the period.",
+          "basis": "Income (\u20ac/person) 12133 -> 14481 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:03:53.768457+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "1-2",
+        "name": "el Barri G\u00f2tic"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_2_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_2_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 16997,
+          "after": 20693,
+          "delta": 3696,
+          "direction": "up",
+          "pct_change": 21.7,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+21.7%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 21.7% over the period.",
+          "basis": "Income (\u20ac/person) 16997 -> 20693 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:04:35.603614+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "1-3",
+        "name": "la Barceloneta"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_3_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_3_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 15987,
+          "after": 18970,
+          "delta": 2983,
+          "direction": "up",
+          "pct_change": 18.7,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+18.7%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 18.7% over the period.",
+          "basis": "Income (\u20ac/person) 15987 -> 18970 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:05:17.676311+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "1-4",
+        "name": "Sant Pere, Santa Caterina i la Ribera"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_4_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_1_4_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 18078,
+          "after": 21381,
+          "delta": 3303,
+          "direction": "up",
+          "pct_change": 18.3,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+18.3%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 18.3% over the period.",
+          "basis": "Income (\u20ac/person) 18078 -> 21381 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:05:58.735894+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "2-5",
+        "name": "el Fort Pienc"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_5_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_5_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 23085,
+          "after": 26502,
+          "delta": 3417,
+          "direction": "up",
+          "pct_change": 14.8,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Stable",
+          "social_signal": "Income roughly flat (+14.8%).",
+          "reading": "No strong socioeconomic shift over the window.",
+          "flag": "ok",
+          "hedge": "Descriptive only."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 14.8% over the period.",
+          "basis": "Income (\u20ac/person) 23085 -> 26502 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:06:41.154081+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "2-6",
+        "name": "la Sagrada Fam\u00edlia"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_6_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_6_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 22464,
+          "after": 25058,
+          "delta": 2594,
+          "direction": "up",
+          "pct_change": 11.5,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Stable",
+          "social_signal": "Income roughly flat (+11.5%).",
+          "reading": "No strong socioeconomic shift over the window.",
+          "flag": "ok",
+          "hedge": "Descriptive only."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 11.5% over the period.",
+          "basis": "Income (\u20ac/person) 22464 -> 25058 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:07:18.113811+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "2-7",
+        "name": "la Dreta de l'Eixample"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_7_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_7_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 30294,
+          "after": 36104,
+          "delta": 5810,
+          "direction": "up",
+          "pct_change": 19.2,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+19.2%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 19.2% over the period.",
+          "basis": "Income (\u20ac/person) 30294 -> 36104 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:07:54.698203+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "2-8",
+        "name": "l'Antiga Esquerra de l'Eixample"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_8_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_8_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 28225,
+          "after": 33026,
+          "delta": 4801,
+          "direction": "up",
+          "pct_change": 17.0,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+17.0%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 17.0% over the period.",
+          "basis": "Income (\u20ac/person) 28225 -> 33026 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:08:28.868764+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "2-9",
+        "name": "la Nova Esquerra de l'Eixample"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_9_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_9_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 25968,
+          "after": 29093,
+          "delta": 3125,
+          "direction": "up",
+          "pct_change": 12.0,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Stable",
+          "social_signal": "Income roughly flat (+12.0%).",
+          "reading": "No strong socioeconomic shift over the window.",
+          "flag": "ok",
+          "hedge": "Descriptive only."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 12.0% over the period.",
+          "basis": "Income (\u20ac/person) 25968 -> 29093 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:09:10.248617+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "2-10",
+        "name": "Sant Antoni"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_10_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_2_10_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 22436,
+          "after": 25430,
+          "delta": 2994,
+          "direction": "up",
+          "pct_change": 13.3,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Stable",
+          "social_signal": "Income roughly flat (+13.3%).",
+          "reading": "No strong socioeconomic shift over the window.",
+          "flag": "ok",
+          "hedge": "Descriptive only."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 13.3% over the period.",
+          "basis": "Income (\u20ac/person) 22436 -> 25430 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:09:45.469766+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "3-11",
+        "name": "el Poble-sec"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_11_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_11_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 16335,
+          "after": 19127,
+          "delta": 2792,
+          "direction": "up",
+          "pct_change": 17.1,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+17.1%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 17.1% over the period.",
+          "basis": "Income (\u20ac/person) 16335 -> 19127 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:10:28.237870+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "3-12",
+        "name": "la Marina del Prat Vermell"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_12_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_12_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 13866,
+          "after": 17334,
+          "delta": 3468,
+          "direction": "up",
+          "pct_change": 25.0,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Possible gentrification / upgrading",
+          "physical_signal": "Compare before/after imagery for redevelopment, new construction, or land-use change.",
+          "social_signal": "Income rose sharply (+25.0%, 2021->2023).",
+          "reading": "A steep income rise alongside visible physical redevelopment is the classic gentrification signature. Rising average income can reflect wealthier residents moving in (displacement), not existing residents gaining.",
+          "flag": "investigate",
+          "hedge": "Area-average income cannot separate 'residents got richer' from 'richer residents replaced poorer ones'. Tenure/turnover data needed to confirm displacement."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 25.0% over the period.",
+          "basis": "Income (\u20ac/person) 13866 -> 17334 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:11:16.145389+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "3-13",
+        "name": "la Marina de Port"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_13_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_13_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 16317,
+          "after": 17976,
+          "delta": 1659,
+          "direction": "up",
+          "pct_change": 10.2,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Stable",
+          "social_signal": "Income roughly flat (+10.2%).",
+          "reading": "No strong socioeconomic shift over the window.",
+          "flag": "ok",
+          "hedge": "Descriptive only."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 10.2% over the period.",
+          "basis": "Income (\u20ac/person) 16317 -> 17976 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:12:03.708569+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "3-14",
+        "name": "la Font de la Guatlla"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_14_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_14_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 20269,
+          "after": 23189,
+          "delta": 2920,
+          "direction": "up",
+          "pct_change": 14.4,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Stable",
+          "social_signal": "Income roughly flat (+14.4%).",
+          "reading": "No strong socioeconomic shift over the window.",
+          "flag": "ok",
+          "hedge": "Descriptive only."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 14.4% over the period.",
+          "basis": "Income (\u20ac/person) 20269 -> 23189 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:12:42.140367+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    },
+    {
+      "area": {
+        "id": "3-15",
+        "name": "Hostafrancs"
+      },
+      "timepoints": {
+        "before": 2021,
+        "after": 2026
+      },
+      "physical": {
+        "before": {
+          "timepoint": 2021,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_15_2021.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2021
+          }
+        },
+        "after": {
+          "timepoint": 2026,
+          "image_path": "/Users/franciscopecora/Downloads/profile_3_15_2026.png",
+          "summary": {
+            "source": "Sentinel-2 L2A median composite",
+            "year": 2026
+          }
+        },
+        "change_note": "Compare the before/after composites directly. This engine shows verifiable imagery rather than asserting an automated change figure, because reliable per-area change classification is not supported at this sensor's resolution.",
+        "confidence": "high (verifiable imagery; no automated change claim)"
+      },
+      "social": [
+        {
+          "key": "income",
+          "label": "Income (\u20ac/person)",
+          "unit": "\u20ac",
+          "before": 19508,
+          "after": 21971,
+          "delta": 2463,
+          "direction": "up",
+          "pct_change": 12.6,
+          "years": {
+            "before": 2021,
+            "after": 2023
+          }
+        }
+      ],
+      "divergence": [
+        {
+          "pattern": "Stable",
+          "social_signal": "Income roughly flat (+12.6%).",
+          "reading": "No strong socioeconomic shift over the window.",
+          "flag": "ok",
+          "hedge": "Descriptive only."
+        }
+      ],
+      "implications": [
+        {
+          "text": "Income (\u20ac/person) moved up 12.6% over the period.",
+          "basis": "Income (\u20ac/person) 19508 -> 21971 \u20ac",
+          "hedge": "descriptive, not causal; single-source"
+        }
+      ],
+      "confidence": {
+        "physical": "high (verifiable imagery; no automated change claim)",
+        "social": "depends on source recency/among years available"
+      },
+      "generated": "2026-08-09T18:13:21.766263+00:00",
+      "provenance": [
+        {
+          "source": "ESA Copernicus Sentinel-2 L2A",
+          "role": "physical observation"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 barri boundaries",
+          "role": "areas"
+        },
+        {
+          "source": "Ajuntament de Barcelona \u2014 open data (pending multi-year)",
+          "role": "social metrics"
+        }
+      ]
+    }
+  ]
+}
