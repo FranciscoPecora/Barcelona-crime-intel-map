@@ -422,6 +422,7 @@ canvas#eyeCanvas{position:absolute;inset:0;width:100%;height:100%}
     <button class="nav-tab" data-map="traffic">Traffic</button>
     <button class="nav-tab" data-map="analysis">Analysis</button>
     <button class="nav-tab" data-map="fusion">Fusion</button>
+    <button class="nav-tab" data-map="profile">Change Profile</button>
   </nav>
   <div class="header-right">
     <div class="feed-status">
@@ -2022,6 +2023,16 @@ document.getElementById('mainNav').addEventListener('click',e=>{
 
   const analysisPanel = document.getElementById('analysisPanel');
   const fusionPanel = document.getElementById('fusionPanel');
+  if(currentMap === 'profile'){
+    analysisPanel.style.display = 'none';
+    fusionPanel.style.display = 'block';
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'none';
+    if(riskLayerActive) stopRiskLayer();
+    if(fusionMapLayer){ map.removeLayer(fusionMapLayer); fusionMapLayer=null; }
+    renderChangeProfile();
+    return;
+  }
   if(currentMap === 'fusion'){
     analysisPanel.style.display = 'none';
     fusionPanel.style.display = 'block';
@@ -4208,6 +4219,72 @@ function renderEvidenceBlock(){
     <div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6;margin-top:10px">Sections marked "rare baseline" have near-zero normal congestion, so any roadwork congestion produces a large ratio, real but fragile. The operationally strongest signals are those with high absolute rates during works.</div>
   `);
 }
+
+let changeProfiles = null;
+let changeProfilesLoaded = false;
+async function loadChangeProfiles(){
+  if(changeProfilesLoaded) return;
+  try {
+    const r = await fetch('change_profiles.json', {signal:AbortSignal.timeout(15000)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    changeProfiles = await r.json();
+  } catch(e){ console.warn('Change profiles load failed:', e.message); }
+  changeProfilesLoaded = true;
+}
+
+function renderChangeProfile(){
+  const panel = document.getElementById('fusionPanel');
+  if(!panel) return;
+  const wrap = (inner)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px;margin-bottom:16px">${inner}</div>`;
+  let head = `<div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase;margin-bottom:4px">Physical × Social change</div>
+    <div style="font-family:var(--sans);font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.01em;margin-bottom:6px">Change Profile</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">How each area changed physically (satellite) and socioeconomically (income), and where the two together suggest a pattern. Physical change is shown as verifiable imagery; income is real multi-year data. Findings are descriptive, not causal.</div>`;
+
+  if(!changeProfilesLoaded){
+    panel.innerHTML = head + wrap('<div style="font-family:var(--sans);color:var(--text2)">Loading change profiles…</div>');
+    loadChangeProfiles().then(()=>{ if(currentMap==='profile') renderChangeProfile(); });
+    return;
+  }
+  if(!changeProfiles || !changeProfiles.profiles || !changeProfiles.profiles.length){
+    panel.innerHTML = head + wrap(`<div style="font-family:var(--sans);color:var(--text2);line-height:1.6">No change profiles yet. Run the engine (<span style="font-family:var(--mono);font-size:12px">change_profile_engine.py --all</span>) and commit <span style="font-family:var(--mono);font-size:12px">change_profiles.json</span> to the repo.</div>`);
+    return;
+  }
+
+  // sort: investigate flags first, by income change
+  const profs = [...changeProfiles.profiles].sort((a,b)=>{
+    const ai = (a.social.find(s=>s.key==='income')||{}).pct_change||0;
+    const bi = (b.social.find(s=>s.key==='income')||{}).pct_change||0;
+    return bi - ai;
+  });
+
+  const flagColor = {investigate:'#e0663a', monitor:'#d9902f', ok:'var(--muted2)', stable:'var(--muted2)'};
+  const cards = profs.map(p=>{
+    const inc = p.social.find(s=>s.key==='income')||{};
+    const dv = (p.divergence&&p.divergence[0])||{};
+    const fc = flagColor[dv.flag]||'var(--muted2)';
+    const pct = inc.pct_change;
+    const arrow = pct>0?'↑':pct<0?'↓':'→';
+    return wrap(`
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <div style="font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text)">${p.area.name}</div>
+        <div style="font-family:var(--sans);font-size:12px;font-weight:600;color:${fc};text-transform:uppercase;letter-spacing:.03em">${dv.pattern||''}</div>
+      </div>
+      <div style="display:flex;gap:20px;margin-bottom:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:var(--sans);font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.03em">Income change</div>
+          <div style="font-family:var(--mono);font-size:18px;color:${fc}">${arrow} ${pct>0?'+':''}${pct}%</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text2)">€${(inc.before||0).toLocaleString()} → €${(inc.after||0).toLocaleString()} · ${(inc.years||{}).before}–${(inc.years||{}).after}</div>
+        </div>
+      </div>
+      <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:6px">${dv.reading||''}</div>
+      ${dv.hedge?`<div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.55;border-left:2px solid var(--border2);padding-left:10px">${dv.hedge}</div>`:''}
+    `);
+  }).join('');
+
+  panel.innerHTML = head + cards +
+    `<div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.6;margin-top:4px">Physical observation: ESA Copernicus Sentinel-2. Income: Ajuntament de Barcelona (Atles de Renda). Reproducible from public data. Income is area-average and cannot by itself distinguish rising resident income from population replacement.</div>`;
+}
+
 
 function renderFusion(){
   const panel = document.getElementById('fusionPanel');
