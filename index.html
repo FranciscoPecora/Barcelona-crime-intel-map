@@ -561,13 +561,16 @@ const map = L.map('map', {
   zoomControl:false, attributionControl:false,
   closePopupOnClick:false,
 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:19,opacity:0.9}).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{
-  maxZoom:19, opacity:0.2, zIndex:200,
-}).addTo(map);
+// Basemap: Esri dark gray canvas. Keyless and free. CARTO's basemap CDN began
+// requiring an API key, which stamped "API KEY REQUIRED" across every tile.
+// Note Esri uses {z}/{y}/{x} order and supports no {s} subdomain or {r} retina.
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:16, opacity:0.9}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:16, opacity:0.35, zIndex:200}).addTo(map);
 L.control.zoom({position:'topleft'}).addTo(map);
 L.control.attribution({position:'bottomright',prefix:''})
-  .addAttribution('© CartoDB · © OpenStreetMap · © Open Data BCN').addTo(map);
+  .addAttribution('© Esri · © OpenStreetMap · © Open Data BCN').addTo(map);
 
 map.on('mousemove', e => {
   const el = document.getElementById('coordDisplay');
@@ -4266,11 +4269,26 @@ function renderChangeProfile(){
     const pct = inc.pct_change;
     const rel = inc.vs_city_avg;
     const arrow = pct>0?'↑':pct<0?'↓':'→';
+    const pb = (p.physical&&p.physical.before)||{};
+    const pa = (p.physical&&p.physical.after)||{};
+    const srcUrls = inc.source_urls||{};
+    const srcLink = Object.values(srcUrls)[0];
     return wrap(`
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
         <div style="font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text)">${p.area.name}</div>
         <div style="font-family:var(--sans);font-size:12px;font-weight:600;color:${fc};text-transform:uppercase;letter-spacing:.03em">${dv.pattern||''}${dv.flag==='investigate'?' · flagged':''}</div>
       </div>
+      ${(pb.image_path&&pa.image_path)?`
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <div style="flex:1">
+          <img src="${pb.image_path}" style="width:100%;border:1px solid var(--border2);display:block" loading="lazy" onerror="this.style.opacity=.2">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">SATELLITE ${(pb).timepoint||''} · before</div>
+        </div>
+        <div style="flex:1">
+          <img src="${pa.image_path}" style="width:100%;border:1px solid var(--border2);display:block" loading="lazy" onerror="this.style.opacity=.2">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px">SATELLITE ${(pa).timepoint||''} · after</div>
+        </div>
+      </div>`:''}
       <div style="display:flex;gap:24px;margin-bottom:10px;flex-wrap:wrap">
         <div>
           <div style="font-family:var(--sans);font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.03em">Income change</div>
@@ -4284,7 +4302,8 @@ function renderChangeProfile(){
       </div>
       <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:6px">${dv.reading||''}</div>
       ${dv.relative_note?`<div style="font-family:var(--sans);font-size:12px;color:${rel>=5?'#c9a06a':'var(--muted2)'};line-height:1.55;margin-bottom:6px">${dv.relative_note}</div>`:''}
-      ${dv.hedge?`<div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.55;border-left:2px solid var(--border2);padding-left:10px">${dv.hedge}</div>`:''}
+      ${dv.hedge?`<div style="font-family:var(--sans);font-size:12px;color:var(--muted2);line-height:1.55;border-left:2px solid var(--border2);padding-left:10px;margin-bottom:6px">${dv.hedge}</div>`:''}
+      ${srcLink?`<div style="font-family:var(--sans);font-size:11px;color:var(--muted2)">Verify: <a href="${srcLink}" target="_blank" style="color:var(--accent);text-decoration:none">income source data ↗</a> · Sentinel-2 imagery, ESA Copernicus</div>`:''}
     `);
   }).join('');
 
